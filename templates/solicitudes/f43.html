@@ -1,7 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 
-{% block titulo %}Nueva Solicitud F43{% endblock %}
+{% block titulo %}Solicitud F43{% endblock %}
 {% block nav_nueva_solicitud %}activo{% endblock %}
 
 {% block estilos_extra %}
@@ -9,514 +9,509 @@
 {% endblock %}
 
 {% block breadcrumb %}
-  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
-    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
-    <a href="{% url 'solicitudes:mis_solicitudes' %}" style="color:var(--color-texto-muted);text-decoration:none;">Mis solicitudes</a>
-  </li>
-  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
-    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
-    <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Nueva solicitud F43</span>
-  </li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'solicitudes:mis_solicitudes' %}" style="color:var(--color-texto-muted);text-decoration:none;">Mis solicitudes</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Nueva solicitud F43</span>
+</li>
 {% endblock %}
 
 {% block contenido %}
-<div class="pagina-cabecera">
-  <h1 class="pagina-titulo">Solicitud de Autorización Técnica — F43</h1>
-  <p class="pagina-subtitulo">Complete todos los campos requeridos. La solicitud será revisada por un operador del Ministerio de Comunicaciones.</p>
+<div class="f43-pagina-fondo">
+
+  <!-- Barra de acciones -->
+  <div class="f43-acciones">
+    <a href="{% url 'solicitudes:mis_solicitudes' %}" class="f43-btn-accion f43-btn-volver">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+      Volver
+    </a>
+    <div style="display:flex;gap:8px;">
+      <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
+        <i data-lucide="printer" style="width:16px;height:16px;"></i>
+        Imprimir / PDF
+      </button>
+      <button type="button" onclick="enviarFormulario()" class="f43-btn-accion f43-btn-enviar">
+        <i data-lucide="send" style="width:16px;height:16px;"></i>
+        Enviar solicitud
+      </button>
+    </div>
+  </div>
+
+  <!-- ── HOJA A4 ──────────────────────────────────────────────────────────── -->
+  <div class="f43-hoja">
+    <form method="post" enctype="multipart/form-data" id="form-f43" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="equipos_json" id="equipos-json" value="[]">
+
+      <!-- Encabezado oficial -->
+      <div class="f43-encabezado">
+        <div class="f43-encabezado-titulo">
+          SOLICITUD DE AUTORIZACIÓN TÉCNICA POR PERSONAS NATURALES PARA LA IMPORTACIÓN
+          DE EQUIPOS Y COMPONENTES REGULADOS POR EL MINISTERIO DE COMUNICACIONES.
+        </div>
+        <div class="f43-encabezado-codigo">F.43</div>
+      </div>
+
+      <!-- ── SECCIÓN 1: DATOS DEL SOLICITANTE ─────────────────────────────── -->
+      <table class="f43-tabla">
+        <thead>
+          <tr><th colspan="4">Datos de la Persona Solicitante</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="f43-campo-label">1. Nombre y Apellidos del solicitante</td>
+            <td colspan="3">
+              <input type="text" name="nombre_apellidos" id="id_nombre_apellidos"
+                value="{{ form.nombre_apellidos.value|default:user.get_nombre_completo }}"
+                placeholder="Nombre completo del solicitante">
+              {% if form.nombre_apellidos.errors %}
+                <span class="f43-error-msg">{{ form.nombre_apellidos.errors.0 }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="f43-campo-label">2. Número de Pasaporte</td>
+            <td>
+              <input type="text" name="numero_pasaporte" id="id_numero_pasaporte"
+                value="{{ form.numero_pasaporte.value|default:'' }}"
+                placeholder="Ej: A12345678">
+              {% if form.numero_pasaporte.errors %}
+                <span class="f43-error-msg">{{ form.numero_pasaporte.errors.0 }}</span>
+              {% endif %}
+            </td>
+            <td class="f43-campo-label">3. País de Residencia</td>
+            <td>
+              <input type="text" name="pais_residencia" id="id_pais_residencia"
+                value="{{ form.pais_residencia.value|default:'Cuba' }}"
+                placeholder="Ej: Cuba">
+            </td>
+          </tr>
+          <tr>
+            <td class="f43-campo-label">4. Dirección de Residencia</td>
+            <td colspan="3">
+              <input type="text" name="direccion_residencia" id="id_direccion_residencia"
+                value="{{ form.direccion_residencia.value|default:'' }}"
+                placeholder="Calle, número, municipio, provincia">
+              {% if form.direccion_residencia.errors %}
+                <span class="f43-error-msg">{{ form.direccion_residencia.errors.0 }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="f43-campo-label">5. Correo Electrónico</td>
+            <td>
+              <input type="email" name="correo_electronico" id="id_correo_electronico"
+                value="{{ form.correo_electronico.value|default:user.email }}"
+                placeholder="correo@ejemplo.cu">
+              {% if form.correo_electronico.errors %}
+                <span class="f43-error-msg">{{ form.correo_electronico.errors.0 }}</span>
+              {% endif %}
+            </td>
+            <td class="f43-campo-label">6. Teléfono</td>
+            <td>
+              <input type="text" name="telefono" id="id_telefono"
+                value="{{ form.telefono.value|default:user.telefono }}"
+                placeholder="+53 5 000 0000">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ── SECCIÓN 2: DATOS DE IMPORTACIÓN ──────────────────────────────── -->
+      <table class="f43-tabla">
+        <thead>
+          <tr><th colspan="4">Datos referentes a la importación</th></tr>
+        </thead>
+        <tbody>
+          <!-- Provincia -->
+          <tr>
+            <td class="f43-campo-label" style="width:25%;">1. Provincia donde será realizada la solicitud</td>
+            <td colspan="3">
+              <select name="provincia" id="id_provincia">
+                {% for valor, etiqueta in form.fields.provincia.choices %}
+                  <option value="{{ valor }}" {% if form.provincia.value == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+              </select>
+              {% if form.provincia.errors %}
+                <span class="f43-error-msg">{{ form.provincia.errors.0 }}</span>
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Modo de importación -->
+          <tr>
+            <td class="f43-campo-label">2. Modo de la Importación</td>
+            <td colspan="3">
+              <div class="f43-check-grupo">
+                <label class="f43-check-item">
+                  <input type="checkbox" name="modo_equipaje" id="modo_equipaje"
+                    {% if form.modo_importacion.value == 'equipaje' %}checked{% endif %}>
+                  Equipaje acompañante
+                </label>
+                <label class="f43-check-item">
+                  <input type="checkbox" name="modo_rad" id="modo_rad"
+                    {% if form.modo_importacion.value == 'rad' %}checked{% endif %}
+                    onchange="toggleRAD(this.checked)">
+                  Documento de Retención Aduanal (RAD)
+                </label>
+                <label class="f43-check-item">
+                  <input type="checkbox" name="modo_carga" id="modo_carga"
+                    {% if form.modo_importacion.value == 'carga' %}checked{% endif %}>
+                  Carga Acompañante
+                </label>
+              </div>
+              <input type="hidden" name="modo_importacion" id="modo_importacion_hidden" value="{{ form.modo_importacion.value|default:'equipaje' }}">
+            </td>
+          </tr>
+
+          <!-- Vuelo y arribo -->
+          <tr>
+            <td class="f43-campo-label">3. No. de vuelo</td>
+            <td>
+              <input type="text" name="numero_vuelo" id="id_numero_vuelo"
+                value="{{ form.numero_vuelo.value|default:'' }}"
+                placeholder="Ej: CU123">
+            </td>
+            <td class="f43-campo-label">4. Fecha de Arribo</td>
+            <td>
+              <input type="date" name="fecha_arribo" id="id_fecha_arribo"
+                value="{{ form.fecha_arribo.value|default:'' }}">
+            </td>
+          </tr>
+
+          <!-- País procedencia y aduana -->
+          <tr>
+            <td class="f43-campo-label">5. País de procedencia</td>
+            <td>
+              <input type="text" name="pais_procedencia" id="id_pais_procedencia"
+                value="{{ form.pais_procedencia.value|default:'' }}"
+                placeholder="País de origen del viaje">
+            </td>
+            <td class="f43-campo-label">6. Aduana de acceso</td>
+            <td>
+              <input type="text" name="aduana_acceso" id="id_aduana_acceso"
+                value="{{ form.aduana_acceso.value|default:'' }}"
+                placeholder="Aeropuerto, Puerto, Aduana Postal">
+            </td>
+          </tr>
+
+          <!-- Lugar acceso y RAD -->
+          <tr>
+            <td class="f43-campo-label">7. Lugar de acceso</td>
+            <td>
+              <input type="text" name="lugar_acceso" id="id_lugar_acceso"
+                value="{{ form.lugar_acceso.value|default:'' }}"
+                placeholder="Ej: Aeropuerto José Martí">
+            </td>
+            <td class="f43-campo-label">8. No. del RAD</td>
+            <td>
+              <input type="text" name="numero_rad" id="id_numero_rad"
+                value="{{ form.numero_rad.value|default:'' }}"
+                placeholder="Número de retención aduanal">
+            </td>
+          </tr>
+
+          <!-- Objetivo -->
+          <tr>
+            <td class="f43-campo-label">9. Objetivo de la Importación</td>
+            <td colspan="3">
+              <div class="f43-check-grupo">
+                <label class="f43-check-item">
+                  <input type="checkbox" name="obj_empleo" id="obj_empleo"
+                    {% if form.objetivo_importacion.value == 'empleo_directo' %}checked{% endif %}>
+                  Empleo Directo
+                </label>
+                <label class="f43-check-item">
+                  <input type="checkbox" name="obj_muestra" id="obj_muestra"
+                    {% if form.objetivo_importacion.value == 'muestra_expositiva' %}checked{% endif %}>
+                  Muestra Expositiva
+                </label>
+                <label class="f43-check-item">
+                  <input type="checkbox" name="obj_otros" id="obj_otros"
+                    {% if form.objetivo_importacion.value == 'otros' %}checked{% endif %}
+                    onchange="toggleOtros(this.checked)">
+                  Otros
+                </label>
+              </div>
+              <input type="hidden" name="objetivo_importacion" id="objetivo_importacion_hidden" value="{{ form.objetivo_importacion.value|default:'empleo_directo' }}">
+              <div id="campo-otros" style="display:none;margin-top:4px;">
+                <input type="text" name="objetivo_otros_detalle" id="id_objetivo_otros_detalle"
+                  value="{{ form.objetivo_otros_detalle.value|default:'' }}"
+                  placeholder="Especifique el objetivo de la importación">
+              </div>
+            </td>
+          </tr>
+
+          <!-- Período -->
+          <tr>
+            <td class="f43-campo-label">10. Periodo de la Importación</td>
+            <td colspan="3">
+              <div class="f43-check-grupo">
+                <label class="f43-check-item">
+                  <input type="radio" name="periodo_importacion" value="definitiva" id="periodo_definitiva"
+                    {% if form.periodo_importacion.value != 'temporal' %}checked{% endif %}>
+                  Definitiva
+                </label>
+                <label class="f43-check-item">
+                  <input type="radio" name="periodo_importacion" value="temporal" id="periodo_temporal"
+                    {% if form.periodo_importacion.value == 'temporal' %}checked{% endif %}
+                    onchange="toggleTemporal(true)">
+                  Temporal
+                </label>
+                <label class="f43-check-item" style="margin-left:12px;">
+                  Tiempo Solicitado (meses):
+                  <input type="number" name="tiempo_solicitado" id="id_tiempo_solicitado"
+                    value="{{ form.tiempo_solicitado.value|default:'' }}"
+                    min="1" max="60" placeholder="Meses"
+                    style="width:70px;margin-left:6px;"
+                    {% if form.periodo_importacion.value != 'temporal' %}disabled{% endif %}>
+                </label>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ── SECCIÓN 3: RELACIÓN DE EQUIPOS ───────────────────────────────── -->
+      <table class="f43-tabla" id="tabla-equipos">
+        <thead>
+          <tr><th colspan="5">11. Relación de Equipos y Medios</th></tr>
+          <tr>
+            <th style="width:5%;">No.</th>
+            <th style="width:38%;">DESCRIPCIÓN</th>
+            <th style="width:20%;">MARCA</th>
+            <th style="width:20%;">MODELO</th>
+            <th style="width:12%;">CANTIDAD</th>
+            <th style="width:5%;" class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="equipos-tbody">
+          <tr>
+            <td style="text-align:center;">1</td>
+            <td><input type="text" placeholder="Función principal del equipo"></td>
+            <td><input type="text" placeholder="Marca"></td>
+            <td><input type="text" placeholder="Modelo"></td>
+            <td><input type="number" min="1" placeholder="1" value="1"></td>
+            <td class="no-print" style="text-align:center;">
+              <button type="button" onclick="eliminarFila(this)"
+                style="background:none;border:none;cursor:pointer;color:#C62828;font-size:14px;padding:2px;">✕</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Botones agregar/eliminar fila -->
+      <div class="no-print" style="display:flex;gap:8px;margin-bottom:4mm;">
+        <button type="button" onclick="agregarFila()"
+          style="font-family:var(--fuente-principal);font-size:12px;padding:4px 12px;background:var(--color-primario);color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+          <i data-lucide="plus" style="width:13px;height:13px;"></i> Añadir renglón
+        </button>
+      </div>
+
+      <p style="font-size:8.5pt;color:#333;margin-bottom:5mm;line-height:1.5;">
+        Puede añadir más renglones o anexar un listado en formato Excel o Word con los mismos datos.<br>
+        <strong>En esta relación de medios se pondrán exclusivamente los equipos y componentes que se encuentran regulados por la legislación vigente.</strong>
+      </p>
+
+      <!-- Documento adjunto -->
+      <div class="no-print" style="margin-bottom:5mm;">
+        <label style="font-family:var(--fuente-principal);font-size:12px;font-weight:600;display:block;margin-bottom:4px;">
+          Documento adjunto (opcional — copia del RAD u otro):
+        </label>
+        <input type="file" name="documento_adjunto" accept=".pdf,.jpg,.jpeg,.png"
+          style="font-family:var(--fuente-principal);font-size:12px;">
+      </div>
+
+      <!-- ── SECCIÓN 4: DATOS SOLICITUD Y FIRMA ────────────────────────────── -->
+      <table class="f43-tabla">
+        <tbody>
+          <tr>
+            <td class="f43-campo-label" style="width:20%;">Fecha de Solicitud</td>
+            <td style="width:30%;">
+              <input type="date" name="fecha_solicitud" id="id_fecha_solicitud"
+                value="{{ today }}">
+            </td>
+            <td class="f43-campo-label" style="width:20%;">FIRMA</td>
+            <td style="width:30%;">
+              <input type="text" name="firma_ci" id="id_firma_ci"
+                placeholder="Número de CI o Pasaporte del solicitante">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:8.5pt;color:#555;margin-bottom:5mm;">
+        En copia electrónica, el espacio "Firma" se llenará con el número del Carné de Identidad o Pasaporte del solicitante.
+      </p>
+
+      <!-- ── SECCIÓN 5: PARA USO DEL CONTROL DE TRÁMITES ──────────────────── -->
+      <table class="f43-tabla">
+        <thead>
+          <tr><th colspan="3">Para uso del Control de Trámites</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="f43-campo-label" style="width:33%;">REGISTRO ENTRADA</td>
+            <td class="f43-campo-label" style="width:33%;">FECHA APROBACIÓN</td>
+            <td class="f43-campo-label" style="width:34%;">REGISTRO SALIDA</td>
+          </tr>
+          <tr>
+            <td><input type="text" readonly placeholder="Uso interno"></td>
+            <td><input type="date" readonly></td>
+            <td><input type="text" readonly placeholder="Uso interno"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ── INSTRUCCIONES ─────────────────────────────────────────────────── -->
+      <div class="f43-instrucciones">
+        <p class="f43-instrucciones-titulo">Instrucciones para llenar el Formulario</p>
+        <table class="f43-tabla">
+          <thead>
+            <tr>
+              <th style="width:8%;">No. del campo</th>
+              <th style="width:25%;">Denominación del campo</th>
+              <th>Especificaciones del campo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td><strong>Nombre y Apellidos del Solicitante</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>2</td><td><strong>Número de Pasaporte</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>3</td><td><strong>País de Residencia</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>4</td><td><strong>Dirección de Residencia</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>5</td><td><strong>Correo Electrónico</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>6</td><td><strong>Teléfono</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>1.1</td><td><strong>Provincia donde será realizada la solicitud</strong></td><td>Provincia por donde se realiza la solicitud de autorización y donde se recibirá la misma.</td></tr>
+            <tr><td>2</td><td><strong>Modo de importación</strong></td><td>Si la importación se realiza como equipaje acompañante o si el proceso se realiza después de una retención aduanal.</td></tr>
+            <tr><td>3</td><td><strong>No. Vuelo</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>4</td><td><strong>Fecha de Arribo</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>5</td><td><strong>País de procedencia</strong></td><td>Se explica por sí solo</td></tr>
+            <tr><td>6</td><td><strong>Aduana de acceso</strong></td><td>Se detalla si es por aeropuerto, puerto o aduana postal.</td></tr>
+            <tr><td>7</td><td><strong>Lugar de acceso</strong></td><td>Se detalla por qué aeropuerto, puerto o aduana postal específico se realizará la importación.</td></tr>
+            <tr><td>8</td><td><strong>No. del RAD</strong></td><td>Se detalla el número del documento de retención aduanal (RAD) que emite la aduana.</td></tr>
+            <tr><td>9</td><td><strong>Objetivo de la Importación</strong></td><td>Debe definirse cuál de los objetivos relacionados se persigue con la importación. En el caso de ser otro objetivo, especificar.</td></tr>
+            <tr><td>10</td><td><strong>Periodo de la Importación</strong></td><td>Se deberá especificar si es definitiva o temporal. En el caso de ser temporal, determinar la cantidad de meses.</td></tr>
+            <tr><td>11</td><td><strong>Relación de Equipos y Medios</strong></td><td>Deben consignarse por renglones los componentes del embarque cuya liberación se solicita. En "Descripción" expresar la función principal del artículo, en "Marca" y "Modelo" la información correspondiente, y en "Cantidad" la cifra de medios a importar. Ampliar la cantidad de renglones si fuera necesario. <strong>En esta relación se pondrán exclusivamente los equipos y componentes regulados por la legislación vigente.</strong></td></tr>
+            <tr><td>—</td><td><strong>Datos Solicitud</strong></td><td>Fecha solicitud: fecha en que se envía el formulario. "Firma" se llenará con el número de CI o Pasaporte del solicitante en copia electrónica.</td></tr>
+            <tr><td>—</td><td><strong>Para uso del Control de Trámites</strong></td><td>Campos para los especialistas del MINCOM.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="f43-nota">
+          <strong>NOTA:</strong> En el caso que la solicitud se realice posterior a una retención aduanal, adjunto a la solicitud se entregará o enviará copia del documento de retención emitido por la Aduana General de la República.
+        </div>
+      </div>
+
+    </form>
+  </div>
+  <!-- FIN HOJA A4 -->
+
 </div>
-
-<!-- Indicador de pasos -->
-<div class="f43-pasos">
-  <div class="f43-paso activo" id="paso-ind-1">
-    <div class="f43-paso-numero">1</div>
-    <div class="f43-paso-etiqueta">Datos personales</div>
-  </div>
-  <div class="f43-paso-linea"></div>
-  <div class="f43-paso" id="paso-ind-2">
-    <div class="f43-paso-numero">2</div>
-    <div class="f43-paso-etiqueta">Datos de importación</div>
-  </div>
-  <div class="f43-paso-linea"></div>
-  <div class="f43-paso" id="paso-ind-3">
-    <div class="f43-paso-numero">3</div>
-    <div class="f43-paso-etiqueta">Equipos</div>
-  </div>
-  <div class="f43-paso-linea"></div>
-  <div class="f43-paso" id="paso-ind-4">
-    <div class="f43-paso-numero">4</div>
-    <div class="f43-paso-etiqueta">Revisión y envío</div>
-  </div>
-</div>
-
-<form method="post" enctype="multipart/form-data" id="form-f43" novalidate>
-  {% csrf_token %}
-  <input type="hidden" name="equipos_json" id="equipos-json" value="[]">
-
-  <!-- ── PASO 1: Datos del solicitante ──────────────────────────────────── -->
-  <div class="f43-seccion activa" id="paso-1">
-    <div class="tarjeta">
-      <div class="tarjeta-cabecera">
-        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div class="f43-seccion-icono">
-            <i data-lucide="user" style="width:20px;height:20px;"></i>
-          </div>
-          <h2 class="tarjeta-titulo">Datos del solicitante</h2>
-        </div>
-        <span class="badge badge-info">Paso 1 de 4</span>
-      </div>
-      <div class="tarjeta-cuerpo">
-        <div class="grid-2">
-          <div class="campo-grupo">
-            <label class="campo-etiqueta requerido" for="id_nombre_apellidos">
-              {{ form.nombre_apellidos.label }}
-            </label>
-            <input type="text" name="nombre_apellidos" id="id_nombre_apellidos"
-              class="campo-input {% if form.nombre_apellidos.errors %}error{% endif %}"
-              value="{{ form.nombre_apellidos.value|default:'' }}"
-              placeholder="Nombre completo del solicitante" required>
-            {% if form.nombre_apellidos.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.nombre_apellidos.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-
-          <div class="campo-grupo">
-            <label class="campo-etiqueta requerido" for="id_numero_pasaporte">
-              {{ form.numero_pasaporte.label }}
-            </label>
-            <input type="text" name="numero_pasaporte" id="id_numero_pasaporte"
-              class="campo-input {% if form.numero_pasaporte.errors %}error{% endif %}"
-              value="{{ form.numero_pasaporte.value|default:'' }}"
-              placeholder="Ej: A12345678" required>
-            {% if form.numero_pasaporte.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.numero_pasaporte.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <div class="campo-grupo">
-            <label class="campo-etiqueta requerido" for="id_pais_residencia">
-              {{ form.pais_residencia.label }}
-            </label>
-            <input type="text" name="pais_residencia" id="id_pais_residencia"
-              class="campo-input {% if form.pais_residencia.errors %}error{% endif %}"
-              value="{{ form.pais_residencia.value|default:'Cuba' }}"
-              placeholder="País de residencia" required>
-            {% if form.pais_residencia.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.pais_residencia.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-
-          <div class="campo-grupo">
-            <label class="campo-etiqueta requerido" for="id_direccion_residencia">
-              {{ form.direccion_residencia.label }}
-            </label>
-            <input type="text" name="direccion_residencia" id="id_direccion_residencia"
-              class="campo-input {% if form.direccion_residencia.errors %}error{% endif %}"
-              value="{{ form.direccion_residencia.value|default:'' }}"
-              placeholder="Calle, número, municipio" required>
-            {% if form.direccion_residencia.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.direccion_residencia.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <div class="campo-grupo">
-            <label class="campo-etiqueta requerido" for="id_correo_electronico">
-              {{ form.correo_electronico.label }}
-            </label>
-            <input type="email" name="correo_electronico" id="id_correo_electronico"
-              class="campo-input {% if form.correo_electronico.errors %}error{% endif %}"
-              value="{{ form.correo_electronico.value|default:'' }}"
-              placeholder="correo@ejemplo.cu" required>
-            {% if form.correo_electronico.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.correo_electronico.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-
-          <div class="campo-grupo">
-            <label class="campo-etiqueta requerido" for="id_telefono">
-              {{ form.telefono.label }}
-            </label>
-            <input type="text" name="telefono" id="id_telefono"
-              class="campo-input {% if form.telefono.errors %}error{% endif %}"
-              value="{{ form.telefono.value|default:'' }}"
-              placeholder="+53 5 000 0000" required>
-            {% if form.telefono.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.telefono.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <div class="tarjeta-pie" style="display:flex;justify-content:flex-end;">
-        <button type="button" class="btn btn-primario" onclick="irPaso(2)">
-          Continuar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── PASO 2: Datos de importación ───────────────────────────────────── -->
-  <div class="f43-seccion" id="paso-2">
-    <div class="tarjeta">
-      <div class="tarjeta-cabecera">
-        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div class="f43-seccion-icono">
-            <i data-lucide="plane" style="width:20px;height:20px;"></i>
-          </div>
-          <h2 class="tarjeta-titulo">Datos referentes a la importación</h2>
-        </div>
-        <span class="badge badge-info">Paso 2 de 4</span>
-      </div>
-      <div class="tarjeta-cuerpo">
-
-        <!-- Provincia -->
-        <div class="campo-grupo">
-          <label class="campo-etiqueta requerido" for="id_provincia">
-            {{ form.provincia.label }}
-          </label>
-          <select name="provincia" id="id_provincia"
-            class="campo-select {% if form.provincia.errors %}error{% endif %}" required>
-            {% for valor, etiqueta in form.fields.provincia.choices %}
-              <option value="{{ valor }}" {% if form.provincia.value == valor %}selected{% endif %}>
-                {{ etiqueta }}
-              </option>
-            {% endfor %}
-          </select>
-          {% if form.provincia.errors %}
-            <div class="campo-error">
-              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-              {{ form.provincia.errors.0 }}
-            </div>
-          {% endif %}
-        </div>
-
-        <!-- Modo de importación -->
-        <div class="campo-grupo">
-          <label class="campo-etiqueta requerido">{{ form.modo_importacion.label }}</label>
-          <div class="f43-radio-grupo">
-            {% for valor, etiqueta in form.fields.modo_importacion.choices %}
-              <label class="f43-radio-opcion">
-                <input type="radio" name="modo_importacion" value="{{ valor }}"
-                  {% if form.modo_importacion.value == valor %}checked{% endif %}
-                  onchange="actualizarModo(this.value)">
-                <span class="f43-radio-caja">
-                  <span class="f43-radio-check"></span>
-                </span>
-                {{ etiqueta }}
-              </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- Datos de vuelo -->
-        <div class="grid-3">
-          <div class="campo-grupo">
-            <label class="campo-etiqueta" for="id_numero_vuelo">{{ form.numero_vuelo.label }}</label>
-            <input type="text" name="numero_vuelo" id="id_numero_vuelo"
-              class="campo-input"
-              value="{{ form.numero_vuelo.value|default:'' }}"
-              placeholder="Ej: CU123">
-          </div>
-          <div class="campo-grupo">
-            <label class="campo-etiqueta" for="id_fecha_arribo">{{ form.fecha_arribo.label }}</label>
-            <input type="date" name="fecha_arribo" id="id_fecha_arribo"
-              class="campo-input"
-              value="{{ form.fecha_arribo.value|default:'' }}">
-          </div>
-          <div class="campo-grupo">
-            <label class="campo-etiqueta" for="id_pais_procedencia">{{ form.pais_procedencia.label }}</label>
-            <input type="text" name="pais_procedencia" id="id_pais_procedencia"
-              class="campo-input"
-              value="{{ form.pais_procedencia.value|default:'' }}"
-              placeholder="País de origen del viaje">
-          </div>
-        </div>
-
-        <!-- Aduana -->
-        <div class="grid-3">
-          <div class="campo-grupo">
-            <label class="campo-etiqueta" for="id_aduana_acceso">{{ form.aduana_acceso.label }}</label>
-            <input type="text" name="aduana_acceso" id="id_aduana_acceso"
-              class="campo-input"
-              value="{{ form.aduana_acceso.value|default:'' }}"
-              placeholder="Aeropuerto, Puerto, Aduana Postal">
-          </div>
-          <div class="campo-grupo">
-            <label class="campo-etiqueta" for="id_lugar_acceso">{{ form.lugar_acceso.label }}</label>
-            <input type="text" name="lugar_acceso" id="id_lugar_acceso"
-              class="campo-input"
-              value="{{ form.lugar_acceso.value|default:'' }}"
-              placeholder="Ej: Aeropuerto José Martí">
-          </div>
-          <div class="campo-grupo" id="campo-rad">
-            <label class="campo-etiqueta" for="id_numero_rad" id="label-rad">{{ form.numero_rad.label }}</label>
-            <input type="text" name="numero_rad" id="id_numero_rad"
-              class="campo-input {% if form.numero_rad.errors %}error{% endif %}"
-              value="{{ form.numero_rad.value|default:'' }}"
-              placeholder="Número del RAD">
-            {% if form.numero_rad.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.numero_rad.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Objetivo -->
-        <div class="campo-grupo">
-          <label class="campo-etiqueta requerido">{{ form.objetivo_importacion.label }}</label>
-          <div class="f43-radio-grupo">
-            {% for valor, etiqueta in form.fields.objetivo_importacion.choices %}
-              <label class="f43-radio-opcion">
-                <input type="radio" name="objetivo_importacion" value="{{ valor }}"
-                  {% if form.objetivo_importacion.value == valor %}checked{% endif %}
-                  onchange="actualizarObjetivo(this.value)">
-                <span class="f43-radio-caja">
-                  <span class="f43-radio-check"></span>
-                </span>
-                {{ etiqueta }}
-              </label>
-            {% endfor %}
-          </div>
-          <div id="campo-objetivo-otros" style="display:none;margin-top:var(--espacio-3);">
-            <input type="text" name="objetivo_otros_detalle" id="id_objetivo_otros_detalle"
-              class="campo-input {% if form.objetivo_otros_detalle.errors %}error{% endif %}"
-              value="{{ form.objetivo_otros_detalle.value|default:'' }}"
-              placeholder="Especifique el objetivo de la importación">
-            {% if form.objetivo_otros_detalle.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.objetivo_otros_detalle.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Período -->
-        <div class="campo-grupo">
-          <label class="campo-etiqueta requerido">{{ form.periodo_importacion.label }}</label>
-          <div class="f43-radio-grupo">
-            {% for valor, etiqueta in form.fields.periodo_importacion.choices %}
-              <label class="f43-radio-opcion">
-                <input type="radio" name="periodo_importacion" value="{{ valor }}"
-                  {% if form.periodo_importacion.value == valor %}checked{% endif %}
-                  onchange="actualizarPeriodo(this.value)">
-                <span class="f43-radio-caja">
-                  <span class="f43-radio-check"></span>
-                </span>
-                {{ etiqueta }}
-              </label>
-            {% endfor %}
-          </div>
-          <div id="campo-tiempo" style="display:none;margin-top:var(--espacio-3);">
-            <input type="number" name="tiempo_solicitado" id="id_tiempo_solicitado"
-              class="campo-input {% if form.tiempo_solicitado.errors %}error{% endif %}"
-              value="{{ form.tiempo_solicitado.value|default:'' }}"
-              placeholder="Cantidad de meses" min="1" max="60"
-              style="max-width:200px;">
-            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);margin-left:var(--espacio-2);">meses</span>
-            {% if form.tiempo_solicitado.errors %}
-              <div class="campo-error">
-                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
-                {{ form.tiempo_solicitado.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Documento adjunto -->
-        <div class="campo-grupo">
-          <label class="campo-etiqueta" for="id_documento_adjunto">
-            {{ form.documento_adjunto.label }}
-          </label>
-          <div class="f43-upload">
-            <input type="file" name="documento_adjunto" id="id_documento_adjunto"
-              accept=".pdf,.jpg,.jpeg,.png" style="display:none;"
-              onchange="mostrarArchivo(this)">
-            <label for="id_documento_adjunto" class="f43-upload-area" id="upload-area">
-              <i data-lucide="upload-cloud" style="width:32px;height:32px;color:var(--color-texto-muted);margin-bottom:var(--espacio-2);"></i>
-              <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Haga clic para adjuntar archivo</span>
-              <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">PDF, JPG o PNG — máximo 5MB</span>
-            </label>
-            <div id="archivo-seleccionado" style="display:none;" class="f43-archivo-seleccionado">
-              <i data-lucide="file-check" style="width:18px;height:18px;color:var(--color-secundario);"></i>
-              <span id="nombre-archivo" style="font-size:var(--texto-sm);"></span>
-              <button type="button" onclick="quitarArchivo()" class="btn btn-ghost btn-sm">
-                <i data-lucide="x" style="width:14px;height:14px;"></i>
-              </button>
-            </div>
-          </div>
-          <p class="campo-ayuda">{{ form.documento_adjunto.help_text }}</p>
-        </div>
-
-      </div>
-      <div class="tarjeta-pie" style="display:flex;justify-content:space-between;">
-        <button type="button" class="btn btn-secundario" onclick="irPaso(1)">
-          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior
-        </button>
-        <button type="button" class="btn btn-primario" onclick="irPaso(3)">
-          Continuar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── PASO 3: Relación de equipos ────────────────────────────────────── -->
-  <div class="f43-seccion" id="paso-3">
-    <div class="tarjeta">
-      <div class="tarjeta-cabecera">
-        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div class="f43-seccion-icono">
-            <i data-lucide="cpu" style="width:20px;height:20px;"></i>
-          </div>
-          <h2 class="tarjeta-titulo">Relación de equipos y medios</h2>
-        </div>
-        <span class="badge badge-info">Paso 3 de 4</span>
-      </div>
-      <div class="tarjeta-cuerpo">
-        <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);margin-bottom:var(--espacio-5);">
-          Consigne los equipos cuya autorización de importación solicita. Incluya únicamente equipos y componentes regulados por la legislación vigente.
-        </p>
-
-        <!-- Tabla de equipos -->
-        <div class="tabla-contenedor mb-6">
-          <table class="tabla" id="tabla-equipos">
-            <thead>
-              <tr>
-                <th style="width:40px;">No.</th>
-                <th>Descripción</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Cantidad</th>
-                <th style="width:50px;"></th>
-              </tr>
-            </thead>
-            <tbody id="equipos-tbody">
-              <!-- Filas dinámicas -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Formulario para agregar equipo -->
-        <div class="tarjeta" style="border:2px dashed var(--color-borde);box-shadow:none;background:var(--color-fondo);">
-          <div class="tarjeta-cuerpo">
-            <p style="font-size:var(--texto-sm);font-weight:var(--peso-semi);margin-bottom:var(--espacio-4);">Agregar equipo</p>
-            <div class="grid-2" style="gap:var(--espacio-4);">
-              <div class="campo-grupo" style="margin-bottom:0;">
-                <label class="campo-etiqueta requerido" for="eq-descripcion">Descripción</label>
-                <input type="text" id="eq-descripcion" class="campo-input"
-                  placeholder="Función principal del equipo">
-              </div>
-              <div class="campo-grupo" style="margin-bottom:0;">
-                <label class="campo-etiqueta requerido" for="eq-marca">Marca</label>
-                <input type="text" id="eq-marca" class="campo-input" placeholder="Ej: Samsung">
-              </div>
-              <div class="campo-grupo" style="margin-bottom:0;">
-                <label class="campo-etiqueta requerido" for="eq-modelo">Modelo</label>
-                <input type="text" id="eq-modelo" class="campo-input" placeholder="Ej: Galaxy S24">
-              </div>
-              <div class="campo-grupo" style="margin-bottom:0;">
-                <label class="campo-etiqueta requerido" for="eq-cantidad">Cantidad</label>
-                <input type="number" id="eq-cantidad" class="campo-input"
-                  placeholder="1" min="1" value="1">
-              </div>
-            </div>
-            <div style="margin-top:var(--espacio-4);">
-              <button type="button" class="btn btn-primario" onclick="agregarEquipo()">
-                <i data-lucide="plus" style="width:16px;height:16px;"></i>
-                Agregar equipo
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div id="alerta-sin-equipos" class="alerta alerta-warning" style="display:none;margin-top:var(--espacio-4);">
-          <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
-          Debe agregar al menos un equipo antes de continuar.
-        </div>
-
-      </div>
-      <div class="tarjeta-pie" style="display:flex;justify-content:space-between;">
-        <button type="button" class="btn btn-secundario" onclick="irPaso(2)">
-          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior
-        </button>
-        <button type="button" class="btn btn-primario" onclick="irPaso(4)">
-          Continuar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── PASO 4: Revisión y envío ───────────────────────────────────────── -->
-  <div class="f43-seccion" id="paso-4">
-    <div class="tarjeta">
-      <div class="tarjeta-cabecera">
-        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div class="f43-seccion-icono">
-            <i data-lucide="send" style="width:20px;height:20px;"></i>
-          </div>
-          <h2 class="tarjeta-titulo">Revisión y envío</h2>
-        </div>
-        <span class="badge badge-info">Paso 4 de 4</span>
-      </div>
-      <div class="tarjeta-cuerpo">
-        <div class="alerta alerta-info" style="margin-bottom:var(--espacio-6);">
-          <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
-          Revise el resumen de su solicitud antes de enviarla. Una vez enviada, no podrá modificarla.
-        </div>
-
-        <!-- Resumen -->
-        <div id="resumen-contenido">
-          <!-- Se rellena dinámicamente por JS -->
-        </div>
-
-        <!-- Observaciones -->
-        <div class="campo-grupo" style="margin-top:var(--espacio-6);">
-          <label class="campo-etiqueta" for="id_observaciones_solicitante">
-            {{ form.observaciones_solicitante.label }}
-          </label>
-          <textarea name="observaciones_solicitante" id="id_observaciones_solicitante"
-            class="campo-textarea" rows="3"
-            placeholder="Información adicional que desee agregar a la solicitud">{{ form.observaciones_solicitante.value|default:'' }}</textarea>
-        </div>
-
-      </div>
-      <div class="tarjeta-pie" style="display:flex;justify-content:space-between;align-items:center;">
-        <button type="button" class="btn btn-secundario" onclick="irPaso(3)">
-          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior
-        </button>
-        <button type="submit" class="btn btn-primario btn-lg" id="btn-enviar">
-          <i data-lucide="send" style="width:18px;height:18px;"></i>
-          Enviar solicitud
-        </button>
-      </div>
-    </div>
-  </div>
-
-</form>
 {% endblock %}
 
 {% block scripts_extra %}
-<script src="{% static 'js/f43.js' %}"></script>
+<script>
+  let filaCount = 1;
+
+  function agregarFila() {
+    filaCount++;
+    const tbody = document.getElementById('equipos-tbody');
+    const fila = document.createElement('tr');
+    fila.innerHTML = `
+      <td style="text-align:center;">${filaCount}</td>
+      <td><input type="text" placeholder="Función principal del equipo"></td>
+      <td><input type="text" placeholder="Marca"></td>
+      <td><input type="text" placeholder="Modelo"></td>
+      <td><input type="number" min="1" placeholder="1" value="1"></td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" onclick="eliminarFila(this)"
+          style="background:none;border:none;cursor:pointer;color:#C62828;font-size:14px;padding:2px;">✕</button>
+      </td>
+    `;
+    tbody.appendChild(fila);
+    lucide.createIcons();
+  }
+
+  function eliminarFila(btn) {
+    const filas = document.querySelectorAll('#equipos-tbody tr');
+    if (filas.length <= 1) return;
+    btn.closest('tr').remove();
+    renumerarFilas();
+  }
+
+  function renumerarFilas() {
+    document.querySelectorAll('#equipos-tbody tr').forEach((fila, i) => {
+      fila.cells[0].textContent = i + 1;
+    });
+    filaCount = document.querySelectorAll('#equipos-tbody tr').length;
+  }
+
+  function toggleRAD(checked) {
+    document.getElementById('modo_importacion_hidden').value = checked ? 'rad' : 'equipaje';
+  }
+
+  function toggleOtros(checked) {
+    document.getElementById('campo-otros').style.display = checked ? 'block' : 'none';
+    const hidden = document.getElementById('objetivo_importacion_hidden');
+    hidden.value = checked ? 'otros' : 'empleo_directo';
+  }
+
+  function toggleTemporal(checked) {
+    const input = document.getElementById('id_tiempo_solicitado');
+    input.disabled = !checked;
+    if (!checked) input.value = '';
+  }
+
+  document.querySelectorAll('input[name="periodo_importacion"]').forEach(r => {
+    r.addEventListener('change', function() {
+      toggleTemporal(this.value === 'temporal');
+    });
+  });
+
+  function recopilarEquipos() {
+    const filas = document.querySelectorAll('#equipos-tbody tr');
+    const equipos = [];
+    filas.forEach(fila => {
+      const inputs = fila.querySelectorAll('input[type="text"], input[type="number"]');
+      if (inputs.length >= 4) {
+        const descripcion = inputs[0].value.trim();
+        const marca       = inputs[1].value.trim();
+        const modelo      = inputs[2].value.trim();
+        const cantidad    = parseInt(inputs[3].value) || 1;
+        if (descripcion || marca || modelo) {
+          equipos.push({ descripcion, marca, modelo, cantidad });
+        }
+      }
+    });
+    return equipos;
+  }
+
+  function enviarFormulario() {
+    const equipos = recopilarEquipos();
+
+    if (!document.getElementById('id_nombre_apellidos').value.trim()) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Complete el nombre y apellidos del solicitante.' });
+      document.getElementById('id_nombre_apellidos').focus();
+      return;
+    }
+    if (!document.getElementById('id_numero_pasaporte').value.trim()) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Complete el número de pasaporte.' });
+      document.getElementById('id_numero_pasaporte').focus();
+      return;
+    }
+    if (!document.getElementById('id_provincia').value) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Seleccione la provincia.' });
+      return;
+    }
+    if (equipos.length === 0) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Agregue al menos un equipo a la relación.' });
+      return;
+    }
+
+    document.getElementById('equipos-json').value = JSON.stringify(equipos);
+    document.getElementById('form-f43').submit();
+  }
+</script>
 {% endblock %}

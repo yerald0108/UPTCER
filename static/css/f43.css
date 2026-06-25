@@ -1,0 +1,306 @@
+/* ─── Formulario F43 — Apariencia de hoja física A4 ─────────────────────── */
+
+.f43-pagina-fondo {
+  background-color: #E8ECF0;
+  min-height: 100vh;
+  padding: var(--espacio-8) var(--espacio-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.f43-hoja {
+  width: 210mm;
+  min-height: 297mm;
+  background-color: #FFFFFF;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10);
+  border-radius: 2px;
+  padding: 18mm 16mm 18mm 16mm;
+  position: relative;
+  margin-bottom: var(--espacio-6);
+}
+
+/* Barra de acciones flotante encima de la hoja */
+.f43-acciones {
+  width: 210mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--espacio-4);
+}
+
+/* ─── Tipografía dentro de la hoja ──────────────────────────────────────── */
+.f43-hoja * {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  color: #000000;
+  box-sizing: border-box;
+}
+
+.f43-hoja input,
+.f43-hoja select,
+.f43-hoja textarea {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  color: #000;
+  background-color: #FAFAFA;
+  border: none;
+  border-bottom: 1px solid #999;
+  outline: none;
+  width: 100%;
+  padding: 2px 4px;
+  border-radius: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.f43-hoja input:focus,
+.f43-hoja select:focus,
+.f43-hoja textarea:focus {
+  background-color: #EEF4FF;
+  border-bottom: 2px solid #1A3A5C;
+  outline: none;
+}
+
+.f43-hoja input[readonly],
+.f43-hoja input[disabled] {
+  background-color: #F0F0F0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.f43-hoja select {
+  appearance: none;
+  cursor: pointer;
+}
+
+.f43-hoja textarea {
+  resize: none;
+  border: 1px solid #999;
+  padding: 4px;
+}
+
+/* ─── Encabezado del documento ───────────────────────────────────────────── */
+.f43-encabezado {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid #000;
+  margin-bottom: 6mm;
+}
+
+.f43-encabezado-titulo {
+  flex: 1;
+  padding: 6px 10px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 10pt;
+  text-transform: uppercase;
+  border-right: 1.5px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;
+}
+
+.f43-encabezado-codigo {
+  width: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 13pt;
+  padding: 6px;
+  text-align: center;
+}
+
+/* ─── Tablas del formulario ──────────────────────────────────────────────── */
+.f43-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 5mm;
+}
+
+.f43-tabla th,
+.f43-tabla td {
+  border: 1px solid #000;
+  padding: 4px 6px;
+  vertical-align: middle;
+  font-size: 10pt;
+}
+
+.f43-tabla th {
+  background-color: #E8E8E8;
+  font-weight: bold;
+  text-align: center;
+  font-size: 10pt;
+}
+
+.f43-tabla .f43-campo-label {
+  font-weight: bold;
+  white-space: nowrap;
+  font-size: 9.5pt;
+  background-color: #F5F5F5;
+  width: 1%;
+}
+
+/* ─── Checkboxes y radios dentro de la hoja ─────────────────────────────── */
+.f43-check-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.f43-check-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 10pt;
+}
+
+.f43-check-item input[type="checkbox"],
+.f43-check-item input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #000;
+  background-color: white;
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: auto;
+  border-bottom: 1.5px solid #000;
+  padding: 0;
+}
+
+.f43-check-item input[type="checkbox"]:focus,
+.f43-check-item input[type="radio"]:focus {
+  background-color: white;
+  border-color: #1A3A5C;
+}
+
+/* ─── Sección de instrucciones ───────────────────────────────────────────── */
+.f43-instrucciones-titulo {
+  font-weight: bold;
+  font-size: 10pt;
+  text-decoration: underline;
+  margin: 5mm 0 3mm 0;
+}
+
+.f43-nota {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  margin-top: 4mm;
+  font-size: 9.5pt;
+  line-height: 1.5;
+}
+
+/* ─── Botones de acción (fuera de la hoja) ───────────────────────────────── */
+.f43-btn-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--fuente-principal);
+  border-radius: var(--radio-md);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transicion-rapida);
+}
+
+.f43-btn-enviar {
+  background-color: var(--color-primario);
+  color: white;
+}
+.f43-btn-enviar:hover {
+  background-color: var(--color-primario-hover);
+  color: white;
+}
+
+.f43-btn-imprimir {
+  background-color: white;
+  color: var(--color-texto-secundario);
+  border: 1px solid var(--color-borde) !important;
+}
+.f43-btn-imprimir:hover {
+  background-color: var(--color-fondo);
+}
+
+.f43-btn-volver {
+  background-color: transparent;
+  color: var(--color-texto-secundario);
+  border: 1px solid var(--color-borde) !important;
+}
+.f43-btn-volver:hover {
+  background-color: var(--color-fondo);
+}
+
+/* ─── Errores de validación ──────────────────────────────────────────────── */
+.f43-hoja input.f43-error,
+.f43-hoja select.f43-error,
+.f43-hoja textarea.f43-error {
+  border-bottom: 2px solid #C62828 !important;
+  background-color: #FFF5F5 !important;
+}
+
+.f43-error-msg {
+  font-size: 8pt;
+  color: #C62828;
+  font-family: var(--fuente-principal) !important;
+  margin-top: 2px;
+  display: block;
+}
+
+/* ─── Impresión ──────────────────────────────────────────────────────────── */
+@media print {
+  body {
+    background-color: white !important;
+  }
+
+  .layout-sidebar,
+  .layout-navbar,
+  .f43-acciones,
+  .f43-pagina-fondo {
+    display: none !important;
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+  }
+
+  .layout-contenido {
+    padding: 0 !important;
+  }
+
+  .f43-hoja {
+    width: 100%;
+    min-height: auto;
+    box-shadow: none;
+    padding: 10mm;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .f43-hoja input,
+  .f43-hoja select,
+  .f43-hoja textarea {
+    background-color: transparent !important;
+    border-bottom: 1px solid #000 !important;
+  }
+
+  .f43-instrucciones { display: none; }
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .f43-hoja {
+    width: 100%;
+    padding: 8mm;
+  }
+  .f43-acciones {
+    width: 100%;
+  }
+}

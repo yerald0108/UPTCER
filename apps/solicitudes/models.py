@@ -137,3 +137,46 @@ class Solicitud(models.Model):
             self.ESTADO_CANCELADA:   'badge-denegado',
         }
         return mapa.get(self.estado, 'badge-info')
+    
+class HistorialSolicitud(models.Model):
+    solicitud       = models.ForeignKey(
+                        Solicitud,
+                        on_delete=models.CASCADE,
+                        related_name='historial',
+                        verbose_name='Solicitud'
+                      )
+    estado_anterior = models.CharField('Estado anterior', max_length=20, blank=True)
+    estado_nuevo    = models.CharField('Estado nuevo', max_length=20)
+    usuario         = models.ForeignKey(
+                        settings.AUTH_USER_MODEL,
+                        on_delete=models.PROTECT,
+                        verbose_name='Realizado por'
+                      )
+    observacion     = models.TextField('Observación', blank=True)
+    fecha           = models.DateTimeField('Fecha', auto_now_add=True)
+
+    class Meta:
+        verbose_name        = 'Historial de solicitud'
+        verbose_name_plural = 'Historial de solicitudes'
+        ordering            = ['-fecha']
+
+    def __str__(self):
+        return f'{self.solicitud.numero} — {self.estado_anterior} → {self.estado_nuevo}'
+
+    def get_estado_anterior_display(self):
+        return dict(Solicitud.ESTADOS).get(self.estado_anterior, self.estado_anterior)
+
+    def get_estado_nuevo_display(self):
+        return dict(Solicitud.ESTADOS).get(self.estado_nuevo, self.estado_nuevo)
+
+    @property
+    def clase_badge_nuevo(self):
+        mapa = {
+            Solicitud.ESTADO_BORRADOR:    'badge-info',
+            Solicitud.ESTADO_ENVIADA:     'badge-pendiente',
+            Solicitud.ESTADO_EN_REVISION: 'badge-revision',
+            Solicitud.ESTADO_APROBADA:    'badge-aprobado',
+            Solicitud.ESTADO_DENEGADA:    'badge-denegado',
+            Solicitud.ESTADO_CANCELADA:   'badge-denegado',
+        }
+        return mapa.get(self.estado_nuevo, 'badge-info')

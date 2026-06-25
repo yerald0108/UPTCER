@@ -35,30 +35,6 @@
         <div class="sidebar-logo-texto">UPTCER</div>
         <div class="sidebar-logo-subtexto">Gestión de Trámites</div>
       </div>
-      <button
-        id="btn-colapsar"
-        onclick="alternarSidebar()"
-        title="Colapsar menú"
-        style="
-          margin-left:auto;
-          flex-shrink:0;
-          background:rgba(255,255,255,0.08);
-          border:none;
-          border-radius:6px;
-          width:28px;
-          height:28px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          cursor:pointer;
-          color:rgba(255,255,255,0.7);
-          transition:background 0.15s ease, color 0.15s ease, opacity 0.3s ease;
-        "
-        onmouseenter="this.style.background='rgba(255,255,255,0.15)';this.style.color='white'"
-        onmouseleave="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.7)'"
-      >
-        <i data-lucide="panel-left-close" id="icono-colapsar" style="width:16px;height:16px;"></i>
-      </button>
     </div>
 
     <!-- Navegación principal -->
@@ -86,7 +62,7 @@
           <i data-lucide="layout-dashboard" class="icono"></i>
           <span class="sidebar-enlace-texto">Inicio</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}" data-tooltip="Solicitudes">
+        <a href="{% url 'solicitudes:lista' %}" class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}" data-tooltip="Solicitudes">
           <i data-lucide="inbox" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes</span>
         </a>
@@ -219,6 +195,20 @@
   </div>
 </div>
 
+<!-- Botón flotante colapsar sidebar -->
+<button
+  id="btn-colapsar"
+  class="btn-colapsar-sidebar"
+  onclick="alternarSidebar()"
+  title="Colapsar menú"
+  aria-label="Colapsar menú"
+>
+  <i data-lucide="panel-left-close" id="icono-colapsar" style="width:14px;height:14px;"></i>
+</button>
+
+<!-- Tooltip para sidebar colapsado -->
+<div id="sidebar-tooltip" class="sidebar-tooltip"></div>
+
 <!-- Overlay para móvil -->
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;" onclick="cerrarSidebar()"></div>
 
@@ -230,13 +220,16 @@
   const main      = document.querySelector('.layout-main');
   const overlay   = document.getElementById('sidebar-overlay');
   const btnMenu   = document.getElementById('btn-menu-movil');
+  const btnColapsar = document.getElementById('btn-colapsar');
   const iconoBtn  = document.getElementById('icono-colapsar');
+  const tooltip   = document.getElementById('sidebar-tooltip');
   const CLAVE     = 'uptcer_sidebar_colapsado';
 
-  // ─── Colapsar / expandir (desktop) ───────────────────────────────────────
+  // ─── Colapsar / expandir ──────────────────────────────────────────────────
   function alternarSidebar() {
     const colapsado = sidebar.classList.toggle('colapsado');
     main.classList.toggle('expandido', colapsado);
+    btnColapsar.classList.toggle('colapsado', colapsado);
     localStorage.setItem(CLAVE, colapsado ? '1' : '0');
     actualizarIconoBoton(colapsado);
   }
@@ -245,14 +238,35 @@
     if (!iconoBtn) return;
     iconoBtn.setAttribute('data-lucide', colapsado ? 'panel-left-open' : 'panel-left-close');
     lucide.createIcons({ nodes: [iconoBtn.parentElement] });
+    btnColapsar.title = colapsado ? 'Expandir menú' : 'Colapsar menú';
+    btnColapsar.setAttribute('aria-label', btnColapsar.title);
   }
 
   // Restaurar estado guardado
   if (localStorage.getItem(CLAVE) === '1') {
     sidebar.classList.add('colapsado');
     main.classList.add('expandido');
+    btnColapsar.classList.add('colapsado');
     actualizarIconoBoton(true);
   }
+
+  // ─── Tooltips del sidebar colapsado ──────────────────────────────────────
+  let tooltipTimeout = null;
+
+  document.querySelectorAll('.sidebar-enlace[data-tooltip]').forEach(enlace => {
+    enlace.addEventListener('mouseenter', (e) => {
+      if (!sidebar.classList.contains('colapsado')) return;
+      clearTimeout(tooltipTimeout);
+      const rect = enlace.getBoundingClientRect();
+      tooltip.textContent = enlace.dataset.tooltip;
+      tooltip.style.top = (rect.top + rect.height / 2 - 14) + 'px';
+      tooltip.classList.add('visible');
+    });
+
+    enlace.addEventListener('mouseleave', () => {
+      tooltipTimeout = setTimeout(() => tooltip.classList.remove('visible'), 100);
+    });
+  });
 
   // ─── Menú móvil ───────────────────────────────────────────────────────────
   function abrirSidebar() {

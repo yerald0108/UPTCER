@@ -188,14 +188,55 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: opacity 0.2s ease, width 0.3s ease;
+  transition: opacity 0.2s ease, max-width 0.3s ease;
   white-space: nowrap;
+  max-width: 200px;
 }
 
 .layout-sidebar.colapsado .sidebar-logo-info {
   opacity: 0;
-  width: 0;
+  max-width: 0;
   pointer-events: none;
+}
+
+/* Botón colapsar — flotante sobre el borde derecho del sidebar */
+.btn-colapsar-sidebar {
+  position: fixed;
+  top: 20px;
+  left: 248px;
+  z-index: 300;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--color-fondo-blanco);
+  border: 1.5px solid var(--color-borde);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-texto-secundario);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s ease,
+              color 0.15s ease;
+  padding: 0;
+}
+
+.btn-colapsar-sidebar:hover {
+  background-color: var(--color-primario);
+  border-color: var(--color-primario);
+  color: white;
+  box-shadow: 0 4px 12px rgba(26,58,92,0.3);
+}
+
+.btn-colapsar-sidebar.colapsado {
+  left: 56px;
+}
+
+@media (max-width: 768px) {
+  .btn-colapsar-sidebar {
+    display: none;
+  }
 }
 
 .sidebar-logo-texto {
@@ -273,13 +314,10 @@ body {
 }
 
 /* Tooltip en estado colapsado */
-.layout-sidebar.colapsado .sidebar-enlace::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(var(--sidebar-ancho-colapsado) - 4px);
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #1E3A5C;
+.sidebar-tooltip {
+  position: fixed;
+  left: calc(var(--sidebar-ancho-colapsado) + var(--espacio-2));
+  background-color: var(--color-primario);
   color: white;
   font-size: var(--texto-xs);
   font-weight: var(--peso-semi);
@@ -287,14 +325,16 @@ body {
   border-radius: var(--radio-md);
   white-space: nowrap;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  z-index: 200;
+  z-index: 9999;
   box-shadow: var(--sombra-md);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.layout-sidebar.colapsado .sidebar-enlace:hover::after {
+.sidebar-tooltip.visible {
   opacity: 1;
+  transform: translateX(0);
 }
 
 .sidebar-enlace:hover {
@@ -703,18 +743,52 @@ body {
     transform: translateX(-100%);
     width: var(--sidebar-ancho) !important;
   }
+
+  /* En móvil, el sidebar siempre se muestra expandido sin importar el estado */
+  .layout-sidebar.colapsado {
+    width: var(--sidebar-ancho) !important;
+  }
+
   .layout-sidebar.abierto {
     transform: translateX(0);
   }
+
+  /* Restaurar todos los elementos ocultos por el estado colapsado */
+  .layout-sidebar.colapsado .sidebar-logo-info {
+    opacity: 1 !important;
+    max-width: 200px !important;
+    pointer-events: auto !important;
+  }
+
+  .layout-sidebar.colapsado .sidebar-enlace-texto {
+    opacity: 1 !important;
+    max-width: 200px !important;
+    pointer-events: auto !important;
+  }
+
+  .layout-sidebar.colapsado .sidebar-seccion-titulo {
+    opacity: 0.6 !important;
+    max-height: 40px !important;
+    padding-top: var(--espacio-5) !important;
+    padding-bottom: var(--espacio-2) !important;
+  }
+
+  .layout-sidebar.colapsado .sidebar-enlace {
+    justify-content: flex-start !important;
+    padding: var(--espacio-3) !important;
+  }
+
   .layout-main,
   .layout-main.expandido {
     margin-left: 0;
   }
+
   .grid-2,
   .grid-3,
   .grid-4 {
     grid-template-columns: 1fr;
   }
+
   .layout-contenido {
     padding: var(--espacio-4);
   }
