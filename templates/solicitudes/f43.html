@@ -1,0 +1,522 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Nueva Solicitud F43{% endblock %}
+{% block nav_nueva_solicitud %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
+
+{% block breadcrumb %}
+  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
+    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+    <a href="{% url 'solicitudes:mis_solicitudes' %}" style="color:var(--color-texto-muted);text-decoration:none;">Mis solicitudes</a>
+  </li>
+  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
+    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+    <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Nueva solicitud F43</span>
+  </li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">Solicitud de Autorización Técnica — F43</h1>
+  <p class="pagina-subtitulo">Complete todos los campos requeridos. La solicitud será revisada por un operador del Ministerio de Comunicaciones.</p>
+</div>
+
+<!-- Indicador de pasos -->
+<div class="f43-pasos">
+  <div class="f43-paso activo" id="paso-ind-1">
+    <div class="f43-paso-numero">1</div>
+    <div class="f43-paso-etiqueta">Datos personales</div>
+  </div>
+  <div class="f43-paso-linea"></div>
+  <div class="f43-paso" id="paso-ind-2">
+    <div class="f43-paso-numero">2</div>
+    <div class="f43-paso-etiqueta">Datos de importación</div>
+  </div>
+  <div class="f43-paso-linea"></div>
+  <div class="f43-paso" id="paso-ind-3">
+    <div class="f43-paso-numero">3</div>
+    <div class="f43-paso-etiqueta">Equipos</div>
+  </div>
+  <div class="f43-paso-linea"></div>
+  <div class="f43-paso" id="paso-ind-4">
+    <div class="f43-paso-numero">4</div>
+    <div class="f43-paso-etiqueta">Revisión y envío</div>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="form-f43" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="equipos_json" id="equipos-json" value="[]">
+
+  <!-- ── PASO 1: Datos del solicitante ──────────────────────────────────── -->
+  <div class="f43-seccion activa" id="paso-1">
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div class="f43-seccion-icono">
+            <i data-lucide="user" style="width:20px;height:20px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Datos del solicitante</h2>
+        </div>
+        <span class="badge badge-info">Paso 1 de 4</span>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido" for="id_nombre_apellidos">
+              {{ form.nombre_apellidos.label }}
+            </label>
+            <input type="text" name="nombre_apellidos" id="id_nombre_apellidos"
+              class="campo-input {% if form.nombre_apellidos.errors %}error{% endif %}"
+              value="{{ form.nombre_apellidos.value|default:'' }}"
+              placeholder="Nombre completo del solicitante" required>
+            {% if form.nombre_apellidos.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.nombre_apellidos.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido" for="id_numero_pasaporte">
+              {{ form.numero_pasaporte.label }}
+            </label>
+            <input type="text" name="numero_pasaporte" id="id_numero_pasaporte"
+              class="campo-input {% if form.numero_pasaporte.errors %}error{% endif %}"
+              value="{{ form.numero_pasaporte.value|default:'' }}"
+              placeholder="Ej: A12345678" required>
+            {% if form.numero_pasaporte.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.numero_pasaporte.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido" for="id_pais_residencia">
+              {{ form.pais_residencia.label }}
+            </label>
+            <input type="text" name="pais_residencia" id="id_pais_residencia"
+              class="campo-input {% if form.pais_residencia.errors %}error{% endif %}"
+              value="{{ form.pais_residencia.value|default:'Cuba' }}"
+              placeholder="País de residencia" required>
+            {% if form.pais_residencia.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.pais_residencia.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido" for="id_direccion_residencia">
+              {{ form.direccion_residencia.label }}
+            </label>
+            <input type="text" name="direccion_residencia" id="id_direccion_residencia"
+              class="campo-input {% if form.direccion_residencia.errors %}error{% endif %}"
+              value="{{ form.direccion_residencia.value|default:'' }}"
+              placeholder="Calle, número, municipio" required>
+            {% if form.direccion_residencia.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.direccion_residencia.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido" for="id_correo_electronico">
+              {{ form.correo_electronico.label }}
+            </label>
+            <input type="email" name="correo_electronico" id="id_correo_electronico"
+              class="campo-input {% if form.correo_electronico.errors %}error{% endif %}"
+              value="{{ form.correo_electronico.value|default:'' }}"
+              placeholder="correo@ejemplo.cu" required>
+            {% if form.correo_electronico.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.correo_electronico.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido" for="id_telefono">
+              {{ form.telefono.label }}
+            </label>
+            <input type="text" name="telefono" id="id_telefono"
+              class="campo-input {% if form.telefono.errors %}error{% endif %}"
+              value="{{ form.telefono.value|default:'' }}"
+              placeholder="+53 5 000 0000" required>
+            {% if form.telefono.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.telefono.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="tarjeta-pie" style="display:flex;justify-content:flex-end;">
+        <button type="button" class="btn btn-primario" onclick="irPaso(2)">
+          Continuar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PASO 2: Datos de importación ───────────────────────────────────── -->
+  <div class="f43-seccion" id="paso-2">
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div class="f43-seccion-icono">
+            <i data-lucide="plane" style="width:20px;height:20px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Datos referentes a la importación</h2>
+        </div>
+        <span class="badge badge-info">Paso 2 de 4</span>
+      </div>
+      <div class="tarjeta-cuerpo">
+
+        <!-- Provincia -->
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido" for="id_provincia">
+            {{ form.provincia.label }}
+          </label>
+          <select name="provincia" id="id_provincia"
+            class="campo-select {% if form.provincia.errors %}error{% endif %}" required>
+            {% for valor, etiqueta in form.fields.provincia.choices %}
+              <option value="{{ valor }}" {% if form.provincia.value == valor %}selected{% endif %}>
+                {{ etiqueta }}
+              </option>
+            {% endfor %}
+          </select>
+          {% if form.provincia.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.provincia.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Modo de importación -->
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.modo_importacion.label }}</label>
+          <div class="f43-radio-grupo">
+            {% for valor, etiqueta in form.fields.modo_importacion.choices %}
+              <label class="f43-radio-opcion">
+                <input type="radio" name="modo_importacion" value="{{ valor }}"
+                  {% if form.modo_importacion.value == valor %}checked{% endif %}
+                  onchange="actualizarModo(this.value)">
+                <span class="f43-radio-caja">
+                  <span class="f43-radio-check"></span>
+                </span>
+                {{ etiqueta }}
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Datos de vuelo -->
+        <div class="grid-3">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta" for="id_numero_vuelo">{{ form.numero_vuelo.label }}</label>
+            <input type="text" name="numero_vuelo" id="id_numero_vuelo"
+              class="campo-input"
+              value="{{ form.numero_vuelo.value|default:'' }}"
+              placeholder="Ej: CU123">
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta" for="id_fecha_arribo">{{ form.fecha_arribo.label }}</label>
+            <input type="date" name="fecha_arribo" id="id_fecha_arribo"
+              class="campo-input"
+              value="{{ form.fecha_arribo.value|default:'' }}">
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta" for="id_pais_procedencia">{{ form.pais_procedencia.label }}</label>
+            <input type="text" name="pais_procedencia" id="id_pais_procedencia"
+              class="campo-input"
+              value="{{ form.pais_procedencia.value|default:'' }}"
+              placeholder="País de origen del viaje">
+          </div>
+        </div>
+
+        <!-- Aduana -->
+        <div class="grid-3">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta" for="id_aduana_acceso">{{ form.aduana_acceso.label }}</label>
+            <input type="text" name="aduana_acceso" id="id_aduana_acceso"
+              class="campo-input"
+              value="{{ form.aduana_acceso.value|default:'' }}"
+              placeholder="Aeropuerto, Puerto, Aduana Postal">
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta" for="id_lugar_acceso">{{ form.lugar_acceso.label }}</label>
+            <input type="text" name="lugar_acceso" id="id_lugar_acceso"
+              class="campo-input"
+              value="{{ form.lugar_acceso.value|default:'' }}"
+              placeholder="Ej: Aeropuerto José Martí">
+          </div>
+          <div class="campo-grupo" id="campo-rad">
+            <label class="campo-etiqueta" for="id_numero_rad" id="label-rad">{{ form.numero_rad.label }}</label>
+            <input type="text" name="numero_rad" id="id_numero_rad"
+              class="campo-input {% if form.numero_rad.errors %}error{% endif %}"
+              value="{{ form.numero_rad.value|default:'' }}"
+              placeholder="Número del RAD">
+            {% if form.numero_rad.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.numero_rad.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Objetivo -->
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.objetivo_importacion.label }}</label>
+          <div class="f43-radio-grupo">
+            {% for valor, etiqueta in form.fields.objetivo_importacion.choices %}
+              <label class="f43-radio-opcion">
+                <input type="radio" name="objetivo_importacion" value="{{ valor }}"
+                  {% if form.objetivo_importacion.value == valor %}checked{% endif %}
+                  onchange="actualizarObjetivo(this.value)">
+                <span class="f43-radio-caja">
+                  <span class="f43-radio-check"></span>
+                </span>
+                {{ etiqueta }}
+              </label>
+            {% endfor %}
+          </div>
+          <div id="campo-objetivo-otros" style="display:none;margin-top:var(--espacio-3);">
+            <input type="text" name="objetivo_otros_detalle" id="id_objetivo_otros_detalle"
+              class="campo-input {% if form.objetivo_otros_detalle.errors %}error{% endif %}"
+              value="{{ form.objetivo_otros_detalle.value|default:'' }}"
+              placeholder="Especifique el objetivo de la importación">
+            {% if form.objetivo_otros_detalle.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.objetivo_otros_detalle.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Período -->
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.periodo_importacion.label }}</label>
+          <div class="f43-radio-grupo">
+            {% for valor, etiqueta in form.fields.periodo_importacion.choices %}
+              <label class="f43-radio-opcion">
+                <input type="radio" name="periodo_importacion" value="{{ valor }}"
+                  {% if form.periodo_importacion.value == valor %}checked{% endif %}
+                  onchange="actualizarPeriodo(this.value)">
+                <span class="f43-radio-caja">
+                  <span class="f43-radio-check"></span>
+                </span>
+                {{ etiqueta }}
+              </label>
+            {% endfor %}
+          </div>
+          <div id="campo-tiempo" style="display:none;margin-top:var(--espacio-3);">
+            <input type="number" name="tiempo_solicitado" id="id_tiempo_solicitado"
+              class="campo-input {% if form.tiempo_solicitado.errors %}error{% endif %}"
+              value="{{ form.tiempo_solicitado.value|default:'' }}"
+              placeholder="Cantidad de meses" min="1" max="60"
+              style="max-width:200px;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);margin-left:var(--espacio-2);">meses</span>
+            {% if form.tiempo_solicitado.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.tiempo_solicitado.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Documento adjunto -->
+        <div class="campo-grupo">
+          <label class="campo-etiqueta" for="id_documento_adjunto">
+            {{ form.documento_adjunto.label }}
+          </label>
+          <div class="f43-upload">
+            <input type="file" name="documento_adjunto" id="id_documento_adjunto"
+              accept=".pdf,.jpg,.jpeg,.png" style="display:none;"
+              onchange="mostrarArchivo(this)">
+            <label for="id_documento_adjunto" class="f43-upload-area" id="upload-area">
+              <i data-lucide="upload-cloud" style="width:32px;height:32px;color:var(--color-texto-muted);margin-bottom:var(--espacio-2);"></i>
+              <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Haga clic para adjuntar archivo</span>
+              <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">PDF, JPG o PNG — máximo 5MB</span>
+            </label>
+            <div id="archivo-seleccionado" style="display:none;" class="f43-archivo-seleccionado">
+              <i data-lucide="file-check" style="width:18px;height:18px;color:var(--color-secundario);"></i>
+              <span id="nombre-archivo" style="font-size:var(--texto-sm);"></span>
+              <button type="button" onclick="quitarArchivo()" class="btn btn-ghost btn-sm">
+                <i data-lucide="x" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
+          </div>
+          <p class="campo-ayuda">{{ form.documento_adjunto.help_text }}</p>
+        </div>
+
+      </div>
+      <div class="tarjeta-pie" style="display:flex;justify-content:space-between;">
+        <button type="button" class="btn btn-secundario" onclick="irPaso(1)">
+          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior
+        </button>
+        <button type="button" class="btn btn-primario" onclick="irPaso(3)">
+          Continuar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PASO 3: Relación de equipos ────────────────────────────────────── -->
+  <div class="f43-seccion" id="paso-3">
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div class="f43-seccion-icono">
+            <i data-lucide="cpu" style="width:20px;height:20px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Relación de equipos y medios</h2>
+        </div>
+        <span class="badge badge-info">Paso 3 de 4</span>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);margin-bottom:var(--espacio-5);">
+          Consigne los equipos cuya autorización de importación solicita. Incluya únicamente equipos y componentes regulados por la legislación vigente.
+        </p>
+
+        <!-- Tabla de equipos -->
+        <div class="tabla-contenedor mb-6">
+          <table class="tabla" id="tabla-equipos">
+            <thead>
+              <tr>
+                <th style="width:40px;">No.</th>
+                <th>Descripción</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Cantidad</th>
+                <th style="width:50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="equipos-tbody">
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Formulario para agregar equipo -->
+        <div class="tarjeta" style="border:2px dashed var(--color-borde);box-shadow:none;background:var(--color-fondo);">
+          <div class="tarjeta-cuerpo">
+            <p style="font-size:var(--texto-sm);font-weight:var(--peso-semi);margin-bottom:var(--espacio-4);">Agregar equipo</p>
+            <div class="grid-2" style="gap:var(--espacio-4);">
+              <div class="campo-grupo" style="margin-bottom:0;">
+                <label class="campo-etiqueta requerido" for="eq-descripcion">Descripción</label>
+                <input type="text" id="eq-descripcion" class="campo-input"
+                  placeholder="Función principal del equipo">
+              </div>
+              <div class="campo-grupo" style="margin-bottom:0;">
+                <label class="campo-etiqueta requerido" for="eq-marca">Marca</label>
+                <input type="text" id="eq-marca" class="campo-input" placeholder="Ej: Samsung">
+              </div>
+              <div class="campo-grupo" style="margin-bottom:0;">
+                <label class="campo-etiqueta requerido" for="eq-modelo">Modelo</label>
+                <input type="text" id="eq-modelo" class="campo-input" placeholder="Ej: Galaxy S24">
+              </div>
+              <div class="campo-grupo" style="margin-bottom:0;">
+                <label class="campo-etiqueta requerido" for="eq-cantidad">Cantidad</label>
+                <input type="number" id="eq-cantidad" class="campo-input"
+                  placeholder="1" min="1" value="1">
+              </div>
+            </div>
+            <div style="margin-top:var(--espacio-4);">
+              <button type="button" class="btn btn-primario" onclick="agregarEquipo()">
+                <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                Agregar equipo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="alerta-sin-equipos" class="alerta alerta-warning" style="display:none;margin-top:var(--espacio-4);">
+          <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Debe agregar al menos un equipo antes de continuar.
+        </div>
+
+      </div>
+      <div class="tarjeta-pie" style="display:flex;justify-content:space-between;">
+        <button type="button" class="btn btn-secundario" onclick="irPaso(2)">
+          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior
+        </button>
+        <button type="button" class="btn btn-primario" onclick="irPaso(4)">
+          Continuar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PASO 4: Revisión y envío ───────────────────────────────────────── -->
+  <div class="f43-seccion" id="paso-4">
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div class="f43-seccion-icono">
+            <i data-lucide="send" style="width:20px;height:20px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Revisión y envío</h2>
+        </div>
+        <span class="badge badge-info">Paso 4 de 4</span>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <div class="alerta alerta-info" style="margin-bottom:var(--espacio-6);">
+          <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Revise el resumen de su solicitud antes de enviarla. Una vez enviada, no podrá modificarla.
+        </div>
+
+        <!-- Resumen -->
+        <div id="resumen-contenido">
+          <!-- Se rellena dinámicamente por JS -->
+        </div>
+
+        <!-- Observaciones -->
+        <div class="campo-grupo" style="margin-top:var(--espacio-6);">
+          <label class="campo-etiqueta" for="id_observaciones_solicitante">
+            {{ form.observaciones_solicitante.label }}
+          </label>
+          <textarea name="observaciones_solicitante" id="id_observaciones_solicitante"
+            class="campo-textarea" rows="3"
+            placeholder="Información adicional que desee agregar a la solicitud">{{ form.observaciones_solicitante.value|default:'' }}</textarea>
+        </div>
+
+      </div>
+      <div class="tarjeta-pie" style="display:flex;justify-content:space-between;align-items:center;">
+        <button type="button" class="btn btn-secundario" onclick="irPaso(3)">
+          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior
+        </button>
+        <button type="submit" class="btn btn-primario btn-lg" id="btn-enviar">
+          <i data-lucide="send" style="width:18px;height:18px;"></i>
+          Enviar solicitud
+        </button>
+      </div>
+    </div>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/f43.js' %}"></script>
+{% endblock %}

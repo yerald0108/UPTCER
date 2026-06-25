@@ -1,0 +1,93 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Inicio{% endblock %}
+{% block nav_esp_inicio %}activo{% endblock %}
+
+{% block breadcrumb %}
+  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
+    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+    <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Inicio</span>
+  </li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">Panel del Especialista Técnico</h1>
+  <p class="pagina-subtitulo">Evalúe equipos no listados y emita criterios técnicos.</p>
+</div>
+
+<div class="grid-3 mb-8">
+  <div class="stat-card">
+    <div class="stat-card-icono warning">
+      <i data-lucide="alert-circle" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ por_evaluar }}</div>
+      <div class="stat-card-etiqueta">Equipos por evaluar</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono primario">
+      <i data-lucide="clipboard-check" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ evaluadas_mes }}</div>
+      <div class="stat-card-etiqueta">Evaluaciones este mes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="cpu" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ aprobadas_total }}</div>
+      <div class="stat-card-etiqueta">Equipos aprobados</div>
+    </div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <div class="tarjeta-cabecera">
+    <h2 class="tarjeta-titulo">Equipos no listados pendientes de evaluación</h2>
+  </div>
+  <div class="tarjeta-cuerpo" style="padding:0;">
+    {% if pendientes_recientes %}
+      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Solicitante</th>
+              <th>Marca / Modelo</th>
+              <th>Descripción</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in pendientes_recientes %}
+            <tr>
+              <td><span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ s.numero }}</span></td>
+              <td>{{ s.solicitante.get_nombre_completo }}</td>
+              <td>{{ s.equipo_marca_manual }} {{ s.equipo_modelo_manual }}</td>
+              <td style="color:var(--color-texto-secundario);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ s.equipo_descripcion|default:"—" }}
+              </td>
+              <td style="color:var(--color-texto-muted);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
+              <td>
+                <a href="#" class="btn btn-primario btn-sm">Evaluar</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
+        <i data-lucide="check-circle" style="width:40px;height:40px;margin-bottom:var(--espacio-4);opacity:0.4;"></i>
+        <p style="font-size:var(--texto-sm);">No hay equipos pendientes de evaluación.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

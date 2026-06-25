@@ -1,0 +1,116 @@
+{% extends 'base/base_auth.html' %}
+{% load static %}
+
+{% block titulo %}Iniciar sesión{% endblock %}
+
+{% block contenido %}
+<div class="login-wrapper">
+
+  <!-- Panel izquierdo — identidad institucional -->
+  <div class="login-panel-izquierdo">
+    <div class="login-logo">
+      <i data-lucide="radio"></i>
+    </div>
+    <h1 class="login-titulo-sistema">UPTCER</h1>
+    <p class="login-subtitulo-sistema">
+      Sistema de Gestión de Permisos para la Importación de Equipos de Telecomunicaciones
+    </p>
+    <div style="margin-top:var(--espacio-10);position:relative;z-index:1;">
+      <p style="font-size:var(--texto-xs);color:rgba(255,255,255,0.4);text-align:center;">
+        Ministerio de Comunicaciones — República de Cuba
+      </p>
+    </div>
+  </div>
+
+  <!-- Panel derecho — formulario -->
+  <div class="login-panel-derecho">
+    <div class="login-formulario-contenedor">
+
+      <div class="login-bienvenida">
+        <h2 class="login-bienvenida-titulo">Bienvenido</h2>
+        <p class="login-bienvenida-subtitulo">Ingrese sus credenciales para acceder al sistema</p>
+      </div>
+
+      <!-- Errores -->
+      {% if messages %}
+        <div class="alerta alerta-error" style="margin-bottom:var(--espacio-5);">
+          <i data-lucide="x-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
+          <span>Usuario o contraseña incorrectos. Por favor intente de nuevo.</span>
+        </div>
+      {% endif %}
+
+      <!-- Formulario -->
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido" for="id_username">Usuario</label>
+          <input
+            type="text"
+            name="username"
+            id="id_username"
+            class="campo-input {% if form.username.errors %}error{% endif %}"
+            placeholder="Nombre de usuario"
+            autocomplete="username"
+            autofocus
+            required
+            value="{{ username_valor|default:'' }}"
+          >
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido" for="id_password">Contraseña</label>
+          <div style="position:relative;">
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              class="campo-input"
+              placeholder="Contraseña"
+              autocomplete="current-password"
+              required
+              style="padding-right:var(--espacio-10);"
+            >
+            <button
+              type="button"
+              onclick="alternarContrasena()"
+              style="position:absolute;right:var(--espacio-3);top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--color-texto-muted);display:flex;align-items:center;"
+              aria-label="Mostrar contraseña"
+            >
+              <i data-lucide="eye" id="icono-ojo" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primario btn-bloque btn-lg" style="margin-top:var(--espacio-2);">
+          <i data-lucide="log-in" style="width:18px;height:18px;"></i>
+          Iniciar sesión
+        </button>
+      </form>
+
+      <div class="login-pie">
+        <p>UPTCER v1.0 &mdash; Uso exclusivo del Ministerio de Comunicaciones</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  function alternarContrasena() {
+    const input  = document.getElementById('id_password');
+    const icono  = document.getElementById('icono-ojo');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icono.setAttribute('data-lucide', 'eye-off');
+    } else {
+      input.type = 'password';
+      icono.setAttribute('data-lucide', 'eye');
+    }
+    lucide.createIcons();
+  }
+</script>
+{% endblock %}

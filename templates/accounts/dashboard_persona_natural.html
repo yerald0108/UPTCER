@@ -1,0 +1,103 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Inicio{% endblock %}
+{% block nav_inicio %}activo{% endblock %}
+
+{% block breadcrumb %}
+  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
+    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+    <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Inicio</span>
+  </li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera flex justify-between items-center">
+  <div>
+    <h1 class="pagina-titulo">Bienvenido, {{ usuario.nombre }}</h1>
+    <p class="pagina-subtitulo">Gestione sus solicitudes de permisos de importación de equipos.</p>
+  </div>
+  <a href="{% url 'solicitudes:nueva_f43' %}" class="btn btn-primario">
+    <i data-lucide="plus-circle" style="width:18px;height:18px;"></i>
+    Nueva solicitud
+  </a>
+</div>
+
+<div class="grid-4 mb-8">
+  <div class="stat-card">
+    <div class="stat-card-icono primario">
+      <i data-lucide="file-text" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ total_solicitudes }}</div>
+      <div class="stat-card-etiqueta">Total solicitudes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono warning">
+      <i data-lucide="clock" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ en_revision }}</div>
+      <div class="stat-card-etiqueta">En revisión</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ aprobadas }}</div>
+      <div class="stat-card-etiqueta">Aprobadas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ denegadas }}</div>
+      <div class="stat-card-etiqueta">Denegadas</div>
+    </div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <div class="tarjeta-cabecera">
+    <h2 class="tarjeta-titulo">Solicitudes recientes</h2>
+    <a href="#" class="btn btn-secundario btn-sm">Ver todas</a>
+  </div>
+  <div class="tarjeta-cuerpo" style="padding:0;">
+    {% if solicitudes_recientes %}
+      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Tipo</th>
+              <th>Equipo</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in solicitudes_recientes %}
+            <tr>
+              <td><span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ s.numero }}</span></td>
+              <td>{{ s.get_flujo_display }}</td>
+              <td>{{ s.equipo|default:s.equipo_marca_manual }}</td>
+              <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+              <td style="color:var(--color-texto-muted);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
+        <i data-lucide="inbox" style="width:40px;height:40px;margin-bottom:var(--espacio-4);opacity:0.4;"></i>
+        <p style="font-size:var(--texto-sm);">No tiene solicitudes aún. Cree su primera solicitud.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

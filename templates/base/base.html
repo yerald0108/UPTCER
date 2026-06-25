@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="UPTCER — Sistema de Gestión de Trámites de Telecomunicaciones">
+  <title>{% block titulo %}UPTCER{% endblock %} — Ministerio de Comunicaciones</title>
+
+  <!-- Fuente Inter desde Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (iconos profesionales SVG) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/global.css' %}">
+  <link rel="stylesheet" href="{% static 'css/toast.css' %}">
+  {% block estilos_extra %}{% endblock %}
+</head>
+<body>
+
+<div class="layout-wrapper">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+  <aside class="layout-sidebar" id="sidebar">
+
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div style="width:36px;height:36px;background:rgba(255,255,255,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i data-lucide="radio" style="width:20px;height:20px;color:white;"></i>
+      </div>
+      <div class="sidebar-logo-info">
+        <div class="sidebar-logo-texto">UPTCER</div>
+        <div class="sidebar-logo-subtexto">Gestión de Trámites</div>
+      </div>
+      <button
+        id="btn-colapsar"
+        onclick="alternarSidebar()"
+        title="Colapsar menú"
+        style="
+          margin-left:auto;
+          flex-shrink:0;
+          background:rgba(255,255,255,0.08);
+          border:none;
+          border-radius:6px;
+          width:28px;
+          height:28px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          color:rgba(255,255,255,0.7);
+          transition:background 0.15s ease, color 0.15s ease, opacity 0.3s ease;
+        "
+        onmouseenter="this.style.background='rgba(255,255,255,0.15)';this.style.color='white'"
+        onmouseleave="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.7)'"
+      >
+        <i data-lucide="panel-left-close" id="icono-colapsar" style="width:16px;height:16px;"></i>
+      </button>
+    </div>
+
+    <!-- Navegación principal -->
+    <nav class="sidebar-nav">
+
+      {% if user.es_persona_natural %}
+        <div class="sidebar-seccion-titulo">Mi Espacio</div>
+        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_inicio %}{% endblock %}" data-tooltip="Inicio">
+          <i data-lucide="layout-dashboard" class="icono"></i>
+          <span class="sidebar-enlace-texto">Inicio</span>
+        </a>
+        <a href="{% url 'solicitudes:mis_solicitudes' %}" class="sidebar-enlace {% block nav_mis_solicitudes %}{% endblock %}" data-tooltip="Mis Solicitudes">
+          <i data-lucide="file-text" class="icono"></i>
+          <span class="sidebar-enlace-texto">Mis Solicitudes</span>
+        </a>
+        <a href="{% url 'solicitudes:nueva_f43' %}" class="sidebar-enlace {% block nav_nueva_solicitud %}{% endblock %}" data-tooltip="Nueva Solicitud">
+          <i data-lucide="plus-circle" class="icono"></i>
+          <span class="sidebar-enlace-texto">Nueva Solicitud</span>
+        </a>
+      {% endif %}
+
+      {% if user.es_operador %}
+        <div class="sidebar-seccion-titulo">Operaciones</div>
+        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_op_inicio %}{% endblock %}" data-tooltip="Inicio">
+          <i data-lucide="layout-dashboard" class="icono"></i>
+          <span class="sidebar-enlace-texto">Inicio</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}" data-tooltip="Solicitudes">
+          <i data-lucide="inbox" class="icono"></i>
+          <span class="sidebar-enlace-texto">Solicitudes</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">
+          <i data-lucide="cpu" class="icono"></i>
+          <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
+        </a>
+      {% endif %}
+
+      {% if user.es_especialista %}
+        <div class="sidebar-seccion-titulo">Evaluación Técnica</div>
+        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_esp_inicio %}{% endblock %}" data-tooltip="Inicio">
+          <i data-lucide="layout-dashboard" class="icono"></i>
+          <span class="sidebar-enlace-texto">Inicio</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">
+          <i data-lucide="clipboard-check" class="icono"></i>
+          <span class="sidebar-enlace-texto">Evaluaciones</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_equipos_no_listados %}{% endblock %}" data-tooltip="Equipos No Listados">
+          <i data-lucide="alert-circle" class="icono"></i>
+          <span class="sidebar-enlace-texto">Equipos No Listados</span>
+        </a>
+      {% endif %}
+
+      {% if user.es_aduana %}
+        <div class="sidebar-seccion-titulo">Aduana</div>
+        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_ad_inicio %}{% endblock %}" data-tooltip="Inicio">
+          <i data-lucide="layout-dashboard" class="icono"></i>
+          <span class="sidebar-enlace-texto">Inicio</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_rats %}{% endblock %}" data-tooltip="Solicitudes RATS">
+          <i data-lucide="package-search" class="icono"></i>
+          <span class="sidebar-enlace-texto">Solicitudes RATS</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_verificar %}{% endblock %}" data-tooltip="Verificar Permiso">
+          <i data-lucide="shield-check" class="icono"></i>
+          <span class="sidebar-enlace-texto">Verificar Permiso</span>
+        </a>
+      {% endif %}
+
+      {% if user.es_directivo %}
+        <div class="sidebar-seccion-titulo">Dirección</div>
+        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_dir_inicio %}{% endblock %}" data-tooltip="Inicio">
+          <i data-lucide="layout-dashboard" class="icono"></i>
+          <span class="sidebar-enlace-texto">Inicio</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_reportes %}{% endblock %}" data-tooltip="Reportes">
+          <i data-lucide="bar-chart-2" class="icono"></i>
+          <span class="sidebar-enlace-texto">Reportes</span>
+        </a>
+        <a href="#" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">
+          <i data-lucide="users" class="icono"></i>
+          <span class="sidebar-enlace-texto">Usuarios</span>
+        </a>
+      {% endif %}
+
+    </nav>
+
+    <!-- Pie del sidebar: perfil del usuario -->
+    <div class="sidebar-pie">
+      <a href="#" class="sidebar-enlace" data-tooltip="Configuración">
+        <i data-lucide="settings" class="icono"></i>
+        <span class="sidebar-enlace-texto">Configuración</span>
+      </a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-enlace" data-tooltip="Cerrar sesión"
+          style="width:100%;background:none;border:none;cursor:pointer;text-align:left;">
+          <i data-lucide="log-out" class="icono"></i>
+          <span class="sidebar-enlace-texto">Cerrar sesión</span>
+        </button>
+      </form>
+    </div>
+
+  </aside>
+
+  <!-- ── Contenido principal ──────────────────────────────────────────────── -->
+  <div class="layout-main">
+
+    <!-- Navbar superior -->
+    <header class="layout-navbar">
+      <!-- Botón menú móvil -->
+      <button class="btn btn-ghost btn-sm" id="btn-menu-movil" style="display:none;" aria-label="Abrir menú">
+        <i data-lucide="menu"></i>
+      </button>
+
+      <!-- Breadcrumb -->
+      <nav aria-label="Ruta de navegación" style="flex:1;">
+        <ol style="list-style:none;display:flex;align-items:center;gap:var(--espacio-2);font-size:var(--texto-sm);color:var(--color-texto-muted);">
+          <li><a href="{% url 'accounts:dashboard' %}" style="color:var(--color-texto-muted);text-decoration:none;">Inicio</a></li>
+          {% block breadcrumb %}{% endblock %}
+        </ol>
+      </nav>
+
+      <!-- Info usuario -->
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="text-align:right;">
+          <div style="font-size:var(--texto-sm);font-weight:var(--peso-semi);color:var(--color-texto-principal);">
+            {{ user.get_nombre_completo }}
+          </div>
+          <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+            {{ user.get_rol_display }}
+          </div>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;background-color:var(--color-primario);display:flex;align-items:center;justify-content:center;color:white;font-size:var(--texto-sm);font-weight:var(--peso-bold);">
+          {{ user.nombre|first|upper }}{{ user.apellidos|first|upper }}
+        </div>
+      </div>
+    </header>
+
+    <!-- Mensajes Django → convertidos a toasts por JS -->
+    {% if messages %}
+      <div id="django-messages" style="display:none;">
+        {% for message in messages %}
+          <span
+            data-toast
+            data-tipo="{{ message.tags }}"
+            data-mensaje="{{ message }}"
+          ></span>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Contenido de cada vista -->
+    <main class="layout-contenido">
+      {% block contenido %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+
+<!-- Overlay para móvil -->
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;" onclick="cerrarSidebar()"></div>
+
+<script>
+  // Inicializar iconos Lucide
+  lucide.createIcons();
+
+  const sidebar   = document.getElementById('sidebar');
+  const main      = document.querySelector('.layout-main');
+  const overlay   = document.getElementById('sidebar-overlay');
+  const btnMenu   = document.getElementById('btn-menu-movil');
+  const iconoBtn  = document.getElementById('icono-colapsar');
+  const CLAVE     = 'uptcer_sidebar_colapsado';
+
+  // ─── Colapsar / expandir (desktop) ───────────────────────────────────────
+  function alternarSidebar() {
+    const colapsado = sidebar.classList.toggle('colapsado');
+    main.classList.toggle('expandido', colapsado);
+    localStorage.setItem(CLAVE, colapsado ? '1' : '0');
+    actualizarIconoBoton(colapsado);
+  }
+
+  function actualizarIconoBoton(colapsado) {
+    if (!iconoBtn) return;
+    iconoBtn.setAttribute('data-lucide', colapsado ? 'panel-left-open' : 'panel-left-close');
+    lucide.createIcons({ nodes: [iconoBtn.parentElement] });
+  }
+
+  // Restaurar estado guardado
+  if (localStorage.getItem(CLAVE) === '1') {
+    sidebar.classList.add('colapsado');
+    main.classList.add('expandido');
+    actualizarIconoBoton(true);
+  }
+
+  // ─── Menú móvil ───────────────────────────────────────────────────────────
+  function abrirSidebar() {
+    sidebar.classList.add('abierto');
+    overlay.style.display = 'block';
+  }
+
+  function cerrarSidebar() {
+    sidebar.classList.remove('abierto');
+    overlay.style.display = 'none';
+  }
+
+  if (btnMenu) {
+    btnMenu.addEventListener('click', abrirSidebar);
+  }
+
+  function verificarMovil() {
+    if (window.innerWidth <= 768) {
+      if (btnMenu) btnMenu.style.display = 'flex';
+    } else {
+      if (btnMenu) btnMenu.style.display = 'none';
+      cerrarSidebar();
+    }
+  }
+
+  verificarMovil();
+  window.addEventListener('resize', verificarMovil);
+</script>
+
+<script src="{% static 'js/toast.js' %}"></script>
+{% block scripts_extra %}{% endblock %}
+</body>
+</html>
