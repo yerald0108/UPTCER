@@ -1,0 +1,139 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Usuarios{% endblock %}
+{% block nav_usuarios %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Usuarios</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera flex justify-between items-center">
+  <div>
+    <h1 class="pagina-titulo">Usuarios del sistema</h1>
+    <p class="pagina-subtitulo">{{ total }} usuario{{ total|pluralize }} registrado{{ total|pluralize }}.</p>
+  </div>
+  {% if user.es_directivo %}
+  <a href="{% url 'accounts:nuevo_usuario' %}" class="btn btn-primario">
+    <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+    Nuevo usuario
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filtros -->
+<div class="tarjeta mb-6">
+  <div class="tarjeta-cuerpo">
+    <form method="get" style="display:flex;gap:var(--espacio-4);align-items:flex-end;flex-wrap:wrap;">
+      <div class="campo-grupo" style="margin-bottom:0;flex:1;min-width:200px;">
+        <label class="campo-etiqueta">Buscar</label>
+        <div style="position:relative;">
+          <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--color-texto-muted);"></i>
+          <input type="text" name="q" value="{{ busqueda }}"
+            class="campo-input" style="padding-left:36px;"
+            placeholder="Nombre, usuario o correo...">
+        </div>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:0;min-width:180px;">
+        <label class="campo-etiqueta">Rol</label>
+        <select name="rol" class="campo-select" onchange="this.form.submit()">
+          <option value="">Todos los roles</option>
+          {% for valor, etiqueta in ROLES %}
+            <option value="{{ valor }}" {% if rol_actual == valor %}selected{% endif %}>
+              {{ etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:0;min-width:150px;">
+        <label class="campo-etiqueta">Estado</label>
+        <select name="activo" class="campo-select" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          <option value="1" {% if activo_actual == '1' %}selected{% endif %}>Activos</option>
+          <option value="0" {% if activo_actual == '0' %}selected{% endif %}>Inactivos</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:var(--espacio-2);margin-bottom:0;">
+        <button type="submit" class="btn btn-primario">
+          <i data-lucide="search" style="width:15px;height:15px;"></i>
+          Buscar
+        </button>
+        {% if busqueda or rol_actual or activo_actual %}
+          <a href="{% url 'accounts:lista_usuarios' %}" class="btn btn-ghost">
+            <i data-lucide="x" style="width:15px;height:15px;"></i>
+            Limpiar
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="tarjeta">
+  <div class="tarjeta-cuerpo" style="padding:0;">
+    {% if usuarios %}
+      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre completo</th>
+              <th>Rol</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Registro</th>
+              <th>Detalles</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in usuarios %}
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+                  <div style="width:32px;height:32px;border-radius:50%;background-color:{% if u.is_active %}var(--color-primario){% else %}var(--color-texto-muted){% endif %};display:flex;align-items:center;justify-content:center;color:white;font-size:var(--texto-xs);font-weight:var(--peso-bold);flex-shrink:0;">
+                    {{ u.nombre|first|upper }}{{ u.apellidos|first|upper }}
+                  </div>
+                  <span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ u.username }}</span>
+                </div>
+              </td>
+              <td style="font-weight:var(--peso-medio);">{{ u.get_nombre_completo }}</td>
+              <td>
+                <span class="badge badge-info">{{ u.get_rol_display }}</span>
+              </td>
+              <td style="color:var(--color-texto-muted);font-size:var(--texto-xs);">{{ u.email }}</td>
+              <td>
+                {% if u.is_active %}
+                  <span class="badge badge-aprobado">Activo</span>
+                {% else %}
+                  <span class="badge badge-denegado">Inactivo</span>
+                {% endif %}
+              </td>
+              <td style="color:var(--color-texto-muted);white-space:nowrap;font-size:var(--texto-xs);">
+                {{ u.fecha_registro|date:"d/m/Y" }}
+              </td>
+              <td>
+                <a href="{% url 'accounts:detalle_usuario' u.pk %}" class="btn btn-ghost btn-sm">
+                  <i data-lucide="eye" style="width:15px;height:15px;"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
+        <i data-lucide="users" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
+        <p style="font-size:var(--texto-base);font-weight:var(--peso-medio);margin-bottom:var(--espacio-2);">
+          No se encontraron usuarios
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

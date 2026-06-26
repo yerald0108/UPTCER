@@ -1,0 +1,86 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Notificaciones{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Notificaciones</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">Notificaciones</h1>
+  <p class="pagina-subtitulo">Historial de todas sus notificaciones del sistema.</p>
+</div>
+
+<div class="tarjeta">
+  <div class="tarjeta-cuerpo" style="padding:0;">
+    {% if notificaciones %}
+      <div style="display:flex;flex-direction:column;">
+        {% for n in notificaciones %}
+        <div style="
+          display:flex;
+          align-items:flex-start;
+          gap:var(--espacio-4);
+          padding:var(--espacio-5) var(--espacio-6);
+          border-bottom:1px solid var(--color-borde);
+          {% if not n.leida %}background-color:var(--color-primario-light);{% endif %}
+          transition:var(--transicion-rapida);
+        ">
+          <!-- Icono -->
+          <div style="
+            width:40px;height:40px;border-radius:var(--radio-md);
+            flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            {% if not n.leida %}
+              background-color:var(--color-primario);color:white;
+            {% else %}
+              background-color:var(--color-fondo);color:var(--color-texto-muted);
+            {% endif %}
+          ">
+            <i data-lucide="{{ n.clase_icono }}" style="width:20px;height:20px;"></i>
+          </div>
+
+          <!-- Contenido -->
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:var(--espacio-3);margin-bottom:var(--espacio-1);">
+              <span style="font-size:var(--texto-sm);font-weight:var(--peso-semi);color:var(--color-texto-principal);">
+                {{ n.titulo }}
+              </span>
+              {% if not n.leida %}
+                <span class="badge badge-revision" style="font-size:10px;">Nueva</span>
+              {% endif %}
+            </div>
+            <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);margin-bottom:var(--espacio-2);line-height:1.5;">
+              {{ n.mensaje }}
+            </p>
+            <div style="display:flex;align-items:center;gap:var(--espacio-4);">
+              <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+                {{ n.fecha_creacion|date:"d/m/Y H:i" }}
+              </span>
+              {% if n.solicitud %}
+                <a href="{% url 'notificaciones:marcar_leida' n.pk %}"
+                  style="font-size:var(--texto-xs);color:var(--color-primario);text-decoration:none;font-weight:var(--peso-medio);">
+                  Ver solicitud →
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
+        <i data-lucide="bell-off" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
+        <p style="font-size:var(--texto-base);font-weight:var(--peso-medio);margin-bottom:var(--espacio-2);">
+          No tiene notificaciones
+        </p>
+        <p style="font-size:var(--texto-sm);">
+          Las notificaciones aparecerán aquí cuando haya actividad en el sistema.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

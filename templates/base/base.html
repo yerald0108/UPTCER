@@ -50,6 +50,10 @@
           <i data-lucide="file-text" class="icono"></i>
           <span class="sidebar-enlace-texto">Mis Solicitudes</span>
         </a>
+        <a href="{% url 'licencias:lista' %}" class="sidebar-enlace {% block nav_mis_licencias %}{% endblock %}" data-tooltip="Mis Licencias">
+          <i data-lucide="file-badge" class="icono"></i>
+          <span class="sidebar-enlace-texto">Mis Licencias</span>
+        </a>
         <a href="{% url 'solicitudes:nueva_f43' %}" class="sidebar-enlace {% block nav_nueva_solicitud %}{% endblock %}" data-tooltip="Nueva Solicitud">
           <i data-lucide="plus-circle" class="icono"></i>
           <span class="sidebar-enlace-texto">Nueva Solicitud</span>
@@ -66,9 +70,12 @@
           <i data-lucide="inbox" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">
-          <i data-lucide="cpu" class="icono"></i>
+        <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">          <i data-lucide="cpu" class="icono"></i>
           <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
+        </a>
+        <a href="{% url 'licencias:lista' %}" class="sidebar-enlace {% block nav_licencias %}{% endblock %}" data-tooltip="Licencias">
+          <i data-lucide="file-badge" class="icono"></i>
+          <span class="sidebar-enlace-texto">Licencias</span>
         </a>
       {% endif %}
 
@@ -114,8 +121,7 @@
           <i data-lucide="bar-chart-2" class="icono"></i>
           <span class="sidebar-enlace-texto">Reportes</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">
-          <i data-lucide="users" class="icono"></i>
+        <a href="{% url 'accounts:lista_usuarios' %}" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">          <i data-lucide="users" class="icono"></i>
           <span class="sidebar-enlace-texto">Usuarios</span>
         </a>
       {% endif %}
@@ -160,6 +166,21 @@
 
       <!-- Info usuario -->
       <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+
+        <!-- Campanita de notificaciones -->
+        <a href="{% url 'notificaciones:lista' %}"
+          id="btn-notificaciones"
+          style="position:relative;width:36px;height:36px;border-radius:var(--radio-md);display:flex;align-items:center;justify-content:center;color:var(--color-texto-muted);background:transparent;border:none;cursor:pointer;text-decoration:none;transition:var(--transicion-rapida);"
+          onmouseenter="this.style.background='var(--color-fondo)';this.style.color='var(--color-texto-principal)'"
+          onmouseleave="this.style.background='transparent';this.style.color='var(--color-texto-muted)'"
+          title="Notificaciones"
+        >
+          <i data-lucide="bell" style="width:20px;height:20px;"></i>
+          <span id="badge-notificaciones"
+            style="display:none;position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background-color:var(--color-acento);color:white;font-size:9px;font-weight:700;align-items:center;justify-content:center;line-height:1;font-family:var(--fuente-principal);">
+            0
+          </span>
+        </a>
         <div style="text-align:right;">
           <div style="font-size:var(--texto-sm);font-weight:var(--peso-semi);color:var(--color-texto-principal);">
             {{ user.get_nombre_completo }}
@@ -294,6 +315,27 @@
 
   verificarMovil();
   window.addEventListener('resize', verificarMovil);
+
+  // ─── Contador de notificaciones ───────────────────────────────────────────
+  function actualizarContadorNotificaciones() {
+    fetch('{% url "notificaciones:contador" %}')
+      .then(r => r.json())
+      .then(data => {
+        const badge = document.getElementById('badge-notificaciones');
+        if (!badge) return;
+        if (data.count > 0) {
+          badge.textContent = data.count > 9 ? '9+' : data.count;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      })
+      .catch(() => {});
+  }
+
+  // Actualizar al cargar y cada 60 segundos
+  actualizarContadorNotificaciones();
+  setInterval(actualizarContadorNotificaciones, 60000);
 </script>
 
 <script src="{% static 'js/toast.js' %}"></script>

@@ -1,0 +1,168 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}{{ equipo.nombre }}{% endblock %}
+{% block nav_equipos %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'equipos:lista' %}" style="color:var(--color-texto-muted);text-decoration:none;">Catálogo</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ equipo.nombre }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera flex justify-between items-center">
+  <div>
+    <h1 class="pagina-titulo">{{ equipo.nombre }}</h1>
+    <p class="pagina-subtitulo">{{ equipo.marca }} — {{ equipo.modelo }}</p>
+  </div>
+  {% if user.es_operador or user.es_especialista or user.es_directivo %}
+  <div style="display:flex;gap:var(--espacio-3);">
+    <a href="{% url 'equipos:editar' equipo.pk %}" class="btn btn-secundario">
+      <i data-lucide="pencil" style="width:16px;height:16px;"></i>
+      Editar
+    </a>
+    <form method="post" action="{% url 'equipos:desactivar' equipo.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if equipo.activo %}btn-ghost{% else %}btn-primario{% endif %}">
+        <i data-lucide="{% if equipo.activo %}eye-off{% else %}eye{% endif %}" style="width:16px;height:16px;"></i>
+        {% if equipo.activo %}Desactivar{% else %}Activar{% endif %}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid-2">
+
+  <!-- Información principal -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:36px;height:36px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="cpu" style="width:20px;height:20px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Información del equipo</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <div style="display:flex;flex-direction:column;gap:var(--espacio-4);">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Estado</span>
+          {% if equipo.activo %}
+            <span class="badge badge-aprobado">Activo</span>
+          {% else %}
+            <span class="badge badge-denegado">Inactivo</span>
+          {% endif %}
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Categoría</span>
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ equipo.categoria.nombre }}</span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Marca</span>
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ equipo.marca }}</span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Modelo</span>
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);font-family:var(--fuente-mono);">{{ equipo.modelo }}</span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Banda de frecuencia</span>
+          {% if equipo.banda_frecuencia == 'libre' %}
+            <span class="badge badge-aprobado">Banda libre (2.4 / 5.7 GHz)</span>
+          {% elif equipo.banda_frecuencia == 'restringida' %}
+            <span class="badge badge-denegado">Frecuencia restringida</span>
+          {% else %}
+            <span class="badge badge-info">No aplica</span>
+          {% endif %}
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Requiere permiso</span>
+          {% if equipo.requiere_permiso %}
+            <span class="badge badge-pendiente">Sí, requiere permiso</span>
+          {% else %}
+            <span class="badge badge-aprobado">No requiere permiso</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Descripción y metadatos -->
+  <div style="display:flex;flex-direction:column;gap:var(--espacio-5);">
+
+    {% if equipo.descripcion %}
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <h2 class="tarjeta-titulo">Descripción técnica</h2>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);line-height:1.7;">
+          {{ equipo.descripcion }}
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <h2 class="tarjeta-titulo">Metadatos</h2>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Fecha de registro</span>
+            <span style="font-size:var(--texto-sm);">{{ equipo.fecha_registro|date:"d/m/Y H:i" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Última actualización</span>
+            <span style="font-size:var(--texto-sm);">{{ equipo.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Solicitudes relacionadas</span>
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-semi);">{{ equipo.solicitudes.count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if equipo.es_restringido %}
+    <div class="alerta alerta-error">
+      <i data-lucide="shield-alert" style="width:18px;height:18px;flex-shrink:0;"></i>
+      <div>
+        <strong>Frecuencia restringida</strong><br>
+        Este equipo opera en frecuencias restringidas. Las solicitudes de importación deben ser evaluadas por el Especialista Técnico antes de su aprobación.
+      </div>
+    </div>
+    {% elif equipo.es_banda_libre %}
+    <div class="alerta alerta-success">
+      <i data-lucide="wifi" style="width:18px;height:18px;flex-shrink:0;"></i>
+      <div>
+        <strong>Banda libre</strong><br>
+        Este equipo opera en bandas de uso libre (2.4 GHz / 5.7 GHz). No requiere evaluación técnica especializada.
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<div style="margin-top:var(--espacio-6);">
+  <a href="{% url 'equipos:lista' %}" class="btn btn-ghost">
+    <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+    Volver al catálogo
+  </a>
+</div>
+{% endblock %}

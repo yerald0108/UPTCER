@@ -1,0 +1,162 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block nav_usuarios %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'accounts:lista_usuarios' %}" style="color:var(--color-texto-muted);text-decoration:none;">Usuarios</a>
+</li>
+{% if usuario_obj %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'accounts:detalle_usuario' usuario_obj.pk %}" style="color:var(--color-texto-muted);text-decoration:none;">{{ usuario_obj.get_nombre_completo }}</a>
+</li>
+{% endif %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ titulo }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">{{ titulo }}</h1>
+</div>
+
+<div style="max-width:720px;">
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:36px;height:36px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="user" style="width:20px;height:20px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Datos del usuario</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.nombre.label }}</label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.nombre.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.apellidos.label }}</label>
+            {{ form.apellidos }}
+            {% if form.apellidos.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.apellidos.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.username.label }}</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.username.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.email.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta">{{ form.telefono.label }}</label>
+            {{ form.telefono }}
+          </div>
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.rol.label }}</label>
+          {{ form.rol }}
+          {% if form.rol.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.rol.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        {% if form.password1 %}
+        <hr class="divisor">
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.password1.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.password2.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if form.is_active %}
+        <hr class="divisor">
+        <label style="display:flex;align-items:center;gap:var(--espacio-3);cursor:pointer;">
+          {{ form.is_active }}
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ form.is_active.label }}</span>
+        </label>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+          <div class="alerta alerta-error" style="margin-top:var(--espacio-5);">
+            <i data-lucide="x-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
+            {{ form.non_field_errors.0 }}
+          </div>
+        {% endif %}
+
+        <hr class="divisor">
+
+        <div style="display:flex;justify-content:space-between;">
+          <a href="{% url 'accounts:lista_usuarios' %}" class="btn btn-ghost">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+            Cancelar
+          </a>
+          <button type="submit" class="btn btn-primario">
+            <i data-lucide="save" style="width:16px;height:16px;"></i>
+            {{ accion }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

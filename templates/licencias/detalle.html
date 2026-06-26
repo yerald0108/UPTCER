@@ -1,0 +1,295 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Licencia {{ licencia.numero }}{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/licencia.css' %}">
+{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'licencias:lista' %}" style="color:var(--color-texto-muted);text-decoration:none;">Licencias</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ licencia.numero }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="f43-pagina-fondo">
+
+  <!-- Barra de acciones -->
+  <div class="f43-acciones">
+    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+      <a href="{% url 'licencias:lista' %}" class="f43-btn-accion f43-btn-volver">
+        <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+        Volver
+      </a>
+      <span class="badge {{ licencia.clase_badge }}" style="font-size:13px;padding:6px 14px;">
+        {{ licencia.get_estado_display }}
+      </span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
+        <i data-lucide="printer" style="width:16px;height:16px;"></i>
+        Imprimir / PDF
+      </button>
+      {% if user.es_operador or user.es_directivo %}
+        {% if licencia.estado == 'vigente' %}
+        <button type="button"
+          onclick="document.getElementById('modal-revocar').style.display='flex'"
+          class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">
+          <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
+          Revocar licencia
+        </button>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── DOCUMENTO OFICIAL ─────────────────────────────────────────────────── -->
+  <div class="f43-hoja licencia-hoja">
+
+    <!-- Encabezado institucional -->
+    <div class="licencia-encabezado">
+      <div class="licencia-ministerio">
+        <div class="licencia-ministerio-nombre">MINISTERIO DE COMUNICACIONES</div>
+        <div class="licencia-ministerio-subtitulo">República de Cuba</div>
+      </div>
+      <div>
+        <div style="width:70px;height:70px;border:3px solid #1A3A5C;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+          <div style="font-size:7pt;font-weight:bold;color:#1A3A5C;text-align:center;line-height:1.2;">MINCOM</div>
+          <div style="font-size:6pt;color:#1A3A5C;text-align:center;">CUBA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Título -->
+    <div class="licencia-titulo-bloque">
+      <div class="licencia-titulo">AUTORIZACIÓN TÉCNICA PARA LA IMPORTACIÓN</div>
+      <div class="licencia-subtitulo">DE EQUIPOS DE TELECOMUNICACIONES</div>
+      <div class="licencia-numero-doc">{{ licencia.numero }}</div>
+    </div>
+
+    <!-- Estado -->
+    <div class="licencia-estado-bloque">
+      {% if licencia.estado == 'vigente' %}
+        <div class="licencia-estado-vigente">VIGENTE</div>
+      {% elif licencia.estado == 'vencida' %}
+        <div class="licencia-estado-vencida">VENCIDA</div>
+      {% elif licencia.estado == 'revocada' %}
+        <div class="licencia-estado-revocada">REVOCADA</div>
+      {% endif %}
+    </div>
+
+    <!-- Sección I: Datos del beneficiario -->
+    <table class="f43-tabla" style="margin-top:6mm;">
+      <thead>
+        <tr><th colspan="4">I. Datos del Beneficiario</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="f43-campo-label">Nombre y Apellidos</td>
+          <td colspan="3">{{ solicitud.solicitante.get_nombre_completo }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">Pasaporte / CI</td>
+          <td>{{ datos_f43.numero_pasaporte|default:"—" }}</td>
+          <td class="f43-campo-label">País de Residencia</td>
+          <td>{{ datos_f43.pais_residencia|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">Dirección</td>
+          <td colspan="3">{{ datos_f43.direccion_residencia|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">Correo electrónico</td>
+          <td>{{ datos_f43.correo_electronico|default:"—" }}</td>
+          <td class="f43-campo-label">Teléfono</td>
+          <td>{{ datos_f43.telefono|default:"—" }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Sección II: Datos de la autorización -->
+    <table class="f43-tabla" style="margin-top:4mm;">
+      <thead>
+        <tr><th colspan="4">II. Datos de la Autorización</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="f43-campo-label" style="width:25%;">Número de solicitud</td>
+          <td style="font-family:monospace;">{{ solicitud.numero }}</td>
+          <td class="f43-campo-label" style="width:20%;">Tipo de flujo</td>
+          <td>{{ solicitud.get_flujo_display }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">Provincia</td>
+          <td>{{ datos_f43.provincia|default:"—"|capfirst }}</td>
+          <td class="f43-campo-label">Modo de importación</td>
+          <td>{{ datos_f43.modo_importacion|default:"—"|capfirst }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">Fecha de emisión</td>
+          <td>{{ licencia.fecha_emision|date:"d/m/Y" }}</td>
+          <td class="f43-campo-label">Tipo de importación</td>
+          <td>{% if licencia.es_temporal %}Temporal{% else %}Definitiva{% endif %}</td>
+        </tr>
+        {% if licencia.fecha_vencimiento %}
+        <tr>
+          <td class="f43-campo-label">Fecha de vencimiento</td>
+          <td colspan="3">
+            <span style="{% if not licencia.es_vigente %}color:#C62828;font-weight:bold;{% endif %}">
+              {{ licencia.fecha_vencimiento|date:"d/m/Y" }}
+              {% if not licencia.es_vigente %} — VENCIDA{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td class="f43-campo-label">Objetivo</td>
+          <td colspan="3">
+            {{ datos_f43.objetivo_importacion|default:"—"|capfirst }}
+            {% if datos_f43.objetivo_otros_detalle %}
+              — {{ datos_f43.objetivo_otros_detalle }}
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">Emitida por</td>
+          <td colspan="3">
+            {{ licencia.emitida_por.get_nombre_completo }}
+            — {{ licencia.emitida_por.get_rol_display }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Sección III: Equipos autorizados -->
+    <table class="f43-tabla" style="margin-top:4mm;">
+      <thead>
+        <tr><th colspan="5">III. Equipos y Medios Autorizados para Importación</th></tr>
+        <tr>
+          <th style="width:5%;">No.</th>
+          <th style="width:38%;">DESCRIPCIÓN</th>
+          <th style="width:20%;">MARCA</th>
+          <th style="width:20%;">MODELO</th>
+          <th style="width:17%;">CANTIDAD</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for eq in equipos %}
+        <tr>
+          <td style="text-align:center;">{{ forloop.counter }}</td>
+          <td>{{ eq.descripcion }}</td>
+          <td>{{ eq.marca }}</td>
+          <td style="font-family:monospace;font-size:9pt;">{{ eq.modelo }}</td>
+          <td style="text-align:center;">{{ eq.cantidad }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center;color:#888;">Sin equipos registrados</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Observaciones del operador -->
+    {% if solicitud.observaciones_operador %}
+    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;">
+      <strong style="font-size:9.5pt;">Observaciones:</strong>
+      <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Criterio técnico -->
+    {% if solicitud.observaciones_tecnicas %}
+    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;">
+      <strong style="font-size:9.5pt;">Criterio técnico:</strong>
+      <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_tecnicas }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Alerta de revocación -->
+    {% if licencia.estado == 'revocada' %}
+    <div style="margin-top:4mm;border:2px solid #C62828;padding:8px;background-color:#FFF5F5;">
+      <strong style="font-size:9.5pt;color:#C62828;">LICENCIA REVOCADA</strong>
+      <p style="font-size:9.5pt;margin-top:2px;color:#C62828;">
+        Motivo: {{ licencia.motivo_revocacion }}<br>
+        Fecha: {{ licencia.fecha_revocacion|date:"d/m/Y H:i" }}
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- Firmas -->
+    <div class="licencia-firmas">
+      <div class="licencia-firma-bloque">
+        <div class="licencia-firma-linea"></div>
+        <div class="licencia-firma-nombre">{{ licencia.emitida_por.get_nombre_completo }}</div>
+        <div class="licencia-firma-cargo">{{ licencia.emitida_por.get_rol_display }}</div>
+        <div class="licencia-firma-cargo">Ministerio de Comunicaciones</div>
+      </div>
+      <div class="licencia-firma-bloque" style="text-align:center;">
+        <div style="width:80px;height:80px;border:2px dashed #999;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:8pt;color:#999;">SELLO</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nota legal -->
+    <div class="licencia-nota-legal">
+      Este documento constituye la autorización técnica oficial emitida por el Ministerio de Comunicaciones
+      de la República de Cuba, de conformidad con la legislación vigente en materia de telecomunicaciones.
+      Cualquier falsificación o uso indebido de este documento será sancionado conforme a la ley.
+    </div>
+
+  </div>
+  <!-- FIN DOCUMENTO -->
+
+</div>
+
+<!-- Modal de revocación -->
+<div id="modal-revocar"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:var(--radio-lg);padding:var(--espacio-8);width:100%;max-width:480px;box-shadow:var(--sombra-xl);">
+    <h3 style="font-size:var(--texto-lg);font-weight:var(--peso-bold);margin-bottom:var(--espacio-2);">
+      Revocar licencia
+    </h3>
+    <p style="font-size:var(--texto-sm);color:var(--color-texto-muted);margin-bottom:var(--espacio-5);">
+      Esta acción no se puede deshacer. Especifique el motivo de revocación.
+    </p>
+    <form method="post" action="{% url 'licencias:revocar' licencia.numero %}">
+      {% csrf_token %}
+      <div class="campo-grupo">
+        <label class="campo-etiqueta requerido">Motivo de revocación</label>
+        <textarea name="motivo" class="campo-textarea" rows="3"
+          placeholder="Describa el motivo por el cual se revoca esta licencia..."
+          required></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:var(--espacio-3);">
+        <button type="button"
+          onclick="document.getElementById('modal-revocar').style.display='none'"
+          class="btn btn-ghost">Cancelar</button>
+        <button type="submit" class="btn btn-peligro">
+          <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
+          Confirmar revocación
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts_extra %}
+<script>
+  // Cerrar modal con Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.getElementById('modal-revocar').style.display = 'none';
+    }
+  });
+</script>
+{% endblock %}
+{% endblock %}

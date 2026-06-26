@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -194,3 +194,193 @@ def _dashboard_directivo(request, usuario):
                                  ).order_by('-fecha_creacion')[:8],
     }
     return render(request, 'accounts/dashboard_directivo.html', contexto)
+
+# ─── Gestión de usuarios (directivo) ─────────────────────────────────────────
+@never_cache
+@login_required
+def lista_usuarios(request):
+    if not (request.user.es_directivo or request.user.es_operador):
+        messages.error(request, 'No tiene permisos para acceder a esta sección.')
+        return redirect('accounts:dashboard')
+
+    from .models import Usuario
+    usuarios = Usuario.objects.all().order_by('apellidos', 'nombre')
+
+    # Filtros
+    rol    = request.GET.get('rol', '')
+    activo = request.GET.get('activo', '')
+    q      = request.GET.get('q', '').strip()
+
+    if rol:
+        usuarios = usuarios.filter(rol=rol)
+    if activo != '':
+        usuarios = usuarios.filter(is_active=activo == '1')
+    if q:
+        from django.db.models import Q
+        usuarios = usuarios.filter(
+            Q(nombre__icontains=q) |
+            Q(apellidos__icontains=q) |
+            Q(username__icontains=q) |
+            Q(email__icontains=q)
+        )
+
+    return render(request, 'accounts/usuarios/lista.html', {
+        'usuarios':    usuarios,
+        'rol_actual':  rol,
+        'activo_actual': activo,
+        'busqueda':    q,
+        'ROLES':       Usuario.ROLES,
+        'total':       usuarios.count(),
+    })
+
+
+@never_cache
+@login_required
+def nuevo_usuario(request):
+    if not request.user.es_directivo:
+        messages.error(request, 'No tiene permisos para crear usuarios.')
+        return redirect('accounts:lista_usuarios')
+
+    from .forms import FormularioCrearUsuario
+    if request.method == 'POST':
+        form = FormularioCrearUsuario(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            messages.success(
+                request,
+                f'Usuario "{usuario.get_nombre_completo()}" creado correctamente.'
+            )
+            return redirect('accounts:detalle_usuario', pk=usuario.pk)
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario.')
+    else:
+        form = FormularioCrearUsuario()
+
+    return render(request, 'accounts/usuarios/form_usuario.html', {
+        'form':   form,
+        'titulo': 'Nuevo usuario',
+        'accion': 'Crear usuario',
+    })
+
+
+@never_cache
+@login_required
+def detalle_usuario(request, pk):
+    if not (request.user.es_directivo or request.user.es_operador):
+        messages.error(request, 'No tiene permisos para acceder a esta sección.')
+        return redirect('accounts:dashboard')
+
+    from .models import Usuario
+    usuario_obj = get_object_or_404(Usuario, pk=pk)
+
+    # Estadísticas del usuario
+    from apps.solicitudes.models import Solicitud
+    solicitudes = Solicitud.objects.filter(solicitante=usuario_obj)
+
+    estadisticas = {
+        'total':       solicitudes.count(),
+        'aprobadas':   solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count(),
+        'denegadas':   solicitudes.filter(estado=Solicitud.ESTADO_DENEGADA).count(),
+        'pendientes':  solicitudes.filter(estado__in=[
+                           Solicitud.ESTADO_ENVIADA,
+                           Solicitud.ESTADO_EN_REVISION
+                       ]).count(),
+    }
+
+    return render(request, 'accounts/usuarios/detalle.html', {
+        'usuario_obj':   usuario_obj,
+        'estadisticas':  estadisticas,
+        'solicitudes_recientes': solicitudes.order_by('-fecha_creacion')[:5],
+    })
+
+
+@never_cache
+@login_required
+def editar_usuario(request, pk):
+    if not request.user.es_directivo:
+        messages.error(request, 'No tiene permisos para editar usuarios.')
+        return redirect('accounts:lista_usuarios')
+
+    from .models import Usuario
+    from .forms import FormularioEditarUsuario
+    usuario_obj = get_object_or_404(Usuario, pk=pk)
+
+    if request.method == 'POST':
+        form = FormularioEditarUsuario(request.POST, instance=usuario_obj)
+        if form.is_valid():
+            usuario_obj = form.save()
+            messages.success(
+                request,
+                f'Usuario "{usuario_obj.get_nombre_completo()}" actualizado correctamente.'
+            )
+            return redirect('accounts:detalle_usuario', pk=usuario_obj.pk)
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario.')
+    else:
+        form = FormularioEditarUsuario(instance=usuario_obj)
+
+    return render(request, 'accounts/usuarios/form_usuario.html', {
+        'form':        form,
+        'usuario_obj': usuario_obj,
+        'titulo':      f'Editar — {usuario_obj.get_nombre_completo()}',
+        'accion':      'Guardar cambios',
+    })
+
+
+@never_cache
+@login_required
+def cambiar_password_usuario(request, pk):
+    if not request.user.es_directivo:
+        messages.error(request, 'No tiene permisos para cambiar contraseñas.')
+        return redirect('accounts:lista_usuarios')
+
+    from .models import Usuario
+    from .forms import FormularioCambiarPassword
+    usuario_obj = get_object_or_404(Usuario, pk=pk)
+
+    if request.method == 'POST':
+        form = FormularioCambiarPassword(request.POST)
+        if form.is_valid():
+            usuario_obj.set_password(form.cleaned_data['password1'])
+            usuario_obj.save()
+            messages.success(
+                request,
+                f'Contraseña de "{usuario_obj.get_nombre_completo()}" actualizada correctamente.'
+            )
+            return redirect('accounts:detalle_usuario', pk=usuario_obj.pk)
+        else:
+            messages.error(request, 'Por favor corrija los errores.')
+    else:
+        form = FormularioCambiarPassword()
+
+    return render(request, 'accounts/usuarios/cambiar_password.html', {
+        'form':        form,
+        'usuario_obj': usuario_obj,
+    })
+
+
+@never_cache
+@login_required
+def togglear_usuario(request, pk):
+    if not request.user.es_directivo:
+        messages.error(request, 'No tiene permisos para realizar esta acción.')
+        return redirect('accounts:lista_usuarios')
+
+    from .models import Usuario
+    usuario_obj = get_object_or_404(Usuario, pk=pk)
+
+    if request.method == 'POST':
+        # No permitir desactivarse a sí mismo
+        if usuario_obj.pk == request.user.pk:
+            messages.error(request, 'No puede desactivar su propia cuenta.')
+            return redirect('accounts:detalle_usuario', pk=pk)
+
+        usuario_obj.is_active = not usuario_obj.is_active
+        usuario_obj.save()
+        estado = 'activado' if usuario_obj.is_active else 'desactivado'
+        messages.success(
+            request,
+            f'Usuario "{usuario_obj.get_nombre_completo()}" {estado} correctamente.'
+        )
+
+    return redirect('accounts:detalle_usuario', pk=pk)

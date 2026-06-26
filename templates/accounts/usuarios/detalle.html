@@ -1,0 +1,195 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}{{ usuario_obj.get_nombre_completo }}{% endblock %}
+{% block nav_usuarios %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'accounts:lista_usuarios' %}" style="color:var(--color-texto-muted);text-decoration:none;">Usuarios</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ usuario_obj.get_nombre_completo }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera flex justify-between items-center">
+  <div style="display:flex;align-items:center;gap:var(--espacio-4);">
+    <div style="width:56px;height:56px;border-radius:50%;background-color:{% if usuario_obj.is_active %}var(--color-primario){% else %}var(--color-texto-muted){% endif %};display:flex;align-items:center;justify-content:center;color:white;font-size:var(--texto-xl);font-weight:var(--peso-bold);">
+      {{ usuario_obj.nombre|first|upper }}{{ usuario_obj.apellidos|first|upper }}
+    </div>
+    <div>
+      <h1 class="pagina-titulo">{{ usuario_obj.get_nombre_completo }}</h1>
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);margin-top:var(--espacio-2);">
+        <span class="badge badge-info">{{ usuario_obj.get_rol_display }}</span>
+        {% if usuario_obj.is_active %}
+          <span class="badge badge-aprobado">Activo</span>
+        {% else %}
+          <span class="badge badge-denegado">Inactivo</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if user.es_directivo %}
+  <div style="display:flex;gap:var(--espacio-3);">
+    <a href="{% url 'accounts:editar_usuario' usuario_obj.pk %}" class="btn btn-secundario">
+      <i data-lucide="pencil" style="width:16px;height:16px;"></i>
+      Editar
+    </a>
+    <a href="{% url 'accounts:cambiar_password' usuario_obj.pk %}" class="btn btn-secundario">
+      <i data-lucide="key" style="width:16px;height:16px;"></i>
+      Cambiar contraseña
+    </a>
+    {% if usuario_obj.pk != user.pk %}
+    <form method="post" action="{% url 'accounts:toggle_usuario' usuario_obj.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if usuario_obj.is_active %}btn-ghost{% else %}btn-primario{% endif %}">
+        <i data-lucide="{% if usuario_obj.is_active %}user-x{% else %}user-check{% endif %}" style="width:16px;height:16px;"></i>
+        {% if usuario_obj.is_active %}Desactivar{% else %}Activar{% endif %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid-2">
+
+  <!-- Información del usuario -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="user" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Información personal</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <div style="display:flex;flex-direction:column;gap:var(--espacio-4);">
+        <div style="display:flex;justify-content:space-between;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Usuario</span>
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);font-family:var(--fuente-mono);">{{ usuario_obj.username }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Nombre</span>
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ usuario_obj.nombre }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Apellidos</span>
+          <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ usuario_obj.apellidos }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Correo electrónico</span>
+          <span style="font-size:var(--texto-sm);">{{ usuario_obj.email }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Teléfono</span>
+          <span style="font-size:var(--texto-sm);">{{ usuario_obj.telefono|default:"—" }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Rol</span>
+          <span class="badge badge-info">{{ usuario_obj.get_rol_display }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Fecha de registro</span>
+          <span style="font-size:var(--texto-sm);">{{ usuario_obj.fecha_registro|date:"d/m/Y H:i" }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div style="display:flex;flex-direction:column;gap:var(--espacio-5);">
+    <div class="grid-2" style="gap:var(--espacio-4);">
+      <div class="stat-card">
+        <div class="stat-card-icono primario">
+          <i data-lucide="file-text" style="width:22px;height:22px;"></i>
+        </div>
+        <div>
+          <div class="stat-card-valor">{{ estadisticas.total }}</div>
+          <div class="stat-card-etiqueta">Total solicitudes</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icono success">
+          <i data-lucide="check-circle" style="width:22px;height:22px;"></i>
+        </div>
+        <div>
+          <div class="stat-card-valor">{{ estadisticas.aprobadas }}</div>
+          <div class="stat-card-etiqueta">Aprobadas</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icono danger">
+          <i data-lucide="x-circle" style="width:22px;height:22px;"></i>
+        </div>
+        <div>
+          <div class="stat-card-valor">{{ estadisticas.denegadas }}</div>
+          <div class="stat-card-etiqueta">Denegadas</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icono warning">
+          <i data-lucide="clock" style="width:22px;height:22px;"></i>
+        </div>
+        <div>
+          <div class="stat-card-valor">{{ estadisticas.pendientes }}</div>
+          <div class="stat-card-etiqueta">Pendientes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solicitudes recientes -->
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <h2 class="tarjeta-titulo">Solicitudes recientes</h2>
+      </div>
+      <div class="tarjeta-cuerpo" style="padding:0;">
+        {% if solicitudes_recientes %}
+          <div class="tabla-contenedor" style="border:none;border-radius:0;">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in solicitudes_recientes %}
+                <tr>
+                  <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ s.numero }}</td>
+                  <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+                  <td style="color:var(--color-texto-muted);font-size:var(--texto-xs);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
+                  <td>
+                    <a href="{% url 'solicitudes:detalle' s.pk %}" class="btn btn-ghost btn-sm">
+                      <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div style="padding:var(--espacio-6);text-align:center;color:var(--color-texto-muted);">
+            <p style="font-size:var(--texto-sm);">Sin solicitudes registradas.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:var(--espacio-6);">
+  <a href="{% url 'accounts:lista_usuarios' %}" class="btn btn-ghost">
+    <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+    Volver a usuarios
+  </a>
+</div>
+{% endblock %}

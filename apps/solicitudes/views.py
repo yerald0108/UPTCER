@@ -6,6 +6,12 @@ from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from .models import Solicitud, HistorialSolicitud
 from .forms import FormularioF43
+from apps.notificaciones.servicios import (
+    notificar_solicitud_nueva,
+    notificar_cambio_estado,
+    notificar_derivacion_especialista,
+    notificar_criterio_tecnico,
+)
 
 
 # ─── Nueva solicitud F43 ──────────────────────────────────────────────────────
@@ -77,6 +83,9 @@ def nueva_solicitud_f43(request):
                 usuario         = request.user,
                 observacion     = 'Solicitud creada y enviada por el solicitante.',
             )
+
+            # Notificar a operadores
+            notificar_solicitud_nueva(solicitud)
 
             messages.success(
                 request,
@@ -202,6 +211,23 @@ def cambiar_estado(request, pk):
         usuario         = usuario,
         observacion     = observacion,
     )
+
+    # Notificaciones automáticas
+    # Siempre notificar al solicitante
+    notificar_cambio_estado(solicitud, estado_anterior, usuario)
+
+    # Si se deriva al especialista
+    if estado_nuevo == Solicitud.ESTADO_EN_REVISION and solicitud.equipo_no_listado:
+        notificar_derivacion_especialista(solicitud)
+
+    # Si el especialista emitió criterio técnico
+    if usuario.es_especialista and observacion:
+        notificar_criterio_tecnico(solicitud)
+        
+     # Generar licencia automáticamente si la solicitud fue aprobada
+    if estado_nuevo == Solicitud.ESTADO_APROBADA:
+        from apps.licencias.servicios import generar_licencia
+        generar_licencia(solicitud, usuario)
 
     messages.success(
         request,

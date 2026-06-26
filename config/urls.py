@@ -9,6 +9,7 @@ urlpatterns = [
     path('solicitudes/', include('apps.solicitudes.urls', namespace='solicitudes')),
     path('equipos/',     include('apps.equipos.urls',    namespace='equipos')),
     path('licencias/',   include('apps.licencias.urls',  namespace='licencias')),
+    path('notificaciones/', include('apps.notificaciones.urls', namespace='notificaciones')),
 ]
 
 if settings.DEBUG:

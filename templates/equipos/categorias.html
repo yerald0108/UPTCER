@@ -1,0 +1,111 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Categorías de equipos{% endblock %}
+{% block nav_equipos %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'equipos:lista' %}" style="color:var(--color-texto-muted);text-decoration:none;">Catálogo</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Categorías</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">Categorías de equipos</h1>
+  <p class="pagina-subtitulo">Gestione las categorías del catálogo de equipos.</p>
+</div>
+
+<div class="grid-2">
+
+  <!-- Lista de categorías -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2 class="tarjeta-titulo">Categorías registradas</h2>
+    </div>
+    <div class="tarjeta-cuerpo" style="padding:0;">
+      {% if categorias %}
+        <div class="tabla-contenedor" style="border:none;border-radius:0;">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Equipos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cat in categorias %}
+              <tr>
+                <td style="font-weight:var(--peso-medio);">{{ cat.nombre }}</td>
+                <td style="color:var(--color-texto-muted);">{{ cat.descripcion|default:"—"|truncatechars:50 }}</td>
+                <td style="text-align:center;">
+                  <span class="badge badge-info">{{ cat.equipos.count }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div style="padding:var(--espacio-8);text-align:center;color:var(--color-texto-muted);">
+          <i data-lucide="tag" style="width:32px;height:32px;opacity:0.3;margin-bottom:var(--espacio-3);display:block;margin-left:auto;margin-right:auto;"></i>
+          <p style="font-size:var(--texto-sm);">No hay categorías registradas aún.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Formulario nueva categoría -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="plus" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Nueva categoría</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.nombre.label }}</label>
+          {{ form.nombre }}
+          {% if form.nombre.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.nombre.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta">{{ form.descripcion.label }}</label>
+          {{ form.descripcion }}
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-primario">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i>
+            Crear categoría
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:var(--espacio-6);">
+  <a href="{% url 'equipos:lista' %}" class="btn btn-ghost">
+    <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+    Volver al catálogo
+  </a>
+</div>
+{% endblock %}

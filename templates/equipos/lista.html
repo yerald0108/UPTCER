@@ -1,0 +1,167 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Catálogo de Equipos{% endblock %}
+{% block nav_equipos %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Catálogo de equipos</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera flex justify-between items-center">
+  <div>
+    <h1 class="pagina-titulo">Catálogo de equipos</h1>
+    <p class="pagina-subtitulo">{{ total }} equipo{{ total|pluralize }} registrado{{ total|pluralize }} en el sistema.</p>
+  </div>
+  {% if user.es_operador or user.es_especialista or user.es_directivo %}
+  <div style="display:flex;gap:var(--espacio-3);">
+    <a href="{% url 'equipos:categorias' %}" class="btn btn-secundario">
+      <i data-lucide="tag" style="width:16px;height:16px;"></i>
+      Categorías
+    </a>
+    <a href="{% url 'equipos:nuevo' %}" class="btn btn-primario">
+      <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+      Nuevo equipo
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Filtros -->
+<div class="tarjeta mb-6">
+  <div class="tarjeta-cuerpo">
+    <form method="get" style="display:flex;gap:var(--espacio-4);align-items:flex-end;flex-wrap:wrap;">
+      <div class="campo-grupo" style="margin-bottom:0;flex:1;min-width:220px;">
+        <label class="campo-etiqueta">Buscar</label>
+        <div style="position:relative;">
+          <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--color-texto-muted);"></i>
+          <input type="text" name="q" value="{{ busqueda }}"
+            class="campo-input" style="padding-left:36px;"
+            placeholder="Nombre, marca o modelo...">
+        </div>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:0;min-width:180px;">
+        <label class="campo-etiqueta">Categoría</label>
+        <select name="categoria" class="campo-select">
+          <option value="">Todas las categorías</option>
+          {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if categoria_sel == cat.id|stringformat:"s" %}selected{% endif %}>
+              {{ cat.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:0;min-width:180px;">
+        <label class="campo-etiqueta">Banda de frecuencia</label>
+        <select name="banda" class="campo-select">
+          <option value="">Todas las bandas</option>
+          {% for valor, etiqueta in BANDAS %}
+            <option value="{{ valor }}" {% if banda_sel == valor %}selected{% endif %}>
+              {{ etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;gap:var(--espacio-2);margin-bottom:0;">
+        <button type="submit" class="btn btn-primario">
+          <i data-lucide="search" style="width:15px;height:15px;"></i>
+          Buscar
+        </button>
+        {% if busqueda or categoria_sel or banda_sel %}
+          <a href="{% url 'equipos:lista' %}" class="btn btn-ghost">
+            <i data-lucide="x" style="width:15px;height:15px;"></i>
+            Limpiar
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="tarjeta">
+  <div class="tarjeta-cuerpo" style="padding:0;">
+    {% if equipos %}
+      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Equipo</th>
+              <th>Categoría</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>Banda de frecuencia</th>
+              <th>Permiso</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in equipos %}
+            <tr>
+              <td>
+                <div style="font-weight:var(--peso-semi);">{{ e.nombre }}</div>
+                {% if e.descripcion %}
+                  <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);margin-top:2px;">
+                    {{ e.descripcion|truncatechars:60 }}
+                  </div>
+                {% endif %}
+              </td>
+              <td style="color:var(--color-texto-secundario);">{{ e.categoria.nombre }}</td>
+              <td>{{ e.marca }}</td>
+              <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ e.modelo }}</td>
+              <td>
+                {% if e.banda_frecuencia == 'libre' %}
+                  <span class="badge badge-aprobado">
+                    <i data-lucide="wifi" style="width:11px;height:11px;"></i>
+                    Banda libre
+                  </span>
+                {% elif e.banda_frecuencia == 'restringida' %}
+                  <span class="badge badge-denegado">
+                    <i data-lucide="shield-alert" style="width:11px;height:11px;"></i>
+                    Restringida
+                  </span>
+                {% else %}
+                  <span class="badge badge-info">No aplica</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if e.requiere_permiso %}
+                  <span class="badge badge-pendiente">Requerido</span>
+                {% else %}
+                  <span class="badge badge-aprobado">No requerido</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'equipos:detalle' e.pk %}" class="btn btn-ghost btn-sm">
+                  <i data-lucide="eye" style="width:15px;height:15px;"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
+        <i data-lucide="cpu" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
+        <p style="font-size:var(--texto-base);font-weight:var(--peso-medio);margin-bottom:var(--espacio-2);">
+          {% if busqueda or categoria_sel or banda_sel %}
+            No se encontraron equipos con esos filtros
+          {% else %}
+            El catálogo está vacío
+          {% endif %}
+        </p>
+        {% if user.es_operador or user.es_especialista or user.es_directivo %}
+          <a href="{% url 'equipos:nuevo' %}" class="btn btn-primario" style="margin-top:var(--espacio-4);">
+            <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+            Agregar primer equipo
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

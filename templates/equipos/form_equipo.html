@@ -1,0 +1,143 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block nav_equipos %}activo{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'equipos:lista' %}" style="color:var(--color-texto-muted);text-decoration:none;">Catálogo</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ titulo }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">{{ titulo }}</h1>
+  <p class="pagina-subtitulo">Complete la información del equipo para agregarlo al catálogo.</p>
+</div>
+
+<div style="max-width:720px;">
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:36px;height:36px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="cpu" style="width:20px;height:20px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Datos del equipo</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.categoria.label }}</label>
+          {{ form.categoria }}
+          {% if form.categoria.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.categoria.errors.0 }}
+            </div>
+          {% endif %}
+          <p class="campo-ayuda">
+            Si la categoría no existe, <a href="{% url 'equipos:categorias' %}" style="color:var(--color-primario);">créela aquí</a>.
+          </p>
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.nombre.label }}</label>
+          {{ form.nombre }}
+          {% if form.nombre.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.nombre.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="grid-2">
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.marca.label }}</label>
+            {{ form.marca }}
+            {% if form.marca.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.marca.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.modelo.label }}</label>
+            {{ form.modelo }}
+            {% if form.modelo.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.modelo.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta">{{ form.descripcion.label }}</label>
+          {{ form.descripcion }}
+        </div>
+
+        <div class="campo-grupo">
+          <label class="campo-etiqueta requerido">{{ form.banda_frecuencia.label }}</label>
+          {{ form.banda_frecuencia }}
+          <p class="campo-ayuda">Determina si el equipo requiere evaluación técnica especializada.</p>
+          {% if form.banda_frecuencia.errors %}
+            <div class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.banda_frecuencia.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <hr class="divisor">
+
+        <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
+          <label style="display:flex;align-items:center;gap:var(--espacio-3);cursor:pointer;">
+            {{ form.requiere_permiso }}
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">
+              {{ form.requiere_permiso.label }}
+            </span>
+          </label>
+          <label style="display:flex;align-items:center;gap:var(--espacio-3);cursor:pointer;">
+            {{ form.activo }}
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">
+              {{ form.activo.label }}
+            </span>
+          </label>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="alerta alerta-error" style="margin-top:var(--espacio-5);">
+            <i data-lucide="x-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
+            {{ form.non_field_errors.0 }}
+          </div>
+        {% endif %}
+
+        <hr class="divisor">
+
+        <div style="display:flex;justify-content:space-between;">
+          <a href="{% url 'equipos:lista' %}" class="btn btn-ghost">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+            Cancelar
+          </a>
+          <button type="submit" class="btn btn-primario">
+            <i data-lucide="save" style="width:16px;height:16px;"></i>
+            {{ accion }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
