@@ -9,4 +9,6 @@ urlpatterns = [
     path('lista/',              views.lista_solicitudes,     name='lista'),
     path('<int:pk>/',           views.detalle_solicitud,     name='detalle'),
     path('<int:pk>/estado/',    views.cambiar_estado,        name='cambiar_estado'),
+    path('evaluaciones/',        views.cola_evaluaciones, name='cola_evaluaciones'),
+    path('<int:pk>/evaluar/',    views.evaluar_solicitud, name='evaluar'),
 ]

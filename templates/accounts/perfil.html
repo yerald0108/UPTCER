@@ -1,0 +1,226 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Mi perfil{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Mi perfil</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <h1 class="pagina-titulo">Mi perfil</h1>
+  <p class="pagina-subtitulo">Gestione su información personal y credenciales de acceso.</p>
+</div>
+
+<div class="grid-2">
+
+  <!-- Formulario de edición -->
+  <div style="display:flex;flex-direction:column;gap:var(--espacio-5);">
+
+    <!-- Avatar y datos básicos -->
+    <div class="tarjeta">
+      <div class="tarjeta-cuerpo">
+        <div style="display:flex;align-items:center;gap:var(--espacio-5);margin-bottom:var(--espacio-6);">
+          <div style="width:72px;height:72px;border-radius:50%;background-color:var(--color-primario);display:flex;align-items:center;justify-content:center;color:white;font-size:var(--texto-2xl);font-weight:var(--peso-bold);flex-shrink:0;">
+            {{ usuario.nombre|first|upper }}{{ usuario.apellidos|first|upper }}
+          </div>
+          <div>
+            <div style="font-size:var(--texto-xl);font-weight:var(--peso-bold);color:var(--color-texto-principal);">
+              {{ usuario.get_nombre_completo }}
+            </div>
+            <div style="font-size:var(--texto-sm);color:var(--color-texto-muted);margin-top:var(--espacio-1);">
+              @{{ usuario.username }}
+            </div>
+            <div style="margin-top:var(--espacio-2);">
+              <span class="badge badge-info">{{ usuario.get_rol_display }}</span>
+            </div>
+          </div>
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="grid-2">
+            <div class="campo-grupo">
+              <label class="campo-etiqueta requerido">{{ form.nombre.label }}</label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}
+                <div class="campo-error">
+                  <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                  {{ form.nombre.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+            <div class="campo-grupo">
+              <label class="campo-etiqueta requerido">{{ form.apellidos.label }}</label>
+              {{ form.apellidos }}
+              {% if form.apellidos.errors %}
+                <div class="campo-error">
+                  <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                  {{ form.apellidos.errors.0 }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="campo-error">
+                <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+                {{ form.email.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta">{{ form.telefono.label }}</label>
+            {{ form.telefono }}
+          </div>
+
+          <!-- Campo solo lectura: usuario y rol -->
+          <div class="grid-2">
+            <div class="campo-grupo">
+              <label class="campo-etiqueta">Nombre de usuario</label>
+              <input type="text" class="campo-input" value="{{ usuario.username }}" disabled
+                style="background-color:var(--color-fondo);color:var(--color-texto-muted);">
+              <p class="campo-ayuda">El nombre de usuario no puede modificarse.</p>
+            </div>
+            <div class="campo-grupo">
+              <label class="campo-etiqueta">Rol en el sistema</label>
+              <input type="text" class="campo-input" value="{{ usuario.get_rol_display }}" disabled
+                style="background-color:var(--color-fondo);color:var(--color-texto-muted);">
+              <p class="campo-ayuda">El rol es asignado por el administrador.</p>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" class="btn btn-primario">
+              <i data-lucide="save" style="width:16px;height:16px;"></i>
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cambiar contraseña -->
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="key" style="width:18px;height:18px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Seguridad</h2>
+        </div>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);margin-bottom:var(--espacio-4);">
+          Para mantener su cuenta segura, le recomendamos usar una contraseña única y difícil de adivinar.
+        </p>
+        <a href="{% url 'accounts:mi_password' %}" class="btn btn-secundario">
+          <i data-lucide="lock" style="width:16px;height:16px;"></i>
+          Cambiar contraseña
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Panel derecho: estadísticas y actividad -->
+  <div style="display:flex;flex-direction:column;gap:var(--espacio-5);">
+
+    <!-- Estadísticas -->
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="bar-chart-2" style="width:18px;height:18px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Mi actividad</h2>
+        </div>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <div style="display:flex;flex-direction:column;gap:var(--espacio-4);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+            <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+              <div style="width:36px;height:36px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="file-text" style="width:18px;height:18px;"></i>
+              </div>
+              <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Total solicitudes</span>
+            </div>
+            <span style="font-size:var(--texto-xl);font-weight:var(--peso-bold);color:var(--color-primario);">
+              {{ estadisticas.total }}
+            </span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--espacio-3);border-bottom:1px solid var(--color-borde);">
+            <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+              <div style="width:36px;height:36px;border-radius:var(--radio-md);background:#E8F5E9;color:var(--color-secundario);display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+              </div>
+              <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Aprobadas</span>
+            </div>
+            <span style="font-size:var(--texto-xl);font-weight:var(--peso-bold);color:var(--color-secundario);">
+              {{ estadisticas.aprobadas }}
+            </span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+              <div style="width:36px;height:36px;border-radius:var(--radio-md);background:#FFF8E1;color:var(--color-advertencia);display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="clock" style="width:18px;height:18px;"></i>
+              </div>
+              <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Pendientes</span>
+            </div>
+            <span style="font-size:var(--texto-xl);font-weight:var(--peso-bold);color:var(--color-advertencia);">
+              {{ estadisticas.pendientes }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información de la cuenta -->
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="shield-check" style="width:18px;height:18px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Información de la cuenta</h2>
+        </div>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Estado</span>
+            {% if usuario.is_active %}
+              <span class="badge badge-aprobado">Activo</span>
+            {% else %}
+              <span class="badge badge-denegado">Inactivo</span>
+            {% endif %}
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Miembro desde</span>
+            <span style="font-size:var(--texto-sm);">{{ usuario.fecha_registro|date:"d/m/Y" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Último acceso</span>
+            <span style="font-size:var(--texto-sm);">
+              {% if usuario.last_login %}
+                {{ usuario.last_login|date:"d/m/Y H:i" }}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

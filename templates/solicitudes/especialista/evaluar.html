@@ -1,0 +1,413 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Evaluar {{ solicitud.numero }}{% endblock %}
+{% block nav_evaluaciones %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'solicitudes:cola_evaluaciones' %}" style="color:var(--color-texto-muted);text-decoration:none;">
+    Cola de evaluaciones
+  </a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ solicitud.numero }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera flex justify-between items-center">
+  <div>
+    <h1 class="pagina-titulo">Evaluación técnica — {{ solicitud.numero }}</h1>
+    <p class="pagina-subtitulo">
+      Solicitante: {{ solicitud.solicitante.get_nombre_completo }} —
+      Recibida: {{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}
+    </p>
+  </div>
+  <span class="badge {{ solicitud.clase_badge }}" style="font-size:13px;padding:6px 14px;">
+    {{ solicitud.get_estado_display }}
+  </span>
+</div>
+
+<div class="grid-2">
+
+  <!-- Columna izquierda: datos de la solicitud -->
+  <div style="display:flex;flex-direction:column;gap:var(--espacio-5);">
+
+    <!-- Datos del solicitante -->
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="user" style="width:18px;height:18px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Datos del solicitante</h2>
+        </div>
+      </div>
+      <div class="tarjeta-cuerpo">
+        <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Nombre</span>
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ datos_f43.nombre_apellidos|default:solicitud.solicitante.get_nombre_completo }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Pasaporte / CI</span>
+            <span style="font-size:var(--texto-sm);">{{ datos_f43.numero_pasaporte|default:"—" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">País</span>
+            <span style="font-size:var(--texto-sm);">{{ datos_f43.pais_residencia|default:"—" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Correo</span>
+            <span style="font-size:var(--texto-sm);">{{ datos_f43.correo_electronico|default:"—" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Provincia</span>
+            <span style="font-size:var(--texto-sm);">{{ datos_f43.provincia|default:"—"|capfirst }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Objetivo</span>
+            <span style="font-size:var(--texto-sm);">{{ datos_f43.objetivo_importacion|default:"—"|capfirst }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Período</span>
+            <span style="font-size:var(--texto-sm);">
+              {{ datos_f43.periodo_importacion|default:"—"|capfirst }}
+              {% if datos_f43.tiempo_solicitado %}
+                — {{ datos_f43.tiempo_solicitado }} meses
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipos de la solicitud -->
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#FFF8E1;color:var(--color-advertencia);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="cpu" style="width:18px;height:18px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Equipos a evaluar</h2>
+        </div>
+        <span class="badge badge-pendiente">No listados</span>
+      </div>
+      <div class="tarjeta-cuerpo" style="padding:0;">
+        <div class="tabla-contenedor" style="border:none;border-radius:0;">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Descripción</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for eq in equipos %}
+              <tr>
+                <td style="text-align:center;">{{ forloop.counter }}</td>
+                <td>{{ eq.descripcion }}</td>
+                <td>{{ eq.marca }}</td>
+                <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ eq.modelo }}</td>
+                <td style="text-align:center;">{{ eq.cantidad }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" style="text-align:center;color:var(--color-texto-muted);">Sin equipos registrados</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    {% if historial %}
+    <div class="tarjeta">
+      <div class="tarjeta-cabecera">
+        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="history" style="width:18px;height:18px;"></i>
+          </div>
+          <h2 class="tarjeta-titulo">Historial</h2>
+        </div>
+      </div>
+      <div class="tarjeta-cuerpo" style="padding:0;">
+        <div class="tabla-contenedor" style="border:none;border-radius:0;">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in historial %}
+              <tr>
+                <td style="white-space:nowrap;color:var(--color-texto-muted);font-size:var(--texto-xs);">
+                  {{ h.fecha|date:"d/m/Y H:i" }}
+                </td>
+                <td style="font-size:var(--texto-xs);">{{ h.usuario.get_nombre_completo }}</td>
+                <td>
+                  <span class="badge {{ h.clase_badge_nuevo }}">{{ h.get_estado_nuevo_display }}</span>
+                </td>
+                <td style="font-size:var(--texto-xs);color:var(--color-texto-secundario);">
+                  {{ h.observacion|default:"—"|truncatechars:60 }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Columna derecha: formulario de evaluación -->
+  <div>
+    {% if not solicitud.esta_resuelta %}
+    <form method="post" id="form-evaluacion">
+      {% csrf_token %}
+
+      <div class="tarjeta mb-6">
+        <div class="tarjeta-cabecera">
+          <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+            <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+              <i data-lucide="clipboard-check" style="width:18px;height:18px;"></i>
+            </div>
+            <h2 class="tarjeta-titulo">Evaluación técnica</h2>
+          </div>
+        </div>
+        <div class="tarjeta-cuerpo">
+
+          <!-- Banda de frecuencia detectada -->
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">Banda de frecuencia detectada</label>
+            <div style="display:flex;flex-direction:column;gap:var(--espacio-2);">
+              {% for valor, etiqueta in BANDAS %}
+              <label style="display:flex;align-items:center;gap:var(--espacio-3);padding:var(--espacio-3) var(--espacio-4);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
+                onmouseover="this.style.borderColor='var(--color-primario)'"
+                onmouseout="this.style.borderColor='var(--color-borde)'">
+                <input type="radio" name="banda_detectada" value="{{ valor }}" required>
+                <span>{{ etiqueta }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Cumple normativa -->
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">¿Cumple con la normativa vigente?</label>
+            <div style="display:flex;gap:var(--espacio-3);">
+              <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-5);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
+                onmouseover="this.style.borderColor='var(--color-secundario)'"
+                onmouseout="this.style.borderColor='var(--color-borde)'">
+                <input type="radio" name="cumple_normativa" value="1" required>
+                <i data-lucide="check" style="width:15px;height:15px;color:var(--color-secundario);"></i>
+                Sí cumple
+              </label>
+              <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-5);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
+                onmouseover="this.style.borderColor='var(--color-acento)'"
+                onmouseout="this.style.borderColor='var(--color-borde)'">
+                <input type="radio" name="cumple_normativa" value="0" required>
+                <i data-lucide="x" style="width:15px;height:15px;color:var(--color-acento);"></i>
+                No cumple
+              </label>
+            </div>
+          </div>
+
+          <!-- Criterio técnico -->
+          <div class="campo-grupo">
+            <label class="campo-etiqueta requerido">Criterio técnico</label>
+            <textarea name="criterio_tecnico" class="campo-textarea" rows="6"
+              placeholder="Describa detalladamente el criterio técnico emitido sobre el equipo. Incluya análisis de frecuencias, compatibilidad con la normativa cubana, y recomendación fundamentada..."
+              required></textarea>
+            <p class="campo-ayuda">Este criterio quedará registrado en el historial y aparecerá en el documento de licencia.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Agregar al catálogo -->
+      <div class="tarjeta mb-6">
+        <div class="tarjeta-cabecera">
+          <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+            <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#E8F5E9;color:var(--color-secundario);display:flex;align-items:center;justify-content:center;">
+              <i data-lucide="database" style="width:18px;height:18px;"></i>
+            </div>
+            <h2 class="tarjeta-titulo">Agregar al catálogo</h2>
+          </div>
+          <label style="display:flex;align-items:center;gap:var(--espacio-2);cursor:pointer;font-size:var(--texto-sm);">
+            <input type="checkbox" name="agregar_catalogo" value="1" id="chk-catalogo"
+              onchange="toggleCatalogo(this.checked)">
+            Agregar este equipo al catálogo
+          </label>
+        </div>
+        <div class="tarjeta-cuerpo" id="panel-catalogo" style="display:none;">
+          <div class="alerta alerta-info" style="margin-bottom:var(--espacio-5);">
+            <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
+            Solo disponible si la solicitud es aprobada. El equipo se agregará automáticamente al catálogo para futuras solicitudes.
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta">Nombre descriptivo del equipo</label>
+            <input type="text" name="cat_nombre" class="campo-input"
+              value="{{ equipos.0.descripcion|default:'' }}"
+              placeholder="Ej: Teléfono inteligente, Router inalámbrico">
+          </div>
+
+          <div class="grid-2">
+            <div class="campo-grupo">
+              <label class="campo-etiqueta">Marca</label>
+              <input type="text" name="cat_marca" class="campo-input"
+                value="{{ equipos.0.marca|default:'' }}"
+                placeholder="Marca del equipo">
+            </div>
+            <div class="campo-grupo">
+              <label class="campo-etiqueta">Modelo</label>
+              <input type="text" name="cat_modelo" class="campo-input"
+                value="{{ equipos.0.modelo|default:'' }}"
+                placeholder="Modelo del equipo">
+            </div>
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta">Categoría</label>
+            <select name="cat_categoria" class="campo-select">
+              <option value="">Seleccione una categoría</option>
+              {% for cat in categorias %}
+                <option value="{{ cat.pk }}">{{ cat.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="campo-grupo">
+            <label class="campo-etiqueta">Banda de frecuencia</label>
+            <select name="cat_banda" class="campo-select">
+              {% for valor, etiqueta in BANDAS %}
+                <option value="{{ valor }}">{{ etiqueta }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="tarjeta">
+        <div class="tarjeta-cuerpo">
+          <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);margin-bottom:var(--espacio-5);">
+            Una vez emitido el criterio técnico esta acción no puede deshacerse. El solicitante recibirá una notificación automática.
+          </p>
+          <div style="display:flex;gap:var(--espacio-3);">
+            <button type="submit" name="accion" value="aprobar"
+              class="btn btn-primario" style="flex:1;justify-content:center;background-color:var(--color-secundario);border-color:var(--color-secundario);"
+              onclick="return confirmarEvaluacion('aprobar')">
+              <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+              Aprobar solicitud
+            </button>
+            <button type="submit" name="accion" value="denegar"
+              class="btn btn-peligro" style="flex:1;justify-content:center;"
+              onclick="return confirmarEvaluacion('denegar')">
+              <i data-lucide="x-circle" style="width:18px;height:18px;"></i>
+              Denegar solicitud
+            </button>
+          </div>
+          <div style="margin-top:var(--espacio-4);text-align:center;">
+            <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="btn btn-ghost">
+              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+              Volver a la cola
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </form>
+
+    {% else %}
+    <div class="tarjeta">
+      <div class="tarjeta-cuerpo">
+        <div class="alerta alerta-info">
+          <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Esta solicitud ya fue resuelta el {{ solicitud.fecha_resolucion|date:"d/m/Y \a \l\a\s H:i" }}.
+        </div>
+        {% if solicitud.observaciones_tecnicas %}
+          <div style="margin-top:var(--espacio-5);">
+            <h3 style="font-size:var(--texto-sm);font-weight:var(--peso-semi);margin-bottom:var(--espacio-3);">Criterio técnico emitido:</h3>
+            <div style="background:var(--color-fondo);padding:var(--espacio-4);border-radius:var(--radio-md);font-size:var(--texto-sm);line-height:1.6;">
+              {% load json_extras %}
+              {% with eval=solicitud.observaciones_tecnicas|parse_json %}
+                {% if eval.criterio %}
+                  <p>{{ eval.criterio }}</p>
+                  <div style="margin-top:var(--espacio-3);display:flex;gap:var(--espacio-4);">
+                    <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+                      Banda: {{ eval.banda_detectada|default:"—" }}
+                    </span>
+                    <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+                      Normativa: {% if eval.cumple_normativa %}Cumple{% else %}No cumple{% endif %}
+                    </span>
+                  </div>
+                {% else %}
+                  <p>{{ solicitud.observaciones_tecnicas }}</p>
+                {% endif %}
+              {% endwith %}
+            </div>
+          </div>
+        {% endif %}
+        <div style="margin-top:var(--espacio-5);">
+          <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="btn btn-ghost">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+            Volver a la cola
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  function toggleCatalogo(checked) {
+    document.getElementById('panel-catalogo').style.display = checked ? 'block' : 'none';
+  }
+
+  function confirmarEvaluacion(accion) {
+    const criterio = document.querySelector('textarea[name="criterio_tecnico"]').value.trim();
+    if (!criterio) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Debe escribir el criterio técnico antes de continuar.' });
+      return false;
+    }
+    const banda = document.querySelector('input[name="banda_detectada"]:checked');
+    if (!banda) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Seleccione la banda de frecuencia detectada.' });
+      return false;
+    }
+    const cumple = document.querySelector('input[name="cumple_normativa"]:checked');
+    if (!cumple) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Indique si el equipo cumple con la normativa.' });
+      return false;
+    }
+    const texto = accion === 'aprobar'
+      ? '¿Confirma que desea APROBAR esta solicitud con el criterio técnico emitido?'
+      : '¿Confirma que desea DENEGAR esta solicitud con el criterio técnico emitido?';
+    return confirm(texto);
+  }
+</script>
+{% endblock %}

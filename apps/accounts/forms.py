@@ -105,3 +105,54 @@ class FormularioCambiarPassword(forms.Form):
         if password1 and password2 and password1 != password2:
             self.add_error('password2', 'Las contraseñas no coinciden.')
         return cleaned
+    
+class FormularioEditarPerfil(forms.ModelForm):
+
+    class Meta:
+        model  = Usuario
+        fields = ['nombre', 'apellidos', 'email', 'telefono']
+        labels = {
+            'nombre':    'Nombre',
+            'apellidos': 'Apellidos',
+            'email':     'Correo electrónico',
+            'telefono':  'Teléfono',
+        }
+        widgets = {
+            'nombre':    forms.TextInput(attrs={'class': 'campo-input'}),
+            'apellidos': forms.TextInput(attrs={'class': 'campo-input'}),
+            'email':     forms.EmailInput(attrs={'class': 'campo-input'}),
+            'telefono':  forms.TextInput(attrs={'class': 'campo-input', 'placeholder': '+53 5 000 0000'}),
+        }
+
+
+class FormularioCambiarMiPassword(forms.Form):
+
+    password_actual = forms.CharField(
+        label='Contraseña actual',
+        widget=forms.PasswordInput(attrs={
+            'class': 'campo-input',
+            'placeholder': 'Su contraseña actual'
+        })
+    )
+    password_nueva1 = forms.CharField(
+        label='Nueva contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'campo-input',
+            'placeholder': 'Nueva contraseña'
+        })
+    )
+    password_nueva2 = forms.CharField(
+        label='Confirmar nueva contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'campo-input',
+            'placeholder': 'Repita la nueva contraseña'
+        })
+    )
+
+    def clean(self):
+        cleaned  = super().clean()
+        nueva1   = cleaned.get('password_nueva1')
+        nueva2   = cleaned.get('password_nueva2')
+        if nueva1 and nueva2 and nueva1 != nueva2:
+            self.add_error('password_nueva2', 'Las contraseñas nuevas no coinciden.')
+        return cleaned

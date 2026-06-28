@@ -85,8 +85,7 @@
           <i data-lucide="layout-dashboard" class="icono"></i>
           <span class="sidebar-enlace-texto">Inicio</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">
-          <i data-lucide="clipboard-check" class="icono"></i>
+        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">          <i data-lucide="clipboard-check" class="icono"></i>
           <span class="sidebar-enlace-texto">Evaluaciones</span>
         </a>
         <a href="#" class="sidebar-enlace {% block nav_equipos_no_listados %}{% endblock %}" data-tooltip="Equipos No Listados">
@@ -130,9 +129,9 @@
 
     <!-- Pie del sidebar: perfil del usuario -->
     <div class="sidebar-pie">
-      <a href="#" class="sidebar-enlace" data-tooltip="Configuración">
-        <i data-lucide="settings" class="icono"></i>
-        <span class="sidebar-enlace-texto">Configuración</span>
+      <a href="{% url 'accounts:perfil' %}" class="sidebar-enlace" data-tooltip="Mi perfil">
+        <i data-lucide="user-circle" class="icono"></i>
+        <span class="sidebar-enlace-texto">Mi perfil</span>
       </a>
       <form method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}

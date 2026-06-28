@@ -173,26 +173,98 @@ def _dashboard_aduana(request, usuario):
 def _dashboard_directivo(request, usuario):
     from apps.solicitudes.models import Solicitud
     from apps.accounts.models import Usuario
+    from apps.licencias.models import Licencia
+    from django.db.models import Count
+    from django.db.models.functions import TruncMonth
+    import json
 
     solicitudes = Solicitud.objects.all()
     total       = solicitudes.count()
     aprobadas   = solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count()
+    denegadas   = solicitudes.filter(estado=Solicitud.ESTADO_DENEGADA).count()
+    pendientes  = solicitudes.filter(estado__in=[
+                      Solicitud.ESTADO_ENVIADA,
+                      Solicitud.ESTADO_EN_REVISION
+                  ]).count()
+
+    # Solicitudes por mes (últimos 6 meses)
+    from django.utils import timezone
+    from dateutil.relativedelta import relativedelta
+
+    hoy        = timezone.now()
+    hace_6m    = hoy - relativedelta(months=5)
+
+    por_mes_qs = (
+        solicitudes
+        .filter(fecha_creacion__gte=hace_6m)
+        .annotate(mes=TruncMonth('fecha_creacion'))
+        .values('mes')
+        .annotate(total=Count('id'))
+        .order_by('mes')
+    )
+
+    # Construir labels y datos para los últimos 6 meses
+    meses_labels = []
+    meses_data   = []
+    meses_map    = {item['mes'].strftime('%Y-%m'): item['total'] for item in por_mes_qs}
+
+    MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
+    for i in range(6):
+        fecha = hace_6m + relativedelta(months=i)
+        clave = fecha.strftime('%Y-%m')
+        meses_labels.append(MESES_ES[fecha.month - 1])
+        meses_data.append(meses_map.get(clave, 0))
+
+    # Solicitudes por estado
+    estados_qs = (
+        solicitudes
+        .values('estado')
+        .annotate(total=Count('id'))
+        .order_by('estado')
+    )
+    estados_labels = [dict(Solicitud.ESTADOS).get(e['estado'], e['estado']) for e in estados_qs]
+    estados_data   = [e['total'] for e in estados_qs]
+
+    # Solicitudes por flujo
+    por_flujo = {
+        'f43':  solicitudes.filter(flujo=Solicitud.FLUJO_F43).count(),
+        'rats': solicitudes.filter(flujo=Solicitud.FLUJO_RATS).count(),
+    }
+
+    # Usuarios por rol
+    usuarios_por_rol = (
+        Usuario.objects
+        .values('rol')
+        .annotate(total=Count('id'))
+        .order_by('rol')
+    )
+    roles_labels = [dict(Usuario.ROLES).get(r['rol'], r['rol']) for r in usuarios_por_rol]
+    roles_data   = [r['total'] for r in usuarios_por_rol]
 
     contexto = {
-        'usuario': usuario,
+        'usuario':           usuario,
         'total_solicitudes': total,
         'tasa_aprobacion':   round((aprobadas / total * 100), 1) if total > 0 else 0,
         'usuarios_activos':  Usuario.objects.filter(is_active=True).count(),
-        'pendientes_firma':  solicitudes.filter(estado=Solicitud.ESTADO_EN_REVISION).count(),
-        'por_flujo': {
-            'f43':  solicitudes.filter(flujo=Solicitud.FLUJO_F43).count(),
-            'rats': solicitudes.filter(flujo=Solicitud.FLUJO_RATS).count(),
-        },
-        'por_estado': solicitudes.values('estado').annotate(total=Count('estado')),
+        'pendientes_firma':  pendientes,
+        'aprobadas':         aprobadas,
+        'denegadas':         denegadas,
+        'licencias_vigentes': Licencia.objects.filter(estado=Licencia.ESTADO_VIGENTE).count(),
+        'por_flujo':         por_flujo,
         'solicitudes_recientes': solicitudes.select_related(
                                      'solicitante', 'equipo'
                                  ).order_by('-fecha_creacion')[:8],
+
+        # Datos para Chart.js (JSON)
+        'chart_meses_labels':  json.dumps(meses_labels),
+        'chart_meses_data':    json.dumps(meses_data),
+        'chart_estados_labels': json.dumps(estados_labels),
+        'chart_estados_data':   json.dumps(estados_data),
+        'chart_roles_labels':   json.dumps(roles_labels),
+        'chart_roles_data':     json.dumps(roles_data),
     }
+
     return render(request, 'accounts/dashboard_directivo.html', contexto)
 
 # ─── Gestión de usuarios (directivo) ─────────────────────────────────────────
@@ -384,3 +456,68 @@ def togglear_usuario(request, pk):
         )
 
     return redirect('accounts:detalle_usuario', pk=pk)
+
+# ─── Perfil del usuario autenticado ──────────────────────────────────────────
+@never_cache
+@login_required
+def perfil(request):
+    from .forms import FormularioEditarPerfil
+    usuario = request.user
+
+    if request.method == 'POST':
+        form = FormularioEditarPerfil(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Su perfil ha sido actualizado correctamente.')
+            return redirect('accounts:perfil')
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario.')
+    else:
+        form = FormularioEditarPerfil(instance=usuario)
+
+    from apps.solicitudes.models import Solicitud
+    solicitudes = Solicitud.objects.filter(solicitante=usuario)
+
+    return render(request, 'accounts/perfil.html', {
+        'form':    form,
+        'usuario': usuario,
+        'estadisticas': {
+            'total':      solicitudes.count(),
+            'aprobadas':  solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count(),
+            'pendientes': solicitudes.filter(estado__in=[
+                              Solicitud.ESTADO_ENVIADA,
+                              Solicitud.ESTADO_EN_REVISION
+                          ]).count(),
+        }
+    })
+
+
+@never_cache
+@login_required
+def cambiar_mi_password(request):
+    from .forms import FormularioCambiarMiPassword
+
+    if request.method == 'POST':
+        form = FormularioCambiarMiPassword(request.POST)
+        if form.is_valid():
+            usuario = request.user
+            # Verificar contraseña actual
+            if not usuario.check_password(form.cleaned_data['password_actual']):
+                form.add_error('password_actual', 'La contraseña actual es incorrecta.')
+                return render(request, 'accounts/cambiar_password.html', {'form': form})
+
+            usuario.set_password(form.cleaned_data['password_nueva1'])
+            usuario.save()
+
+            # Mantener sesión activa tras cambio de contraseña
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, usuario)
+
+            messages.success(request, 'Su contraseña ha sido actualizada correctamente.')
+            return redirect('accounts:perfil')
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario.')
+    else:
+        form = FormularioCambiarMiPassword()
+
+    return render(request, 'accounts/cambiar_password.html', {'form': form})

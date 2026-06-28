@@ -4,10 +4,10 @@
 {% block nav_dir_inicio %}activo{% endblock %}
 
 {% block breadcrumb %}
-  <li style="display:flex;align-items:center;gap:var(--espacio-2);">
-    <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
-    <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Inicio</span>
-  </li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Inicio</span>
+</li>
 {% endblock %}
 
 {% block contenido %}
@@ -16,6 +16,7 @@
   <p class="pagina-subtitulo">Resumen ejecutivo del sistema de gestión de trámites.</p>
 </div>
 
+<!-- Estadísticas principales -->
 <div class="grid-4 mb-8">
   <div class="stat-card">
     <div class="stat-card-icono primario">
@@ -55,54 +56,166 @@
   </div>
 </div>
 
-<div class="grid-2 mb-8">
-  <div class="tarjeta">
-    <div class="tarjeta-cabecera">
-      <h2 class="tarjeta-titulo">Solicitudes por tipo de flujo</h2>
+<!-- Segunda fila de stats -->
+<div class="grid-4 mb-8">
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
     </div>
-    <div class="tarjeta-cuerpo">
-      <div style="display:flex;flex-direction:column;gap:var(--espacio-4);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-            <div style="width:12px;height:12px;border-radius:50%;background-color:var(--color-primario);"></div>
-            <span style="font-size:var(--texto-sm);">Flujo F43</span>
-          </div>
-          <span style="font-size:var(--texto-sm);font-weight:var(--peso-semi);">{{ por_flujo.f43 }}</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-            <div style="width:12px;height:12px;border-radius:50%;background-color:var(--color-advertencia);"></div>
-            <span style="font-size:var(--texto-sm);">Flujo RATS</span>
-          </div>
-          <span style="font-size:var(--texto-sm);font-weight:var(--peso-semi);">{{ por_flujo.rats }}</span>
-        </div>
-      </div>
+    <div>
+      <div class="stat-card-valor">{{ aprobadas }}</div>
+      <div class="stat-card-etiqueta">Aprobadas</div>
     </div>
   </div>
-
-  <div class="tarjeta">
-    <div class="tarjeta-cabecera">
-      <h2 class="tarjeta-titulo">Solicitudes por estado</h2>
+  <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
     </div>
-    <div class="tarjeta-cuerpo">
-      <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
-        {% for item in por_estado %}
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:var(--texto-sm);color:var(--color-texto-secundario);">{{ item.estado|capfirst }}</span>
-          <span style="font-size:var(--texto-sm);font-weight:var(--peso-semi);">{{ item.total }}</span>
-        </div>
-        {% empty %}
-        <p style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Sin datos aún.</p>
-        {% endfor %}
-      </div>
+    <div>
+      <div class="stat-card-valor">{{ denegadas }}</div>
+      <div class="stat-card-etiqueta">Denegadas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono primario">
+      <i data-lucide="file-badge" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ licencias_vigentes }}</div>
+      <div class="stat-card-etiqueta">Licencias vigentes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono info">
+      <i data-lucide="inbox" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ por_flujo.f43 }}</div>
+      <div class="stat-card-etiqueta">Flujo F43</div>
     </div>
   </div>
 </div>
 
+<!-- Gráficas -->
+<div class="grid-2 mb-8">
+
+  <!-- Gráfica de línea: solicitudes por mes -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="trending-up" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Solicitudes por mes</h2>
+      </div>
+      <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">Últimos 6 meses</span>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <div style="position:relative;height:240px;">
+        <canvas id="chart-meses"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfica de dona: solicitudes por estado -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="pie-chart" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Solicitudes por estado</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo" style="display:flex;align-items:center;justify-content:center;">
+      <div style="position:relative;height:240px;width:240px;">
+        <canvas id="chart-estados"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="grid-2 mb-8">
+
+  <!-- Gráfica de barras: usuarios por rol -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="bar-chart-2" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Usuarios por rol</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      <div style="position:relative;height:240px;">
+        <canvas id="chart-roles"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen flujos -->
+  <div class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="git-branch" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Distribución por flujo</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo">
+      {% if total_solicitudes > 0 %}
+        <!-- F43 -->
+        <div style="margin-bottom:var(--espacio-5);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--espacio-2);">
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Flujo F43</span>
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">
+              {{ por_flujo.f43 }} solicitudes
+            </span>
+          </div>
+          <div style="height:8px;background:var(--color-fondo);border-radius:var(--radio-full);overflow:hidden;">
+            <div style="height:100%;width:{% widthratio por_flujo.f43 total_solicitudes 100 %}%;background:var(--color-primario);border-radius:var(--radio-full);transition:width 0.5s ease;"></div>
+          </div>
+        </div>
+        <!-- RATS -->
+        <div style="margin-bottom:var(--espacio-5);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--espacio-2);">
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Flujo RATS</span>
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">
+              {{ por_flujo.rats }} solicitudes
+            </span>
+          </div>
+          <div style="height:8px;background:var(--color-fondo);border-radius:var(--radio-full);overflow:hidden;">
+            <div style="height:100%;width:{% widthratio por_flujo.rats total_solicitudes 100 %}%;background:var(--color-advertencia);border-radius:var(--radio-full);transition:width 0.5s ease;"></div>
+          </div>
+        </div>
+        <!-- Aprobadas -->
+        <div style="margin-bottom:var(--espacio-5);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--espacio-2);">
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">Tasa de aprobación</span>
+            <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">{{ tasa_aprobacion }}%</span>
+          </div>
+          <div style="height:8px;background:var(--color-fondo);border-radius:var(--radio-full);overflow:hidden;">
+            <div style="height:100%;width:{{ tasa_aprobacion }}%;background:var(--color-secundario);border-radius:var(--radio-full);transition:width 0.5s ease;"></div>
+          </div>
+        </div>
+      {% else %}
+        <div style="text-align:center;padding:var(--espacio-8);color:var(--color-texto-muted);">
+          <p style="font-size:var(--texto-sm);">Sin datos aún.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Solicitudes recientes -->
 <div class="tarjeta">
   <div class="tarjeta-cabecera">
     <h2 class="tarjeta-titulo">Solicitudes recientes</h2>
-    <a href="#" class="btn btn-secundario btn-sm">Ver todas</a>
+    <a href="{% url 'solicitudes:lista' %}" class="btn btn-secundario btn-sm">Ver todas</a>
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if solicitudes_recientes %}
@@ -113,20 +226,28 @@
               <th>Número</th>
               <th>Tipo</th>
               <th>Solicitante</th>
-              <th>Equipo</th>
               <th>Estado</th>
               <th>Fecha</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {% for s in solicitudes_recientes %}
             <tr>
-              <td><span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ s.numero }}</span></td>
+              <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
+                {{ s.numero }}
+              </td>
               <td><span class="badge badge-info">{{ s.get_flujo_display }}</span></td>
               <td>{{ s.solicitante.get_nombre_completo }}</td>
-              <td style="color:var(--color-texto-secundario);">{{ s.equipo|default:"—" }}</td>
               <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
-              <td style="color:var(--color-texto-muted);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
+              <td style="color:var(--color-texto-muted);white-space:nowrap;">
+                {{ s.fecha_creacion|date:"d/m/Y H:i" }}
+              </td>
+              <td>
+                <a href="{% url 'solicitudes:detalle' s.pk %}" class="btn btn-ghost btn-sm">
+                  <i data-lucide="eye" style="width:15px;height:15px;"></i>
+                </a>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -134,10 +255,170 @@
       </div>
     {% else %}
       <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
-        <i data-lucide="inbox" style="width:40px;height:40px;margin-bottom:var(--espacio-4);opacity:0.4;"></i>
+        <i data-lucide="inbox" style="width:40px;height:40px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
         <p style="font-size:var(--texto-sm);">No hay solicitudes registradas aún.</p>
       </div>
     {% endif %}
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const COLORES = {
+    primario:    '#1A3A5C',
+    secundario:  '#2E7D32',
+    acento:      '#C62828',
+    advertencia: '#F57F17',
+    info:        '#0277BD',
+    muted:       '#8A94A6',
+  };
+
+  const COLORES_ESTADOS = [
+    '#8A94A6', // borrador
+    '#F57F17', // enviada
+    '#0277BD', // en revisión
+    '#2E7D32', // aprobada
+    '#C62828', // denegada
+    '#5A6070', // cancelada
+  ];
+
+  Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = '#5A6070';
+
+  // ── Gráfica de línea: solicitudes por mes ──────────────────────────────────
+  new Chart(document.getElementById('chart-meses'), {
+    type: 'line',
+    data: {
+      labels: {{ chart_meses_labels|safe }},
+      datasets: [{
+        label: 'Solicitudes',
+        data:  {{ chart_meses_data|safe }},
+        borderColor:     COLORES.primario,
+        backgroundColor: 'rgba(26,58,92,0.08)',
+        borderWidth:     2.5,
+        pointBackgroundColor: COLORES.primario,
+        pointRadius:     4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A3A5C',
+          titleColor:      'white',
+          bodyColor:       'rgba(255,255,255,0.8)',
+          padding:         10,
+          cornerRadius:    8,
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, precision: 0 },
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          border: { display: false },
+        }
+      }
+    }
+  });
+
+  // ── Gráfica de dona: solicitudes por estado ────────────────────────────────
+  new Chart(document.getElementById('chart-estados'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ chart_estados_labels|safe }},
+      datasets: [{
+        data:            {{ chart_estados_data|safe }},
+        backgroundColor: COLORES_ESTADOS,
+        borderWidth:     2,
+        borderColor:     'white',
+        hoverOffset:     6,
+      }]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding:   16,
+            boxWidth:  12,
+            boxHeight: 12,
+            usePointStyle: true,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1A3A5C',
+          titleColor:      'white',
+          bodyColor:       'rgba(255,255,255,0.8)',
+          padding:         10,
+          cornerRadius:    8,
+        }
+      }
+    }
+  });
+
+  // ── Gráfica de barras: usuarios por rol ────────────────────────────────────
+  new Chart(document.getElementById('chart-roles'), {
+    type: 'bar',
+    data: {
+      labels: {{ chart_roles_labels|safe }},
+      datasets: [{
+        label: 'Usuarios',
+        data:  {{ chart_roles_data|safe }},
+        backgroundColor: [
+          'rgba(26,58,92,0.8)',
+          'rgba(46,125,50,0.8)',
+          'rgba(2,119,189,0.8)',
+          'rgba(245,127,23,0.8)',
+          'rgba(198,40,40,0.8)',
+        ],
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A3A5C',
+          titleColor:      'white',
+          bodyColor:       'rgba(255,255,255,0.8)',
+          padding:         10,
+          cornerRadius:    8,
+        }
+      },
+      scales: {
+        x: {
+          grid:   { display: false },
+          border: { display: false },
+          ticks:  { maxRotation: 0 },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, precision: 0 },
+          grid:   { color: 'rgba(0,0,0,0.05)' },
+          border: { display: false },
+        }
+      }
+    }
+  });
+</script>
 {% endblock %}
