@@ -58,7 +58,7 @@
 <div class="tarjeta">
   <div class="tarjeta-cabecera">
     <h2 class="tarjeta-titulo">Solicitudes pendientes de atención</h2>
-    <a href="#" class="btn btn-secundario btn-sm">Ver todas</a>
+    <a href="{% url 'solicitudes:lista' %}" class="btn btn-secundario btn-sm">Ver todas</a>
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if solicitudes_recientes %}
@@ -85,7 +85,7 @@
               <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
               <td style="color:var(--color-texto-muted);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
               <td>
-                <a href="#" class="btn btn-ghost btn-sm">
+                <a href="{% url 'solicitudes:detalle' s.pk %}" class="btn btn-ghost btn-sm">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </a>
               </td>

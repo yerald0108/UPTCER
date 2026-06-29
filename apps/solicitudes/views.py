@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.utils import timezone
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Solicitud, HistorialSolicitud
 from .forms import FormularioF43
 from apps.notificaciones.servicios import (
@@ -117,12 +118,23 @@ def nueva_solicitud_f43(request):
 @never_cache
 @login_required
 def mis_solicitudes(request):
-    solicitudes = Solicitud.objects.filter(
+    solicitudes_qs = Solicitud.objects.filter(
         solicitante=request.user
     ).order_by('-fecha_creacion')
 
+    paginator = Paginator(solicitudes_qs, 10)
+    pagina    = request.GET.get('pagina', 1)
+
+    try:
+        solicitudes = paginator.page(pagina)
+    except PageNotAnInteger:
+        solicitudes = paginator.page(1)
+    except EmptyPage:
+        solicitudes = paginator.page(paginator.num_pages)
+
     return render(request, 'solicitudes/mis_solicitudes.html', {
         'solicitudes': solicitudes,
+        'paginator':   paginator,
     })
 
 
@@ -246,25 +258,45 @@ def lista_solicitudes(request):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
-    solicitudes = Solicitud.objects.select_related(
+    solicitudes_qs = Solicitud.objects.select_related(
         'solicitante', 'operador_asignado'
     ).order_by('-fecha_creacion')
 
     # Filtros
     estado = request.GET.get('estado', '')
     flujo  = request.GET.get('flujo', '')
+    q      = request.GET.get('q', '').strip()
 
     if estado:
-        solicitudes = solicitudes.filter(estado=estado)
+        solicitudes_qs = solicitudes_qs.filter(estado=estado)
     if flujo:
-        solicitudes = solicitudes.filter(flujo=flujo)
+        solicitudes_qs = solicitudes_qs.filter(flujo=flujo)
+    if q:
+        from django.db.models import Q
+        solicitudes_qs = solicitudes_qs.filter(
+            Q(numero__icontains=q) |
+            Q(solicitante__nombre__icontains=q) |
+            Q(solicitante__apellidos__icontains=q)
+        )
+
+    paginator = Paginator(solicitudes_qs, 15)
+    pagina    = request.GET.get('pagina', 1)
+
+    try:
+        solicitudes = paginator.page(pagina)
+    except PageNotAnInteger:
+        solicitudes = paginator.page(1)
+    except EmptyPage:
+        solicitudes = paginator.page(paginator.num_pages)
 
     return render(request, 'solicitudes/lista.html', {
-        'solicitudes': solicitudes,
+        'solicitudes':   solicitudes,
+        'paginator':     paginator,
         'estado_actual': estado,
         'flujo_actual':  flujo,
-        'ESTADOS': Solicitud.ESTADOS,
-        'FLUJOS':  Solicitud.FLUJOS,
+        'busqueda':      q,
+        'ESTADOS':       Solicitud.ESTADOS,
+        'FLUJOS':        Solicitud.FLUJOS,
     })
     
 # ─── Cola de evaluaciones del especialista ────────────────────────────────────

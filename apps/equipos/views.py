@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.db.models import Q
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import CategoriaEquipo, Equipo
 from .forms import FormularioEquipo, FormularioCategoria
 
@@ -11,34 +12,44 @@ from .forms import FormularioEquipo, FormularioCategoria
 @never_cache
 @login_required
 def lista_equipos(request):
-    equipos = Equipo.objects.select_related('categoria').filter(activo=True)
+    equipos_qs = Equipo.objects.select_related('categoria').filter(activo=True)
 
-    # Filtros
-    busqueda   = request.GET.get('q', '').strip()
-    categoria  = request.GET.get('categoria', '')
-    banda      = request.GET.get('banda', '')
+    busqueda  = request.GET.get('q', '').strip()
+    categoria = request.GET.get('categoria', '')
+    banda     = request.GET.get('banda', '')
 
     if busqueda:
-        equipos = equipos.filter(
+        equipos_qs = equipos_qs.filter(
             Q(nombre__icontains=busqueda) |
             Q(marca__icontains=busqueda)  |
             Q(modelo__icontains=busqueda)
         )
     if categoria:
-        equipos = equipos.filter(categoria__id=categoria)
+        equipos_qs = equipos_qs.filter(categoria__id=categoria)
     if banda:
-        equipos = equipos.filter(banda_frecuencia=banda)
+        equipos_qs = equipos_qs.filter(banda_frecuencia=banda)
 
     categorias = CategoriaEquipo.objects.all()
 
+    paginator = Paginator(equipos_qs, 15)
+    pagina    = request.GET.get('pagina', 1)
+
+    try:
+        equipos = paginator.page(pagina)
+    except PageNotAnInteger:
+        equipos = paginator.page(1)
+    except EmptyPage:
+        equipos = paginator.page(paginator.num_pages)
+
     return render(request, 'equipos/lista.html', {
-        'equipos':        equipos,
-        'categorias':     categorias,
-        'busqueda':       busqueda,
-        'categoria_sel':  categoria,
-        'banda_sel':      banda,
-        'BANDAS':         Equipo.BANDAS,
-        'total':          equipos.count(),
+        'equipos':       equipos,
+        'categorias':    categorias,
+        'busqueda':      busqueda,
+        'categoria_sel': categoria,
+        'banda_sel':     banda,
+        'BANDAS':        Equipo.BANDAS,
+        'total':         equipos_qs.count(),
+        'paginator':     paginator,
     })
 
 

@@ -75,7 +75,10 @@
               </td>
               <td style="color:var(--color-texto-muted);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
               <td>
-                <a href="#" class="btn btn-primario btn-sm">Evaluar</a>
+                <a href="{% url 'solicitudes:evaluar' s.pk %}" class="btn btn-primario btn-sm">
+                  <i data-lucide="clipboard-check" style="width:14px;height:14px;"></i>
+                  Evaluar
+                </a>
               </td>
             </tr>
             {% endfor %}

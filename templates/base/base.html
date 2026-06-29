@@ -88,7 +88,7 @@
         <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">          <i data-lucide="clipboard-check" class="icono"></i>
           <span class="sidebar-enlace-texto">Evaluaciones</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_equipos_no_listados %}{% endblock %}" data-tooltip="Equipos No Listados">
+        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_equipos_no_listados %}{% endblock %}" data-tooltip="Equipos No Listados">
           <i data-lucide="alert-circle" class="icono"></i>
           <span class="sidebar-enlace-texto">Equipos No Listados</span>
         </a>
@@ -104,7 +104,7 @@
           <i data-lucide="package-search" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes RATS</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_verificar %}{% endblock %}" data-tooltip="Verificar Permiso">
+        <a href="{% url 'licencias:lista' %}" class="sidebar-enlace {% block nav_verificar %}{% endblock %}" data-tooltip="Verificar Permiso">
           <i data-lucide="shield-check" class="icono"></i>
           <span class="sidebar-enlace-texto">Verificar Permiso</span>
         </a>
@@ -116,9 +116,9 @@
           <i data-lucide="layout-dashboard" class="icono"></i>
           <span class="sidebar-enlace-texto">Inicio</span>
         </a>
-        <a href="#" class="sidebar-enlace {% block nav_reportes %}{% endblock %}" data-tooltip="Reportes">
+        <a href="{% url 'solicitudes:lista' %}" class="sidebar-enlace {% block nav_reportes %}{% endblock %}" data-tooltip="Solicitudes y Reportes">
           <i data-lucide="bar-chart-2" class="icono"></i>
-          <span class="sidebar-enlace-texto">Reportes</span>
+          <span class="sidebar-enlace-texto">Solicitudes y Reportes</span>
         </a>
         <a href="{% url 'accounts:lista_usuarios' %}" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">          <i data-lucide="users" class="icono"></i>
           <span class="sidebar-enlace-texto">Usuarios</span>

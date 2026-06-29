@@ -64,7 +64,7 @@
 <div class="tarjeta">
   <div class="tarjeta-cabecera">
     <h2 class="tarjeta-titulo">Solicitudes recientes</h2>
-    <a href="#" class="btn btn-secundario btn-sm">Ver todas</a>
+    <a href="{% url 'solicitudes:mis_solicitudes' %}" class="btn btn-secundario btn-sm">Ver todas</a>
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if solicitudes_recientes %}

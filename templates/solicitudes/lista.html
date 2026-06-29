@@ -44,6 +44,15 @@
           {% endfor %}
         </select>
       </div>
+      <div class="campo-grupo" style="margin-bottom:0;flex:1;min-width:200px;">
+        <label class="campo-etiqueta">Buscar</label>
+        <div style="position:relative;">
+          <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--color-texto-muted);"></i>
+          <input type="text" name="q" value="{{ busqueda }}"
+            class="campo-input" style="padding-left:36px;"
+            placeholder="Número o nombre del solicitante...">
+        </div>
+      </div>
       {% if estado_actual or flujo_actual %}
         <a href="{% url 'solicitudes:lista' %}" class="btn btn-ghost">
           <i data-lucide="x" style="width:15px;height:15px;"></i>
@@ -108,6 +117,7 @@
         <p style="font-size:var(--texto-sm);">No se encontraron solicitudes con los filtros aplicados.</p>
       </div>
     {% endif %}
+    {% include 'base/paginacion.html' with page_obj=solicitudes %}
   </div>
 </div>
 {% endblock %}

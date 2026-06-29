@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UPTCER — Sistema de Gestión de Permisos de Telecomunicaciones</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul-oscuro:    #0B1E33;
+      --azul-medio:     #1A3A5C;
+      --azul-claro:     #2563A8;
+      --azul-brillo:    #3B82F6;
+      --azul-glass:     rgba(37, 99, 168, 0.15);
+      --linea:          rgba(255,255,255,0.08);
+      --texto-blanco:   #FFFFFF;
+      --texto-suave:    rgba(255,255,255,0.65);
+      --texto-muted:    rgba(255,255,255,0.35);
+      --verde:          #22C55E;
+      --oro:            #F59E0B;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--azul-oscuro);
+      color: var(--texto-blanco);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Navbar ──────────────────────────────────────────────────────────── */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(24px, 5vw, 80px);
+      height: 68px;
+      background: rgba(11, 30, 51, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--linea);
+    }
+
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .navbar-logo-icono {
+      width: 36px; height: 36px;
+      background: var(--azul-claro);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .navbar-logo-texto {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--texto-blanco);
+    }
+
+    .navbar-logo-sub {
+      font-size: 11px;
+      color: var(--texto-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: block;
+      margin-top: -2px;
+    }
+
+    .btn-acceso {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      background: var(--azul-claro);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 0 0 rgba(59,130,246,0);
+    }
+
+    .btn-acceso:hover {
+      background: var(--azul-brillo);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(59,130,246,0.35);
+    }
+
+    /* ── Hero ────────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px clamp(24px, 5vw, 80px) 80px;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    /* Fondo con gradiente radial */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(37,99,168,0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 20% 80%, rgba(11,30,51,0.8) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Grid de puntos de fondo */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* Onda de señal SVG animada — el elemento firma */
+    .hero-onda {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 900px;
+      height: 400px;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+
+    .hero-onda path {
+      stroke-dasharray: 2000;
+      stroke-dashoffset: 2000;
+      animation: dibujar-onda 3s ease forwards;
+    }
+
+    @keyframes dibujar-onda {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Badge del ministerio */
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(37,99,168,0.2);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(147,197,253,1);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 1;
+      animation: aparecer 0.6s ease both;
+    }
+
+    .hero-badge-punto {
+      width: 6px; height: 6px;
+      background: var(--verde);
+      border-radius: 50%;
+      animation: pulsar 2s ease infinite;
+    }
+
+    @keyframes pulsar {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Título principal */
+    .hero-titulo {
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+      position: relative;
+      z-index: 1;
+      animation: subir 0.7s ease 0.1s both;
+    }
+
+    .hero-titulo-uptcer {
+      display: block;
+      background: linear-gradient(135deg, #FFFFFF 0%, rgba(147,197,253,0.9) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-titulo-linea {
+      display: block;
+      font-size: clamp(14px, 2.5vw, 22px);
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--texto-suave);
+      margin-top: 16px;
+    }
+
+    .hero-descripcion {
+      max-width: 600px;
+      margin: 28px auto 0;
+      font-size: clamp(16px, 2vw, 19px);
+      font-weight: 400;
+      color: var(--texto-suave);
+      line-height: 1.65;
+      position: relative;
+      z-index: 1;
+      animation: subir 0.7s ease 0.2s both;
+    }
+
+    .hero-acciones {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 44px;
+      position: relative;
+      z-index: 1;
+      animation: subir 0.7s ease 0.3s both;
+    }
+
+    .btn-hero-primario {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      background: var(--azul-claro);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 40px rgba(37,99,168,0.5), 0 4px 16px rgba(0,0,0,0.3);
+    }
+
+    .btn-hero-primario:hover {
+      background: var(--azul-brillo);
+      transform: translateY(-2px);
+      box-shadow: 0 0 60px rgba(59,130,246,0.5), 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .btn-hero-secundario {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 28px;
+      background: transparent;
+      color: var(--texto-suave);
+      border: 1px solid var(--linea);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-hero-secundario:hover {
+      border-color: rgba(255,255,255,0.2);
+      color: white;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* Stats bajo el hero */
+    .hero-stats {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+      margin-top: 64px;
+      padding-top: 40px;
+      border-top: 1px solid var(--linea);
+      position: relative;
+      z-index: 1;
+      animation: subir 0.7s ease 0.4s both;
+    }
+
+    .hero-stat {
+      text-align: center;
+    }
+
+    .hero-stat-valor {
+      font-size: 28px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-stat-etiqueta {
+      font-size: 12px;
+      color: var(--texto-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    .hero-stat-divisor {
+      width: 1px;
+      height: 40px;
+      background: var(--linea);
+    }
+
+    /* Animaciones de entrada */
+    @keyframes aparecer {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes subir {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Sección: Cómo funciona ──────────────────────────────────────────── */
+    .seccion {
+      padding: 100px clamp(24px, 5vw, 80px);
+      position: relative;
+    }
+
+    .seccion-etiqueta {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(147,197,253,0.8);
+      margin-bottom: 16px;
+    }
+
+    .seccion-titulo {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: white;
+      max-width: 580px;
+    }
+
+    .seccion-titulo span {
+      color: rgba(147,197,253,0.8);
+    }
+
+    /* Flujo de pasos */
+    .flujo {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 64px;
+      position: relative;
+    }
+
+    .flujo::before {
+      content: '';
+      position: absolute;
+      top: 48px;
+      left: calc(16.66% + 24px);
+      right: calc(16.66% + 24px);
+      height: 1px;
+      background: linear-gradient(90deg,
+        rgba(59,130,246,0.6) 0%,
+        rgba(59,130,246,0.2) 50%,
+        rgba(59,130,246,0.6) 100%
+      );
+    }
+
+    .flujo-paso {
+      padding: 40px 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--linea);
+      position: relative;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .flujo-paso:first-child { border-radius: 16px 0 0 16px; }
+    .flujo-paso:last-child  { border-radius: 0 16px 16px 0; }
+
+    .flujo-paso:hover {
+      background: rgba(37,99,168,0.12);
+      border-color: rgba(59,130,246,0.3);
+    }
+
+    .flujo-paso-numero {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--azul-medio);
+      border: 2px solid rgba(59,130,246,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: rgba(147,197,253,1);
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .flujo-paso-icono {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .flujo-paso-titulo {
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .flujo-paso-desc {
+      font-size: 14px;
+      color: var(--texto-suave);
+      line-height: 1.7;
+    }
+
+    .flujo-paso-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+
+    /* ── Sección: Roles ──────────────────────────────────────────────────── */
+    .seccion-roles {
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid var(--linea);
+      border-bottom: 1px solid var(--linea);
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      margin-top: 56px;
+    }
+
+    .rol-card {
+      padding: 32px 24px;
+      border-right: 1px solid var(--linea);
+      transition: background 0.25s ease;
+      cursor: default;
+    }
+
+    .rol-card:last-child { border-right: none; }
+
+    .rol-card:hover {
+      background: rgba(37,99,168,0.1);
+    }
+
+    .rol-icono {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .rol-nombre {
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .rol-desc {
+      font-size: 12px;
+      color: var(--texto-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Sección: Características ────────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+
+    .feature-card {
+      padding: 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--linea);
+      border-radius: 14px;
+      transition: all 0.25s ease;
+    }
+
+    .feature-card:hover {
+      background: rgba(37,99,168,0.1);
+      border-color: rgba(59,130,246,0.25);
+      transform: translateY(-2px);
+    }
+
+    .feature-icono {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-titulo {
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      color: var(--texto-suave);
+      line-height: 1.65;
+    }
+
+    /* ── CTA final ───────────────────────────────────────────────────────── */
+    .cta-seccion {
+      padding: 100px clamp(24px, 5vw, 80px);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-seccion::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(37,99,168,0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-titulo {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      color: white;
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .cta-desc {
+      font-size: 18px;
+      color: var(--texto-suave);
+      margin: 20px auto 0;
+      max-width: 480px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-acciones {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    .footer {
+      padding: 32px clamp(24px, 5vw, 80px);
+      border-top: 1px solid var(--linea);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .footer-texto {
+      font-size: 13px;
+      color: var(--texto-muted);
+    }
+
+    .footer-texto strong {
+      color: var(--texto-suave);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .roles-grid   { grid-template-columns: repeat(3, 1fr); }
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .flujo        { grid-template-columns: 1fr; gap: 12px; }
+      .flujo::before { display: none; }
+      .flujo-paso:first-child { border-radius: 14px 14px 0 0; }
+      .flujo-paso:last-child  { border-radius: 0 0 14px 14px; }
+      .roles-grid   { grid-template-columns: repeat(2, 1fr); }
+      .features-grid { grid-template-columns: 1fr; }
+      .hero-stats   { gap: 24px; flex-wrap: wrap; justify-content: center; }
+      .footer       { flex-direction: column; text-align: center; }
+      .navbar-logo-sub { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .roles-grid   { grid-template-columns: 1fr; }
+      .rol-card     { border-right: none; border-bottom: 1px solid var(--linea); }
+      .btn-hero-secundario { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ────────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-logo">
+    <div class="navbar-logo-icono">
+      <i data-lucide="radio" style="width:18px;height:18px;color:white;"></i>
+    </div>
+    <div>
+      <span class="navbar-logo-texto">UPTCER</span>
+      <span class="navbar-logo-sub">Ministerio de Comunicaciones</span>
+    </div>
+  </div>
+  <a href="{% url 'accounts:login' %}" class="btn-acceso">
+    <i data-lucide="log-in" style="width:16px;height:16px;"></i>
+    Acceder al sistema
+  </a>
+</nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+
+  <!-- Onda de señal animada — elemento firma del diseño -->
+  <svg class="hero-onda" viewBox="0 0 900 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 200 Q50 100 100 200 T200 200 T300 200 T400 200 T500 200 T600 200 T700 200 T800 200 T900 200"
+      stroke="#3B82F6" stroke-width="2" fill="none"/>
+    <path d="M0 200 Q75 50 150 200 T300 200 T450 200 T600 200 T750 200 T900 200"
+      stroke="#2563A8" stroke-width="1.5" fill="none" style="animation-delay:0.5s"/>
+    <path d="M0 200 Q100 20 200 200 T400 200 T600 200 T800 200"
+      stroke="#1A3A5C" stroke-width="1" fill="none" style="animation-delay:1s"/>
+    <!-- Círculos concéntricos de señal -->
+    <circle cx="450" cy="200" r="60"  stroke="#3B82F6" stroke-width="1" fill="none" opacity="0.6"/>
+    <circle cx="450" cy="200" r="100" stroke="#3B82F6" stroke-width="0.8" fill="none" opacity="0.4"/>
+    <circle cx="450" cy="200" r="140" stroke="#3B82F6" stroke-width="0.6" fill="none" opacity="0.25"/>
+    <circle cx="450" cy="200" r="180" stroke="#3B82F6" stroke-width="0.4" fill="none" opacity="0.15"/>
+    <circle cx="450" cy="200" r="6"   fill="#3B82F6"/>
+  </svg>
+
+  <div class="hero-badge">
+    <span class="hero-badge-punto"></span>
+    Sistema activo — República de Cuba
+  </div>
+
+  <h1 class="hero-titulo">
+    <span class="hero-titulo-uptcer">UPTCER</span>
+    <span class="hero-titulo-linea">Sistema de Gestión de Permisos de Importación</span>
+  </h1>
+
+  <p class="hero-descripcion">
+    Plataforma digital oficial del Ministerio de Comunicaciones para la solicitud,
+    evaluación y aprobación de autorizaciones técnicas para la importación de
+    equipos de telecomunicaciones.
+  </p>
+
+  <div class="hero-acciones">
+    <a href="{% url 'accounts:login' %}" class="btn-hero-primario">
+      <i data-lucide="shield-check" style="width:20px;height:20px;"></i>
+      Iniciar sesión
+    </a>
+    <a href="#como-funciona" class="btn-hero-secundario">
+      <i data-lucide="arrow-down" style="width:16px;height:16px;"></i>
+      Cómo funciona
+    </a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-valor">5</div>
+      <div class="hero-stat-etiqueta">Roles de usuario</div>
+    </div>
+    <div class="hero-stat-divisor"></div>
+    <div class="hero-stat">
+      <div class="hero-stat-valor">2</div>
+      <div class="hero-stat-etiqueta">Flujos de trámite</div>
+    </div>
+    <div class="hero-stat-divisor"></div>
+    <div class="hero-stat">
+      <div class="hero-stat-valor">F43</div>
+      <div class="hero-stat-etiqueta">Modelo oficial</div>
+    </div>
+    <div class="hero-stat-divisor"></div>
+    <div class="hero-stat">
+      <div class="hero-stat-valor">100%</div>
+      <div class="hero-stat-etiqueta">Digital y trazable</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Cómo funciona ──────────────────────────────────────────────────────── -->
+<section class="seccion" id="como-funciona">
+  <div class="seccion-etiqueta">Flujo del trámite</div>
+  <h2 class="seccion-titulo">Del formulario a la <span>licencia oficial</span> en tres etapas</h2>
+
+  <div class="flujo">
+
+    <div class="flujo-paso">
+      <div class="flujo-paso-numero">01</div>
+      <div class="flujo-paso-icono" style="background:rgba(37,99,168,0.2);">
+        <i data-lucide="file-text" style="width:20px;height:20px;color:#93C5FD;"></i>
+      </div>
+      <div class="flujo-paso-titulo">Solicitud F43</div>
+      <div class="flujo-paso-desc">
+        La persona natural accede al sistema y llena el formulario oficial F43 en formato digital,
+        fiel al documento físico del Ministerio. Puede buscar el equipo en el catálogo o
+        registrarlo manualmente si no está listado.
+      </div>
+      <div class="flujo-paso-tag" style="background:rgba(37,99,168,0.2);color:#93C5FD;border:1px solid rgba(59,130,246,0.3);">
+        <i data-lucide="user" style="width:11px;height:11px;"></i>
+        Persona Natural
+      </div>
+    </div>
+
+    <div class="flujo-paso">
+      <div class="flujo-paso-numero">02</div>
+      <div class="flujo-paso-icono" style="background:rgba(245,158,11,0.15);">
+        <i data-lucide="clipboard-check" style="width:20px;height:20px;color:#FCD34D;"></i>
+      </div>
+      <div class="flujo-paso-titulo">Revisión y evaluación</div>
+      <div class="flujo-paso-desc">
+        El Operador revisa la solicitud. Si el equipo no está en el catálogo,
+        se deriva automáticamente al Especialista Técnico, quien evalúa la banda de
+        frecuencia y emite el criterio técnico oficial.
+      </div>
+      <div class="flujo-paso-tag" style="background:rgba(245,158,11,0.15);color:#FCD34D;border:1px solid rgba(245,158,11,0.3);">
+        <i data-lucide="users" style="width:11px;height:11px;"></i>
+        Operador / Especialista
+      </div>
+    </div>
+
+    <div class="flujo-paso">
+      <div class="flujo-paso-numero">03</div>
+      <div class="flujo-paso-icono" style="background:rgba(34,197,94,0.15);">
+        <i data-lucide="file-badge" style="width:20px;height:20px;color:#86EFAC;"></i>
+      </div>
+      <div class="flujo-paso-titulo">Licencia oficial</div>
+      <div class="flujo-paso-desc">
+        Al aprobar la solicitud, el sistema genera automáticamente la licencia de importación
+        con número único, datos del beneficiario y equipos autorizados.
+        Disponible para imprimir como documento oficial.
+      </div>
+      <div class="flujo-paso-tag" style="background:rgba(34,197,94,0.15);color:#86EFAC;border:1px solid rgba(34,197,94,0.3);">
+        <i data-lucide="check-circle" style="width:11px;height:11px;"></i>
+        Emisión automática
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Roles del sistema ──────────────────────────────────────────────────── -->
+<section class="seccion seccion-roles">
+  <div class="seccion-etiqueta">Actores del sistema</div>
+  <h2 class="seccion-titulo">Cinco roles, <span>un solo proceso</span></h2>
+
+  <div class="roles-grid">
+    <div class="rol-card">
+      <div class="rol-icono" style="background:rgba(37,99,168,0.2);">
+        <i data-lucide="user" style="width:20px;height:20px;color:#93C5FD;"></i>
+      </div>
+      <div class="rol-nombre">Persona Natural</div>
+      <div class="rol-desc">Crea y hace seguimiento de sus solicitudes de autorización técnica.</div>
+    </div>
+    <div class="rol-card">
+      <div class="rol-icono" style="background:rgba(168,85,247,0.2);">
+        <i data-lucide="inbox" style="width:20px;height:20px;color:#C4B5FD;"></i>
+      </div>
+      <div class="rol-nombre">Operador</div>
+      <div class="rol-desc">Recibe, procesa y resuelve las solicitudes. Gestiona el catálogo de equipos.</div>
+    </div>
+    <div class="rol-card">
+      <div class="rol-icono" style="background:rgba(245,158,11,0.2);">
+        <i data-lucide="cpu" style="width:20px;height:20px;color:#FCD34D;"></i>
+      </div>
+      <div class="rol-nombre">Especialista Técnico</div>
+      <div class="rol-desc">Evalúa equipos no listados y emite criterios técnicos sobre bandas de frecuencia.</div>
+    </div>
+    <div class="rol-card">
+      <div class="rol-icono" style="background:rgba(239,68,68,0.2);">
+        <i data-lucide="package-search" style="width:20px;height:20px;color:#FCA5A5;"></i>
+      </div>
+      <div class="rol-nombre">Aduana</div>
+      <div class="rol-desc">Registra equipos retenidos y gestiona el flujo RATS de retención aduanal.</div>
+    </div>
+    <div class="rol-card">
+      <div class="rol-icono" style="background:rgba(34,197,94,0.15);">
+        <i data-lucide="bar-chart-2" style="width:20px;height:20px;color:#86EFAC;"></i>
+      </div>
+      <div class="rol-nombre">Directivo</div>
+      <div class="rol-desc">Acceso completo. Gestiona usuarios y visualiza estadísticas ejecutivas.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Características ────────────────────────────────────────────────────── -->
+<section class="seccion">
+  <div class="seccion-etiqueta">Capacidades del sistema</div>
+  <h2 class="seccion-titulo">Todo el proceso, <span>completamente digitalizado</span></h2>
+
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icono" style="background:rgba(37,99,168,0.2);">
+        <i data-lucide="file-text" style="width:20px;height:20px;color:#93C5FD;"></i>
+      </div>
+      <div class="feature-titulo">Formulario F43 digital</div>
+      <div class="feature-desc">
+        El modelo F43 oficial se llena en pantalla con apariencia de hoja A4.
+        Al imprimir genera el documento físico oficial sin diferencias.
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icono" style="background:rgba(34,197,94,0.15);">
+        <i data-lucide="history" style="width:20px;height:20px;color:#86EFAC;"></i>
+      </div>
+      <div class="feature-titulo">Historial completo</div>
+      <div class="feature-desc">
+        Cada cambio de estado queda registrado con fecha, usuario responsable
+        y observaciones. Trazabilidad total del trámite.
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icono" style="background:rgba(245,158,11,0.15);">
+        <i data-lucide="bell" style="width:20px;height:20px;color:#FCD34D;"></i>
+      </div>
+      <div class="feature-titulo">Notificaciones automáticas</div>
+      <div class="feature-desc">
+        El sistema notifica automáticamente a los actores relevantes en cada
+        etapa del proceso. Sin necesidad de seguimiento manual.
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icono" style="background:rgba(168,85,247,0.2);">
+        <i data-lucide="database" style="width:20px;height:20px;color:#C4B5FD;"></i>
+      </div>
+      <div class="feature-titulo">Catálogo de equipos</div>
+      <div class="feature-desc">
+        Base de datos de equipos regulados con información de bandas de frecuencia.
+        Búsqueda en tiempo real integrada en el formulario F43.
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icono" style="background:rgba(239,68,68,0.15);">
+        <i data-lucide="file-badge" style="width:20px;height:20px;color:#FCA5A5;"></i>
+      </div>
+      <div class="feature-titulo">Licencias automáticas</div>
+      <div class="feature-desc">
+        Al aprobar una solicitud se genera automáticamente la licencia oficial
+        con número único. Imprimible como documento institucional.
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icono" style="background:rgba(20,184,166,0.15);">
+        <i data-lucide="shield-check" style="width:20px;height:20px;color:#5EEAD4;"></i>
+      </div>
+      <div class="feature-titulo">Acceso por roles</div>
+      <div class="feature-desc">
+        Cada usuario ve únicamente lo que le corresponde según su rol.
+        Control de acceso granular en cada vista y acción del sistema.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── CTA final ──────────────────────────────────────────────────────────── -->
+<section class="cta-seccion">
+  <h2 class="cta-titulo">El trámite ahora es digital, rápido y trazable</h2>
+  <p class="cta-desc">
+    Acceda con sus credenciales institucionales para gestionar sus solicitudes de autorización técnica.
+  </p>
+  <div class="cta-acciones">
+    <a href="{% url 'accounts:login' %}" class="btn-hero-primario">
+      <i data-lucide="log-in" style="width:20px;height:20px;"></i>
+      Acceder al sistema
+    </a>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-texto">
+    <strong>UPTCER</strong> — Sistema de Gestión de Permisos de Importación de Equipos de Telecomunicaciones
+  </div>
+  <div class="footer-texto">
+    Ministerio de Comunicaciones · República de Cuba
+  </div>
+</footer>
+
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

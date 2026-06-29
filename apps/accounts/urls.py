@@ -5,9 +5,13 @@ app_name = 'accounts'
 
 urlpatterns = [
     # Auth
-    path('',            views.vista_login,     name='login'),
-    path('logout/',     views.vista_logout,    name='logout'),
-    path('dashboard/',  views.vista_dashboard, name='dashboard'),
+    path('',                                views.vista_login,              name='login'),
+    path('logout/',                         views.vista_logout,             name='logout'),
+    path('dashboard/',                      views.vista_dashboard,          name='dashboard'),
+
+    # Perfil propio
+    path('perfil/',                         views.perfil,                   name='perfil'),
+    path('perfil/password/',                views.cambiar_mi_password,      name='mi_password'),
 
     # Gestión de usuarios
     path('usuarios/',                       views.lista_usuarios,           name='lista_usuarios'),
@@ -16,8 +20,4 @@ urlpatterns = [
     path('usuarios/<int:pk>/editar/',       views.editar_usuario,           name='editar_usuario'),
     path('usuarios/<int:pk>/password/',     views.cambiar_password_usuario, name='cambiar_password'),
     path('usuarios/<int:pk>/toggle/',       views.togglear_usuario,         name='toggle_usuario'),
-    
-    # Perfil propio
-    path('perfil/',            views.perfil,              name='perfil'),
-    path('perfil/password/',   views.cambiar_mi_password, name='mi_password'),
 ]

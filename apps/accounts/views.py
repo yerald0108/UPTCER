@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -276,33 +277,43 @@ def lista_usuarios(request):
         return redirect('accounts:dashboard')
 
     from .models import Usuario
-    usuarios = Usuario.objects.all().order_by('apellidos', 'nombre')
+    usuarios_qs = Usuario.objects.all().order_by('apellidos', 'nombre')
 
-    # Filtros
     rol    = request.GET.get('rol', '')
     activo = request.GET.get('activo', '')
     q      = request.GET.get('q', '').strip()
 
     if rol:
-        usuarios = usuarios.filter(rol=rol)
+        usuarios_qs = usuarios_qs.filter(rol=rol)
     if activo != '':
-        usuarios = usuarios.filter(is_active=activo == '1')
+        usuarios_qs = usuarios_qs.filter(is_active=activo == '1')
     if q:
         from django.db.models import Q
-        usuarios = usuarios.filter(
+        usuarios_qs = usuarios_qs.filter(
             Q(nombre__icontains=q) |
             Q(apellidos__icontains=q) |
             Q(username__icontains=q) |
             Q(email__icontains=q)
         )
 
+    paginator = Paginator(usuarios_qs, 15)
+    pagina    = request.GET.get('pagina', 1)
+
+    try:
+        usuarios = paginator.page(pagina)
+    except PageNotAnInteger:
+        usuarios = paginator.page(1)
+    except EmptyPage:
+        usuarios = paginator.page(paginator.num_pages)
+
     return render(request, 'accounts/usuarios/lista.html', {
-        'usuarios':    usuarios,
-        'rol_actual':  rol,
+        'usuarios':      usuarios,
+        'paginator':     paginator,
+        'rol_actual':    rol,
         'activo_actual': activo,
-        'busqueda':    q,
-        'ROLES':       Usuario.ROLES,
-        'total':       usuarios.count(),
+        'busqueda':      q,
+        'ROLES':         Usuario.ROLES,
+        'total':         usuarios_qs.count(),
     })
 
 

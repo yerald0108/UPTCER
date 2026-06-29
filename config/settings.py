@@ -196,7 +196,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ─── Autenticación ────────────────────────────────────────────────────────────
 AUTH_USER_MODEL = 'accounts.Usuario'
 LOGIN_URL = 'accounts:login'
-LOGIN_REDIRECT_URL = 'accounts:dashboard'
+LOGIN_REDIRECT_URL = 'bienvenida'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
 # ─── Clave primaria por defecto ───────────────────────────────────────────────

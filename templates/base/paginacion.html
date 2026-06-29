@@ -1,0 +1,105 @@
+{% if paginator.num_pages > 1 %}
+<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--espacio-4) var(--espacio-6);border-top:1px solid var(--color-borde);">
+
+  <!-- Info -->
+  <div style="font-size:var(--texto-sm);color:var(--color-texto-muted);">
+    Página {{ page_obj.number }} de {{ paginator.num_pages }}
+    &mdash;
+    {{ paginator.count }} resultado{{ paginator.count|pluralize }}
+  </div>
+
+  <!-- Controles -->
+  <div style="display:flex;align-items:center;gap:var(--espacio-2);">
+
+    <!-- Primera página -->
+    {% if page_obj.has_previous %}
+    <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}pagina=1"
+      style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-texto-muted);text-decoration:none;font-size:var(--texto-xs);transition:var(--transicion-rapida);"
+      onmouseover="this.style.borderColor='var(--color-primario)';this.style.color='var(--color-primario)'"
+      onmouseout="this.style.borderColor='var(--color-borde)';this.style.color='var(--color-texto-muted)'"
+      title="Primera página">
+      <i data-lucide="chevrons-left" style="width:14px;height:14px;"></i>
+    </a>
+
+    <!-- Página anterior -->
+    <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}pagina={{ page_obj.previous_page_number }}"
+      style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-texto-muted);text-decoration:none;font-size:var(--texto-xs);transition:var(--transicion-rapida);"
+      onmouseover="this.style.borderColor='var(--color-primario)';this.style.color='var(--color-primario)'"
+      onmouseout="this.style.borderColor='var(--color-borde)';this.style.color='var(--color-texto-muted)'"
+      title="Página anterior">
+      <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+    </a>
+    {% else %}
+    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-borde);font-size:var(--texto-xs);cursor:not-allowed;">
+      <i data-lucide="chevrons-left" style="width:14px;height:14px;"></i>
+    </span>
+    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-borde);font-size:var(--texto-xs);cursor:not-allowed;">
+      <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+    </span>
+    {% endif %}
+
+    <!-- Páginas numeradas -->
+    {% for num in paginator.page_range %}
+      {% if paginator.num_pages <= 7 %}
+        {% if page_obj.number == num %}
+          <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--color-primario);color:white;border-radius:var(--radio-md);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
+            {{ num }}
+          </span>
+        {% else %}
+          <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}pagina={{ num }}"
+            style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-texto-muted);text-decoration:none;font-size:var(--texto-xs);transition:var(--transicion-rapida);"
+            onmouseover="this.style.borderColor='var(--color-primario)';this.style.color='var(--color-primario)'"
+            onmouseout="this.style.borderColor='var(--color-borde)';this.style.color='var(--color-texto-muted)'">
+            {{ num }}
+          </a>
+        {% endif %}
+      {% else %}
+        {% if num == 1 or num == paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+          {% if page_obj.number == num %}
+            <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--color-primario);color:white;border-radius:var(--radio-md);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
+              {{ num }}
+            </span>
+          {% else %}
+            <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}pagina={{ num }}"
+              style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-texto-muted);text-decoration:none;font-size:var(--texto-xs);transition:var(--transicion-rapida);"
+              onmouseover="this.style.borderColor='var(--color-primario)';this.style.color='var(--color-primario)'"
+              onmouseout="this.style.borderColor='var(--color-borde)';this.style.color='var(--color-texto-muted)'">
+              {{ num }}
+            </a>
+          {% endif %}
+        {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+          <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--color-texto-muted);font-size:var(--texto-xs);">...</span>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    <!-- Página siguiente -->
+    {% if page_obj.has_next %}
+    <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}pagina={{ page_obj.next_page_number }}"
+      style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-texto-muted);text-decoration:none;font-size:var(--texto-xs);transition:var(--transicion-rapida);"
+      onmouseover="this.style.borderColor='var(--color-primario)';this.style.color='var(--color-primario)'"
+      onmouseout="this.style.borderColor='var(--color-borde)';this.style.color='var(--color-texto-muted)'"
+      title="Página siguiente">
+      <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+    </a>
+
+    <!-- Última página -->
+    <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}pagina={{ paginator.num_pages }}"
+      style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-texto-muted);text-decoration:none;font-size:var(--texto-xs);transition:var(--transicion-rapida);"
+      onmouseover="this.style.borderColor='var(--color-primario)';this.style.color='var(--color-primario)'"
+      onmouseout="this.style.borderColor='var(--color-borde)';this.style.color='var(--color-texto-muted)'"
+      title="Última página">
+      <i data-lucide="chevrons-right" style="width:14px;height:14px;"></i>
+    </a>
+    {% else %}
+    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-borde);font-size:var(--texto-xs);cursor:not-allowed;">
+      <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+    </span>
+    <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--color-borde);border-radius:var(--radio-md);color:var(--color-borde);font-size:var(--texto-xs);cursor:not-allowed;">
+      <i data-lucide="chevrons-right" style="width:14px;height:14px;"></i>
+    </span>
+    {% endif %}
+
+  </div>
+</div>
+{% endif %}
