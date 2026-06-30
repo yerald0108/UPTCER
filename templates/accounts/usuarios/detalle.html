@@ -43,9 +43,18 @@
       Cambiar contraseña
     </a>
     {% if usuario_obj.pk != user.pk %}
-    <form method="post" action="{% url 'accounts:toggle_usuario' usuario_obj.pk %}">
+    <form method="post" action="{% url 'accounts:toggle_usuario' usuario_obj.pk %}" id="form-toggle-usuario">
       {% csrf_token %}
-      <button type="submit" class="btn {% if usuario_obj.is_active %}btn-ghost{% else %}btn-primario{% endif %}">
+      <button type="button"
+        class="btn {% if usuario_obj.is_active %}btn-ghost{% else %}btn-primario{% endif %}"
+        onclick="confirmarAccion({
+          titulo: '{% if usuario_obj.is_active %}Desactivar usuario{% else %}Activar usuario{% endif %}',
+          mensaje: '{% if usuario_obj.is_active %}El usuario {{ usuario_obj.get_nombre_completo }} perderá el acceso al sistema inmediatamente.{% else %}El usuario {{ usuario_obj.get_nombre_completo }} recuperará el acceso al sistema.{% endif %}',
+          labelConfirmar: '{% if usuario_obj.is_active %}Sí, desactivar{% else %}Sí, activar{% endif %}',
+          tipo: '{% if usuario_obj.is_active %}peligro{% else %}info{% endif %}',
+          icono: '{% if usuario_obj.is_active %}user-x{% else %}user-check{% endif %}',
+          formId: \'form-toggle-usuario\'
+        })">
         <i data-lucide="{% if usuario_obj.is_active %}user-x{% else %}user-check{% endif %}" style="width:16px;height:16px;"></i>
         {% if usuario_obj.is_active %}Desactivar{% else %}Activar{% endif %}
       </button>

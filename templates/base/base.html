@@ -17,6 +17,7 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/global.css' %}">
   <link rel="stylesheet" href="{% static 'css/toast.css' %}">
+  <link rel="stylesheet" href="{% static 'css/modal.css' %}">
   {% block estilos_extra %}{% endblock %}
 </head>
 <body>
@@ -228,6 +229,30 @@
 
 <!-- Tooltip para sidebar colapsado -->
 <div id="sidebar-tooltip" class="sidebar-tooltip"></div>
+
+<!-- ── Modal de confirmación global ────────────────────────────────────── -->
+<div id="modal-confirmacion-global" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo-global">
+    <div class="modal-cabecera">
+      <div class="modal-icono peligro">
+        <i data-lucide="alert-triangle" style="width:24px;height:24px;"></i>
+      </div>
+      <div>
+        <div class="modal-titulo" id="modal-titulo-global">¿Está seguro?</div>
+        <div class="modal-subtitulo">Esta acción no se puede deshacer.</div>
+      </div>
+    </div>
+    <div class="modal-pie">
+      <span class="modal-esc-hint">ESC para cancelar</span>
+      <button type="button" class="btn btn-ghost" onclick="cerrarModal('modal-confirmacion-global')">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-peligro" data-confirmar onclick="_ejecutarConfirmacion()">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Overlay para móvil -->
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;" onclick="cerrarSidebar()"></div>

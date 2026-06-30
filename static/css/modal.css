@@ -1,0 +1,115 @@
+/* ─── Sistema de modales de confirmación ─────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espacio-4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--color-fondo-blanco);
+  border-radius: var(--radio-xl);
+  box-shadow: var(--sombra-xl);
+  width: 100%;
+  max-width: 460px;
+  transform: translateY(16px) scale(0.98);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.2s ease;
+  opacity: 0;
+}
+
+.modal-overlay.visible .modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal-cabecera {
+  padding: var(--espacio-6) var(--espacio-6) 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+}
+
+.modal-icono {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radio-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modal-icono.peligro  { background-color: #FFEBEE; color: var(--color-acento); }
+.modal-icono.warning  { background-color: #FFF8E1; color: var(--color-advertencia); }
+.modal-icono.info     { background-color: var(--color-primario-light); color: var(--color-primario); }
+
+.modal-titulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-bold);
+  color: var(--color-texto-principal);
+  line-height: 1.2;
+  margin-bottom: var(--espacio-2);
+}
+
+.modal-subtitulo {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.5;
+}
+
+.modal-cuerpo {
+  padding: var(--espacio-5) var(--espacio-6);
+}
+
+.modal-pie {
+  padding: var(--espacio-4) var(--espacio-6) var(--espacio-6);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espacio-3);
+}
+
+/* Separador opcional */
+.modal-divisor {
+  height: 1px;
+  background: var(--color-borde);
+  margin: 0 var(--espacio-6);
+}
+
+/* Cerrar con Escape — indicador visual */
+.modal-esc-hint {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-muted);
+  margin-right: auto;
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    border-radius: var(--radio-xl) var(--radio-xl) 0 0;
+    max-width: 100%;
+    transform: translateY(100%);
+  }
+  .modal-overlay.visible .modal {
+    transform: translateY(0);
+  }
+}

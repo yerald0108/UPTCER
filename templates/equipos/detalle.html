@@ -26,9 +26,18 @@
       <i data-lucide="pencil" style="width:16px;height:16px;"></i>
       Editar
     </a>
-    <form method="post" action="{% url 'equipos:desactivar' equipo.pk %}">
+    <form method="post" action="{% url 'equipos:desactivar' equipo.pk %}" id="form-toggle-equipo">
       {% csrf_token %}
-      <button type="submit" class="btn {% if equipo.activo %}btn-ghost{% else %}btn-primario{% endif %}">
+      <button type="button"
+        class="btn {% if equipo.activo %}btn-ghost{% else %}btn-primario{% endif %}"
+        onclick="confirmarAccion({
+          titulo: '{% if equipo.activo %}Desactivar equipo{% else %}Activar equipo{% endif %}',
+          mensaje: '{% if equipo.activo %}El equipo {{ equipo.nombre }} dejará de aparecer en el catálogo y en el buscador del formulario F43.{% else %}El equipo {{ equipo.nombre }} volverá a estar disponible en el catálogo.{% endif %}',
+          labelConfirmar: '{% if equipo.activo %}Sí, desactivar{% else %}Sí, activar{% endif %}',
+          tipo: '{% if equipo.activo %}warning{% else %}info{% endif %}',
+          icono: '{% if equipo.activo %}eye-off{% else %}eye{% endif %}',
+          formId: \'form-toggle-equipo\'
+        })">
         <i data-lucide="{% if equipo.activo %}eye-off{% else %}eye{% endif %}" style="width:16px;height:16px;"></i>
         {% if equipo.activo %}Desactivar{% else %}Activar{% endif %}
       </button>

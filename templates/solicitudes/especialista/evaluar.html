@@ -314,15 +314,17 @@
             Una vez emitido el criterio técnico esta acción no puede deshacerse. El solicitante recibirá una notificación automática.
           </p>
           <div style="display:flex;gap:var(--espacio-3);">
-            <button type="submit" name="accion" value="aprobar"
+            <button type="button"
+              name="accion" value="aprobar"
               class="btn btn-primario" style="flex:1;justify-content:center;background-color:var(--color-secundario);border-color:var(--color-secundario);"
-              onclick="return confirmarEvaluacion('aprobar')">
+              onclick="confirmarEvaluacion('aprobar')">
               <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
               Aprobar solicitud
             </button>
-            <button type="submit" name="accion" value="denegar"
+            <button type="button"
+              name="accion" value="denegar"
               class="btn btn-peligro" style="flex:1;justify-content:center;"
-              onclick="return confirmarEvaluacion('denegar')">
+              onclick="confirmarEvaluacion('denegar')">
               <i data-lucide="x-circle" style="width:18px;height:18px;"></i>
               Denegar solicitud
             </button>
@@ -404,10 +406,30 @@
       mostrarToast({ tipo: 'warning', mensaje: 'Indique si el equipo cumple con la normativa.' });
       return false;
     }
-    const texto = accion === 'aprobar'
-      ? '¿Confirma que desea APROBAR esta solicitud con el criterio técnico emitido?'
-      : '¿Confirma que desea DENEGAR esta solicitud con el criterio técnico emitido?';
-    return confirm(texto);
+
+    const esAprobacion = accion === 'aprobar';
+    const btnSubmit    = document.querySelector(`button[value="${accion}"]`);
+
+    confirmarAccion({
+      titulo:         esAprobacion ? 'Aprobar solicitud' : 'Denegar solicitud',
+      mensaje:        esAprobacion
+        ? 'Se aprobará la solicitud con el criterio técnico emitido y se generará la licencia de importación automáticamente.'
+        : 'Se denegará la solicitud con el criterio técnico emitido. El solicitante recibirá una notificación.',
+      labelConfirmar: esAprobacion ? 'Sí, aprobar' : 'Sí, denegar',
+      tipo:           esAprobacion ? 'info' : 'peligro',
+      icono:          esAprobacion ? 'check-circle' : 'x-circle',
+      onConfirmar: () => {
+        // Establecer el valor de acción y enviar el formulario
+        const inputAccion = document.createElement('input');
+        inputAccion.type  = 'hidden';
+        inputAccion.name  = 'accion';
+        inputAccion.value = accion;
+        document.getElementById('form-evaluacion').appendChild(inputAccion);
+        document.getElementById('form-evaluacion').submit();
+      }
+    });
+
+    return false;
   }
 </script>
 {% endblock %}

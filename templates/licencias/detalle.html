@@ -33,8 +33,9 @@
       </span>
     </div>
     <div style="display:flex;gap:8px;">
-      <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
-        <i data-lucide="printer" style="width:16px;height:16px;"></i>
+      <button type="button"
+        onclick="abrirModal('modal-revocar')"
+        class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">        <i data-lucide="printer" style="width:16px;height:16px;"></i>
         Imprimir / PDF
       </button>
       {% if user.es_operador or user.es_directivo %}
@@ -252,27 +253,32 @@
 </div>
 
 <!-- Modal de revocación -->
-<div id="modal-revocar"
-  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:var(--radio-lg);padding:var(--espacio-8);width:100%;max-width:480px;box-shadow:var(--sombra-xl);">
-    <h3 style="font-size:var(--texto-lg);font-weight:var(--peso-bold);margin-bottom:var(--espacio-2);">
-      Revocar licencia
-    </h3>
-    <p style="font-size:var(--texto-sm);color:var(--color-texto-muted);margin-bottom:var(--espacio-5);">
-      Esta acción no se puede deshacer. Especifique el motivo de revocación.
-    </p>
+<div id="modal-revocar" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-cabecera">
+      <div class="modal-icono peligro">
+        <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
+      </div>
+      <div>
+        <div class="modal-titulo">Revocar licencia</div>
+        <div class="modal-subtitulo">Esta acción no se puede deshacer. La licencia quedará inválida permanentemente.</div>
+      </div>
+    </div>
     <form method="post" action="{% url 'licencias:revocar' licencia.numero %}">
       {% csrf_token %}
-      <div class="campo-grupo">
-        <label class="campo-etiqueta requerido">Motivo de revocación</label>
-        <textarea name="motivo" class="campo-textarea" rows="3"
-          placeholder="Describa el motivo por el cual se revoca esta licencia..."
-          required></textarea>
+      <div class="modal-cuerpo">
+        <div class="campo-grupo" style="margin-bottom:0;">
+          <label class="campo-etiqueta requerido">Motivo de revocación</label>
+          <textarea name="motivo" class="campo-textarea" rows="3"
+            placeholder="Describa el motivo por el cual se revoca esta licencia..."
+            required></textarea>
+        </div>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:var(--espacio-3);">
-        <button type="button"
-          onclick="document.getElementById('modal-revocar').style.display='none'"
-          class="btn btn-ghost">Cancelar</button>
+      <div class="modal-pie">
+        <span class="modal-esc-hint">ESC para cancelar</span>
+        <button type="button" class="btn btn-ghost" onclick="cerrarModal('modal-revocar')">
+          Cancelar
+        </button>
         <button type="submit" class="btn btn-peligro">
           <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
           Confirmar revocación

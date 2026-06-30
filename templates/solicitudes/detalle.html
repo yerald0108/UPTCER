@@ -333,8 +333,7 @@
         </div>
       </div>
       <div class="tarjeta-cuerpo">
-        <form method="post" action="{% url 'solicitudes:cambiar_estado' solicitud.pk %}">
-          {% csrf_token %}
+        <form method="post" action="{% url 'solicitudes:cambiar_estado' solicitud.pk %}" id="form-cambiar-estado">          {% csrf_token %}
 
           <div class="campo-grupo">
             <label class="campo-etiqueta requerido">Cambiar estado a</label>
@@ -361,7 +360,8 @@
           </div>
 
           <div style="display:flex;justify-content:flex-end;gap:var(--espacio-3);">
-            <button type="submit" class="btn btn-primario">
+            <button type="button" class="btn btn-primario" id="btn-guardar-estado"
+              onclick="confirmarCambioEstado()">
               <i data-lucide="save" style="width:16px;height:16px;"></i>
               Guardar cambio de estado
             </button>
@@ -380,4 +380,43 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  function confirmarCambioEstado() {
+    const estadoSeleccionado = document.querySelector('input[name="estado_nuevo"]:checked');
+
+    if (!estadoSeleccionado) {
+      mostrarToast({ tipo: 'warning', mensaje: 'Seleccione un estado antes de continuar.' });
+      return;
+    }
+
+    const estado = estadoSeleccionado.value;
+    const esDenegacion = estado === 'denegada';
+    const esAprobacion = estado === 'aprobada';
+
+    if (esDenegacion) {
+      confirmarAccion({
+        titulo:         'Denegar solicitud',
+        mensaje:        'Esta acción notificará al solicitante que su solicitud ha sido denegada. ¿Desea continuar?',
+        labelConfirmar: 'Sí, denegar solicitud',
+        tipo:           'peligro',
+        icono:          'x-circle',
+        onConfirmar:    () => document.getElementById('form-cambiar-estado').submit(),
+      });
+    } else if (esAprobacion) {
+      confirmarAccion({
+        titulo:         'Aprobar solicitud',
+        mensaje:        'Se aprobará la solicitud y se generará automáticamente la licencia de importación. ¿Desea continuar?',
+        labelConfirmar: 'Sí, aprobar y generar licencia',
+        tipo:           'info',
+        icono:          'check-circle',
+        onConfirmar:    () => document.getElementById('form-cambiar-estado').submit(),
+      });
+    } else {
+      document.getElementById('form-cambiar-estado').submit();
+    }
+  }
+</script>
 {% endblock %}
