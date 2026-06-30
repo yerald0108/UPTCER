@@ -37,7 +37,7 @@
           <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Volver
         </a>
       {% endif %}
-      <span class="badge {{ solicitud.clase_badge }}" style="font-size:13px;padding:6px 14px;">
+      <span id="badge-estado-solicitud" class="badge {{ solicitud.clase_badge }}" style="font-size:13px;padding:6px 14px;">
         {{ solicitud.get_estado_display }}
       </span>
     </div>
@@ -384,6 +384,7 @@
 
 {% block scripts_extra %}
 <script>
+  // ── Cambio de estado via AJAX ──────────────────────────────────────────────
   function confirmarCambioEstado() {
     const estadoSeleccionado = document.querySelector('input[name="estado_nuevo"]:checked');
 
@@ -392,31 +393,126 @@
       return;
     }
 
-    const estado = estadoSeleccionado.value;
+    const estado      = estadoSeleccionado.value;
     const esDenegacion = estado === 'denegada';
     const esAprobacion = estado === 'aprobada';
+
+    const ejecutar = () => enviarCambioEstado();
 
     if (esDenegacion) {
       confirmarAccion({
         titulo:         'Denegar solicitud',
-        mensaje:        'Esta acción notificará al solicitante que su solicitud ha sido denegada. ¿Desea continuar?',
+        mensaje:        'Esta acción notificará al solicitante que su solicitud ha sido denegada.',
         labelConfirmar: 'Sí, denegar solicitud',
         tipo:           'peligro',
         icono:          'x-circle',
-        onConfirmar:    () => document.getElementById('form-cambiar-estado').submit(),
+        onConfirmar:    ejecutar,
       });
     } else if (esAprobacion) {
       confirmarAccion({
         titulo:         'Aprobar solicitud',
-        mensaje:        'Se aprobará la solicitud y se generará automáticamente la licencia de importación. ¿Desea continuar?',
+        mensaje:        'Se aprobará la solicitud y se generará automáticamente la licencia de importación.',
         labelConfirmar: 'Sí, aprobar y generar licencia',
         tipo:           'info',
         icono:          'check-circle',
-        onConfirmar:    () => document.getElementById('form-cambiar-estado').submit(),
+        onConfirmar:    ejecutar,
       });
     } else {
-      document.getElementById('form-cambiar-estado').submit();
+      ejecutar();
     }
+  }
+
+  function enviarCambioEstado() {
+    const form     = document.getElementById('form-cambiar-estado');
+    const btn      = document.getElementById('btn-guardar-estado');
+    const formData = new FormData(form);
+
+    // Estado de carga manual en el botón
+    const textoOriginal = btn.innerHTML;
+    btn.disabled    = true;
+    btn.style.opacity = '0.75';
+    btn.innerHTML = `
+      <span style="display:inline-flex;align-items:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+          style="animation:girar 0.7s linear infinite;"
+          xmlns="http://www.w3.org/2000/svg">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"
+            stroke-dasharray="25" stroke-dashoffset="10" opacity="0.4"/>
+          <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Guardando...</span>
+      </span>
+    `;
+
+    fetch(form.action, {
+      method:  'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body:    formData,
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        // Actualizar badge de estado en la barra de acciones
+        const badgeEstado = document.getElementById('badge-estado-solicitud');
+        if (badgeEstado) {
+          badgeEstado.textContent = data.estado_label;
+          badgeEstado.className   = `badge ${data.clase_badge}`;
+          badgeEstado.style.fontSize = '13px';
+          badgeEstado.style.padding  = '6px 14px';
+        }
+
+        // Toast de éxito
+        mostrarToast({
+          tipo:    'success',
+          titulo:  'Estado actualizado',
+          mensaje: `La solicitud cambió a "${data.estado_label}" correctamente.`,
+        });
+
+        // Si se generó una licencia, mostrar enlace
+        if (data.licencia_numero) {
+          mostrarToast({
+            tipo:    'info',
+            titulo:  'Licencia generada',
+            mensaje: `Licencia ${data.licencia_numero} creada automáticamente.`,
+            duracion: 6000,
+          });
+          // Recargar para mostrar el panel de licencia y ocultar el formulario
+          setTimeout(() => location.reload(), 1800);
+          return;
+        }
+
+        // Ocultar el formulario de gestión si la solicitud quedó resuelta
+        const estadosResueltos = ['aprobada', 'denegada', 'cancelada'];
+        if (estadosResueltos.includes(data.estado_nuevo)) {
+          setTimeout(() => location.reload(), 1200);
+          return;
+        }
+
+        // Restaurar botón
+        btn.disabled    = false;
+        btn.style.opacity = '';
+        btn.innerHTML   = textoOriginal;
+
+        // Limpiar observación
+        const textarea = form.querySelector('textarea[name="observacion"]');
+        if (textarea) textarea.value = '';
+
+        // Limpiar selección de estado
+        document.querySelectorAll('input[name="estado_nuevo"]').forEach(r => r.checked = false);
+
+      } else {
+        throw new Error('Error en el servidor');
+      }
+    })
+    .catch(() => {
+      mostrarToast({
+        tipo:    'error',
+        mensaje: 'Ocurrió un error al guardar. Intente de nuevo.',
+      });
+      btn.disabled    = false;
+      btn.style.opacity = '';
+      btn.innerHTML   = textoOriginal;
+    });
   }
 </script>
 {% endblock %}

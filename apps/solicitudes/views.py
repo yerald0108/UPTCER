@@ -245,6 +245,25 @@ def cambiar_estado(request, pk):
         request,
         f'Estado de la solicitud {solicitud.numero} actualizado a "{solicitud.get_estado_display()}".'
     )
+
+    # Si la petición es AJAX devolver JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        from django.http import JsonResponse
+        licencia_url = None
+        if estado_nuevo == Solicitud.ESTADO_APROBADA:
+            try:
+                licencia_url = solicitud.licencia.numero
+            except Exception:
+                pass
+
+        return JsonResponse({
+            'ok':            True,
+            'estado_nuevo':  estado_nuevo,
+            'estado_label':  solicitud.get_estado_display(),
+            'clase_badge':   solicitud.clase_badge,
+            'licencia_numero': licencia_url,
+        })
+
     return redirect('solicitudes:detalle', pk=pk)
 
 

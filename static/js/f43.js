@@ -340,4 +340,149 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.f43-dropdown').forEach(d => d.style.display = 'none');
     }
   });
+
+  // ── Validación en tiempo real (on blur) ──────────────────────────────────
+
+  const MENSAJES = {
+    'id_nombre_apellidos':    'El nombre y apellidos son obligatorios.',
+    'id_numero_pasaporte':    'El número de pasaporte es obligatorio.',
+    'id_pais_residencia':     'El país de residencia es obligatorio.',
+    'id_direccion_residencia':'La dirección de residencia es obligatoria.',
+    'id_correo_electronico':  'El correo electrónico es obligatorio.',
+    'id_telefono':            'El teléfono es obligatorio.',
+    'id_provincia':           'Seleccione la provincia.',
+  };
+
+  function mostrarErrorCampo(campo, mensaje) {
+    campo.style.borderBottom = '2px solid #C62828';
+    campo.style.backgroundColor = '#FFF5F5';
+
+    let errorEl = campo.parentElement.querySelector('.f43-error-inline');
+    if (!errorEl) {
+      errorEl = document.createElement('div');
+      errorEl.className = 'f43-error-inline';
+      errorEl.style.cssText = `
+        font-size: 11px;
+        color: #C62828;
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-family: var(--fuente-principal);
+      `;
+      campo.parentElement.appendChild(errorEl);
+    }
+    errorEl.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      ${mensaje}
+    `;
+  }
+
+  function limpiarErrorCampo(campo) {
+    campo.style.borderBottom = '';
+    campo.style.backgroundColor = '';
+    const errorEl = campo.parentElement.querySelector('.f43-error-inline');
+    if (errorEl) errorEl.remove();
+  }
+
+  function validarCampoIndividual(campo) {
+    const valor = campo.value.trim();
+
+    if (!valor) {
+      const mensaje = MENSAJES[campo.id] || 'Este campo es obligatorio.';
+      mostrarErrorCampo(campo, mensaje);
+      return false;
+    }
+
+    // Validación específica de email
+    if (campo.type === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(valor)) {
+        mostrarErrorCampo(campo, 'Ingrese un correo electrónico válido.');
+        return false;
+      }
+    }
+
+    limpiarErrorCampo(campo);
+    // Mostrar check verde si es válido
+    campo.style.borderBottom = '2px solid #2E7D32';
+    campo.style.backgroundColor = '#F0FBF0';
+    return true;
+  }
+
+  // Aplicar validación on blur a los campos del paso 1
+  const camposValidar = [
+    'id_nombre_apellidos',
+    'id_numero_pasaporte',
+    'id_pais_residencia',
+    'id_direccion_residencia',
+    'id_correo_electronico',
+    'id_telefono',
+  ];
+
+  camposValidar.forEach(id => {
+    const campo = document.getElementById(id);
+    if (!campo) return;
+
+    // Validar al salir del campo
+    campo.addEventListener('blur', () => {
+      if (campo.value.trim()) {
+        validarCampoIndividual(campo);
+      }
+    });
+
+    // Limpiar error mientras escribe si había error
+    campo.addEventListener('input', () => {
+      if (campo.style.borderBottom.includes('C62828')) {
+        if (campo.value.trim()) {
+          limpiarErrorCampo(campo);
+        }
+      }
+    });
+  });
+
+  // Validar provincia al cambiar
+  const provincia = document.getElementById('id_provincia');
+  if (provincia) {
+    provincia.addEventListener('change', () => {
+      if (provincia.value) {
+        limpiarErrorCampo(provincia);
+        provincia.style.borderBottom = '2px solid #2E7D32';
+        provincia.style.backgroundColor = '#F0FBF0';
+      } else {
+        mostrarErrorCampo(provincia, 'Seleccione la provincia.');
+      }
+    });
+  }
+
+  // Validar paso 1 completo antes de avanzar al paso 2
+  const btnContinuarPaso1 = document.querySelector('#paso-1 .tarjeta-pie .btn-primario');
+  if (btnContinuarPaso1) {
+    btnContinuarPaso1.addEventListener('click', (e) => {
+      e.stopPropagation();
+      let todoValido = true;
+      camposValidar.forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo && !validarCampoIndividual(campo)) {
+          todoValido = false;
+        }
+      });
+      if (!todoValido) {
+        mostrarToast({
+          tipo:    'warning',
+          titulo:  'Campos incompletos',
+          mensaje: 'Complete todos los campos requeridos antes de continuar.',
+        });
+        // Scroll al primer error
+        const primerError = document.querySelector('.f43-error-inline');
+        if (primerError) {
+          primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }, true);
+  }
+  
 });
