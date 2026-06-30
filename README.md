@@ -798,7 +798,7 @@ ALLOWED_HOSTS=tu-dominio.cu,www.tu-dominio.cu
 ### Instalar dependencias
 
 ```bash
-pip install django pillow python-decouple python-dateutil
+pip install -r requirements.txt
 ```
 
 ### Primera ejecución
