@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class Notificacion(models.Model):
@@ -48,7 +49,6 @@ class Notificacion(models.Model):
         return f'{self.titulo} → {self.destinatario.get_nombre_completo()}'
 
     def marcar_leida(self):
-        from django.utils import timezone
         if not self.leida:
             self.leida        = True
             self.fecha_lectura = timezone.now()

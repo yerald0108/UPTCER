@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
+from django.db.models import Q
 from .models import Solicitud, HistorialSolicitud
 from .forms import FormularioF43
 from apps.notificaciones.servicios import (
@@ -13,6 +15,8 @@ from apps.notificaciones.servicios import (
     notificar_derivacion_especialista,
     notificar_criterio_tecnico,
 )
+from apps.licencias.servicios import generar_licencia
+from apps.equipos.models import Equipo, CategoriaEquipo
 
 
 # ─── Nueva solicitud F43 ──────────────────────────────────────────────────────
@@ -238,7 +242,6 @@ def cambiar_estado(request, pk):
         
      # Generar licencia automáticamente si la solicitud fue aprobada
     if estado_nuevo == Solicitud.ESTADO_APROBADA:
-        from apps.licencias.servicios import generar_licencia
         generar_licencia(solicitud, usuario)
 
     messages.success(
@@ -248,7 +251,6 @@ def cambiar_estado(request, pk):
 
     # Si la petición es AJAX devolver JSON
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        from django.http import JsonResponse
         licencia_url = None
         if estado_nuevo == Solicitud.ESTADO_APROBADA:
             try:
@@ -291,7 +293,6 @@ def lista_solicitudes(request):
     if flujo:
         solicitudes_qs = solicitudes_qs.filter(flujo=flujo)
     if q:
-        from django.db.models import Q
         solicitudes_qs = solicitudes_qs.filter(
             Q(numero__icontains=q) |
             Q(solicitante__nombre__icontains=q) |
@@ -412,16 +413,11 @@ def evaluar_solicitud(request, pk):
         )
 
         # Notificaciones
-        from apps.notificaciones.servicios import (
-            notificar_cambio_estado,
-            notificar_criterio_tecnico,
-        )
         notificar_cambio_estado(solicitud, estado_anterior, request.user)
         notificar_criterio_tecnico(solicitud)
 
         # Generar licencia si se aprueba
         if estado_nuevo == Solicitud.ESTADO_APROBADA:
-            from apps.licencias.servicios import generar_licencia
             generar_licencia(solicitud, request.user)
 
         # Agregar equipo al catálogo si se solicitó
@@ -433,7 +429,6 @@ def evaluar_solicitud(request, pk):
             banda_cat     = request.POST.get('cat_banda', 'no_aplica')
 
             if nombre_equipo and marca_equipo and modelo_equipo and categoria_id:
-                from apps.equipos.models import Equipo, CategoriaEquipo
                 try:
                     categoria = CategoriaEquipo.objects.get(pk=categoria_id)
                     Equipo.objects.get_or_create(
@@ -458,9 +453,7 @@ def evaluar_solicitud(request, pk):
         )
         return redirect('solicitudes:cola_evaluaciones')
 
-    from apps.equipos.models import CategoriaEquipo
     categorias = CategoriaEquipo.objects.all()
-    from apps.equipos.models import Equipo
 
     return render(request, 'solicitudes/especialista/evaluar.html', {
         'solicitud':  solicitud,

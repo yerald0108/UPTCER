@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class Solicitud(models.Model):
@@ -105,7 +106,6 @@ class Solicitud(models.Model):
         super().save(*args, **kwargs)
 
     def _generar_numero(self):
-        from django.utils import timezone
         año = timezone.now().year
         prefijo = 'F43' if self.flujo == self.FLUJO_F43 else 'RAT'
         ultimo = Solicitud.objects.filter(

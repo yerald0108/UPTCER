@@ -1,13 +1,26 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Count, Q
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from dateutil.relativedelta import relativedelta
+import json
 
+from apps.solicitudes.models import Solicitud
+from apps.accounts.models import Usuario
+from apps.licencias.models import Licencia
+from .forms import FormularioCrearUsuario
+from .forms import FormularioCambiarPassword
+from .forms import FormularioEditarUsuario
+from .forms import FormularioEditarPerfil
+from .forms import FormularioCambiarMiPassword
+from .models import Usuario
 
 # ─── Login ────────────────────────────────────────────────────────────────────
 @never_cache
@@ -73,7 +86,6 @@ def vista_dashboard(request):
 # ─── Dashboards por rol ───────────────────────────────────────────────────────
 
 def _dashboard_persona_natural(request, usuario):
-    from apps.solicitudes.models import Solicitud
 
     solicitudes = Solicitud.objects.filter(solicitante=usuario)
 
@@ -92,7 +104,6 @@ def _dashboard_persona_natural(request, usuario):
 
 
 def _dashboard_operador(request, usuario):
-    from apps.solicitudes.models import Solicitud
 
     hoy = timezone.now().date()
     solicitudes = Solicitud.objects.select_related('solicitante', 'equipo')
@@ -120,7 +131,6 @@ def _dashboard_operador(request, usuario):
 
 
 def _dashboard_especialista(request, usuario):
-    from apps.solicitudes.models import Solicitud
 
     contexto = {
         'usuario': usuario,
@@ -150,7 +160,6 @@ def _dashboard_especialista(request, usuario):
 
 
 def _dashboard_aduana(request, usuario):
-    from apps.solicitudes.models import Solicitud
 
     hoy = timezone.now().date()
     rats = Solicitud.objects.filter(flujo=Solicitud.FLUJO_RATS)
@@ -172,12 +181,6 @@ def _dashboard_aduana(request, usuario):
 
 
 def _dashboard_directivo(request, usuario):
-    from apps.solicitudes.models import Solicitud
-    from apps.accounts.models import Usuario
-    from apps.licencias.models import Licencia
-    from django.db.models import Count
-    from django.db.models.functions import TruncMonth
-    import json
 
     solicitudes = Solicitud.objects.all()
     total       = solicitudes.count()
@@ -189,9 +192,6 @@ def _dashboard_directivo(request, usuario):
                   ]).count()
 
     # Solicitudes por mes (últimos 6 meses)
-    from django.utils import timezone
-    from dateutil.relativedelta import relativedelta
-
     hoy        = timezone.now()
     hace_6m    = hoy - relativedelta(months=5)
 
@@ -276,7 +276,6 @@ def lista_usuarios(request):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
-    from .models import Usuario
     usuarios_qs = Usuario.objects.all().order_by('apellidos', 'nombre')
 
     rol    = request.GET.get('rol', '')
@@ -288,7 +287,6 @@ def lista_usuarios(request):
     if activo != '':
         usuarios_qs = usuarios_qs.filter(is_active=activo == '1')
     if q:
-        from django.db.models import Q
         usuarios_qs = usuarios_qs.filter(
             Q(nombre__icontains=q) |
             Q(apellidos__icontains=q) |
@@ -324,7 +322,6 @@ def nuevo_usuario(request):
         messages.error(request, 'No tiene permisos para crear usuarios.')
         return redirect('accounts:lista_usuarios')
 
-    from .forms import FormularioCrearUsuario
     if request.method == 'POST':
         form = FormularioCrearUsuario(request.POST)
         if form.is_valid():
@@ -353,11 +350,9 @@ def detalle_usuario(request, pk):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
-    from .models import Usuario
     usuario_obj = get_object_or_404(Usuario, pk=pk)
 
     # Estadísticas del usuario
-    from apps.solicitudes.models import Solicitud
     solicitudes = Solicitud.objects.filter(solicitante=usuario_obj)
 
     estadisticas = {
@@ -384,8 +379,6 @@ def editar_usuario(request, pk):
         messages.error(request, 'No tiene permisos para editar usuarios.')
         return redirect('accounts:lista_usuarios')
 
-    from .models import Usuario
-    from .forms import FormularioEditarUsuario
     usuario_obj = get_object_or_404(Usuario, pk=pk)
 
     if request.method == 'POST':
@@ -417,8 +410,6 @@ def cambiar_password_usuario(request, pk):
         messages.error(request, 'No tiene permisos para cambiar contraseñas.')
         return redirect('accounts:lista_usuarios')
 
-    from .models import Usuario
-    from .forms import FormularioCambiarPassword
     usuario_obj = get_object_or_404(Usuario, pk=pk)
 
     if request.method == 'POST':
@@ -449,7 +440,6 @@ def togglear_usuario(request, pk):
         messages.error(request, 'No tiene permisos para realizar esta acción.')
         return redirect('accounts:lista_usuarios')
 
-    from .models import Usuario
     usuario_obj = get_object_or_404(Usuario, pk=pk)
 
     if request.method == 'POST':
@@ -472,7 +462,6 @@ def togglear_usuario(request, pk):
 @never_cache
 @login_required
 def perfil(request):
-    from .forms import FormularioEditarPerfil
     usuario = request.user
 
     if request.method == 'POST':
@@ -486,7 +475,6 @@ def perfil(request):
     else:
         form = FormularioEditarPerfil(instance=usuario)
 
-    from apps.solicitudes.models import Solicitud
     solicitudes = Solicitud.objects.filter(solicitante=usuario)
 
     return render(request, 'accounts/perfil.html', {
@@ -506,7 +494,6 @@ def perfil(request):
 @never_cache
 @login_required
 def cambiar_mi_password(request):
-    from .forms import FormularioCambiarMiPassword
 
     if request.method == 'POST':
         form = FormularioCambiarMiPassword(request.POST)
@@ -521,7 +508,6 @@ def cambiar_mi_password(request):
             usuario.save()
 
             # Mantener sesión activa tras cambio de contraseña
-            from django.contrib.auth import update_session_auth_hash
             update_session_auth_hash(request, usuario)
 
             messages.success(request, 'Su contraseña ha sido actualizada correctamente.')

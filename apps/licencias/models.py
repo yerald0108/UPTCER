@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class Licencia(models.Model):
@@ -48,7 +49,6 @@ class Licencia(models.Model):
         super().save(*args, **kwargs)
 
     def _generar_numero(self):
-        from django.utils import timezone
         año = timezone.now().year
         ultimo = Licencia.objects.filter(
             numero__startswith=f'LIC-{año}'
@@ -57,7 +57,6 @@ class Licencia(models.Model):
 
     @property
     def es_vigente(self):
-        from django.utils import timezone
         if self.estado != self.ESTADO_VIGENTE:
             return False
         if self.fecha_vencimiento:
@@ -79,7 +78,6 @@ class Licencia(models.Model):
 
     def verificar_vencimiento(self):
         """Actualiza el estado si la licencia temporal venció."""
-        from django.utils import timezone
         if (self.estado == self.ESTADO_VIGENTE and
                 self.fecha_vencimiento and
                 self.fecha_vencimiento < timezone.now().date()):

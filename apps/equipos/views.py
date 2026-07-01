@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
 from .models import CategoriaEquipo, Equipo
 from .forms import FormularioEquipo, FormularioCategoria
 
@@ -167,7 +168,6 @@ def lista_categorias(request):
 # ─── Búsqueda AJAX para el formulario F43 ────────────────────────────────────
 @login_required
 def buscar_equipos_ajax(request):
-    from django.http import JsonResponse
     q = request.GET.get('q', '').strip()
     if len(q) < 2:
         return JsonResponse({'equipos': []})
