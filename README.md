@@ -798,7 +798,7 @@ ALLOWED_HOSTS=tu-dominio.cu,www.tu-dominio.cu
 ### Instalar dependencias
 
 ```bash
-pip install -r requirements.txt
+pip install django pillow python-decouple python-dateutil
 ```
 
 ### Primera ejecución
@@ -973,3 +973,175 @@ El formulario y el detalle de la solicitud se muestran como una hoja de papel A4
 *Documentación generada para el equipo de desarrollo de UPTCER*
 *Ministerio de Comunicaciones — República de Cuba*
 *Sistema desarrollado con Django + Python*
+
+---
+
+## 17. Sistema de tests automatizados
+
+UPTCER tiene una suite completa de **149 tests automatizados** que cubren modelos, vistas, servicios y flujos completos de punta a punta. Todos los tests pasan al 100%.
+
+### Resumen de cobertura
+
+| App | Tests | Qué cubre |
+|-----|-------|-----------|
+| `accounts` | 33 | Modelo Usuario, login/logout, dashboards por rol, gestión de usuarios |
+| `solicitudes` | 40 | Modelo Solicitud, historial, control de acceso, cambio de estado, flujos completos, especialista |
+| `equipos` | 29 | Modelo Equipo y Categoría, catálogo, búsqueda AJAX, permisos |
+| `licencias` | 25 | Modelo Licencia, generación automática, vencimiento, revocación, permisos |
+| `notificaciones` | 22 | Modelo Notificación, servicios, vistas, contador AJAX |
+| **Total** | **149** | **Sistema completo** |
+
+---
+
+### Cómo ejecutar los tests
+
+#### Ejecutar todos los tests del sistema (recomendado)
+
+```bash
+python manage.py test apps
+```
+
+#### Ejecutar tests de una app específica
+
+```bash
+# Solo accounts (login, usuarios, dashboards)
+python manage.py test apps.accounts
+
+# Solo solicitudes (F43, estados, flujos)
+python manage.py test apps.solicitudes
+
+# Solo equipos (catálogo, búsqueda)
+python manage.py test apps.equipos
+
+# Solo licencias (generación, revocación)
+python manage.py test apps.licencias
+
+# Solo notificaciones (servicios, contador)
+python manage.py test apps.notificaciones
+```
+
+#### Ejecutar con salida detallada (ver cada test individualmente)
+
+```bash
+python manage.py test apps --verbosity=2
+```
+
+#### Ejecutar un test específico
+
+```bash
+# Formato: python manage.py test apps.<app>.tests.<Clase>.<método>
+python manage.py test apps.solicitudes.tests.FlujoF43CompletoTest.test_flujo_completo_f43_aprobacion
+python manage.py test apps.accounts.tests.LoginViewTest.test_login_correcto_redirige_dashboard
+python manage.py test apps.licencias.tests.LicenciaModelTest.test_licencia_temporal_6_meses
+```
+
+#### Ejecutar múltiples apps a la vez
+
+```bash
+python manage.py test apps.licencias apps.notificaciones
+python manage.py test apps.accounts apps.solicitudes
+```
+
+---
+
+### Estructura de los tests
+
+Cada app tiene su archivo `tests.py` organizado en clases por responsabilidad:
+
+```
+apps/accounts/tests.py
+  ├── UsuarioModelTest          ← Tests del modelo Usuario (roles, propiedades, __str__)
+  ├── LoginViewTest             ← Tests de login/logout
+  ├── DashboardViewTest         ← Tests de redirección al dashboard correcto por rol
+  └── GestionUsuariosTest       ← Tests de crear, editar, activar/desactivar usuarios
+
+apps/solicitudes/tests.py
+  ├── SolicitudModelTest        ← Tests del modelo Solicitud (número, estados, badges)
+  ├── HistorialSolicitudModelTest ← Tests del modelo HistorialSolicitud
+  ├── SolicitudAccesoTest       ← Tests de control de acceso por rol
+  ├── CambioEstadoTest          ← Tests de cambio de estado con historial y licencia
+  ├── FlujoF43CompletoTest      ← Tests de flujo completo de punta a punta
+  └── FlujoEspecialistaTest     ← Tests de cola de evaluaciones del especialista
+
+apps/equipos/tests.py
+  ├── CategoriaEquipoModelTest  ← Tests del modelo CategoriaEquipo
+  ├── EquipoModelTest           ← Tests del modelo Equipo (propiedades, unicidad)
+  ├── EquipoVistaTest           ← Tests de lista, detalle, crear, desactivar, AJAX
+  └── CategoriaVistaTest        ← Tests de gestión de categorías
+
+apps/licencias/tests.py
+  ├── LicenciaModelTest         ← Tests del modelo Licencia (generación, vencimiento)
+  └── LicenciaVistaTest         ← Tests de lista, detalle, revocar, permisos
+
+apps/notificaciones/tests.py
+  ├── NotificacionModelTest     ← Tests del modelo Notificacion (marcar leída, iconos)
+  ├── ServiciosNotificacionTest ← Tests de todos los servicios de notificación
+  └── NotificacionVistaTest     ← Tests de lista, contador AJAX, permisos
+```
+
+---
+
+### Bugs encontrados y corregidos durante los tests
+
+Los tests no solo verifican que el sistema funciona — también descubrieron **bugs reales de seguridad** que fueron corregidos:
+
+| Bug | Descripción | Corrección |
+|-----|-------------|------------|
+| **Bug 1** | Una persona natural podía cambiar el estado de una solicitud enviando un POST directo a `/solicitudes/<pk>/estado/` sin pasar por la interfaz | Se agregó verificación de rol al inicio de `cambiar_estado()` en `apps/solicitudes/views.py` |
+| **Bug 2** | Una solicitud ya resuelta (aprobada o denegada) podía cambiar de estado si se enviaba un POST directo a la URL — el formulario no aparecía en el template pero la vista no lo bloqueaba | Se agregó validación `if solicitud.esta_resuelta` al inicio de `cambiar_estado()` |
+| **Bug 3** | `JsonResponse` no estaba importado globalmente en `solicitudes/views.py`, lo que causaba un `UnboundLocalError` al usar AJAX | Se movió el import al inicio del archivo |
+
+---
+
+### Buenas prácticas para escribir nuevos tests
+
+Cuando se añada nueva funcionalidad al sistema, seguir estas convenciones:
+
+**1. Usar las factories existentes**
+
+Cada `tests.py` tiene funciones `crear_usuario()` y `crear_solicitud()` al inicio. Reutilizarlas en vez de crear objetos directamente en cada test.
+
+```python
+# Bien
+persona = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
+
+# Evitar
+persona = Usuario.objects.create_user(username='persona', email='...', ...)
+```
+
+**2. Un test, una cosa**
+
+Cada método de test verifica exactamente una cosa. El nombre del método debe describir exactamente qué se está verificando.
+
+```python
+# Bien — nombre descriptivo y test enfocado
+def test_operador_puede_cambiar_estado(self):
+    ...
+
+# Evitar — demasiado en un solo test
+def test_operador(self):
+    # verifica login, cambio de estado, y creación de usuario
+    ...
+```
+
+**3. Verificar el lado negativo también**
+
+Por cada permiso que se otorga, verificar que quien no debe tenerlo tampoco lo tiene.
+
+```python
+def test_nuevo_equipo_accesible_para_operador(self):
+    # Lado positivo
+    ...
+
+def test_nuevo_equipo_denegado_para_persona_natural(self):
+    # Lado negativo — igual de importante
+    ...
+```
+
+**4. Ejecutar los tests antes de hacer commit**
+
+```bash
+python manage.py test apps
+```
+
+Si algún test falla, el cambio rompió algo. Corregir antes de continuar.
