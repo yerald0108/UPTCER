@@ -3,6 +3,7 @@ from datetime import date
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 from apps.accounts.models import Usuario
 from apps.solicitudes.models import Solicitud
 from apps.licencias.models import Licencia
@@ -113,7 +114,6 @@ class LicenciaModelTest(TestCase):
 
     def test_licencia_temporal_6_meses(self):
         """La fecha de vencimiento de 6 meses es correcta."""
-        from dateutil.relativedelta import relativedelta
         solicitud_temporal = crear_solicitud_aprobada(
             self.persona, self.operador,
             periodo='temporal', meses=6
