@@ -190,6 +190,15 @@ def cambiar_estado(request, pk):
 
     if not (usuario.es_operador or usuario.es_directivo or usuario.es_especialista):
         messages.error(request, 'No tiene permisos para realizar esta acción.')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': False, 'error': 'Sin permisos.'}, status=403)
+        return redirect('solicitudes:detalle', pk=pk)
+
+    # No permitir cambios en solicitudes ya resueltas
+    if solicitud.esta_resuelta:
+        messages.error(request, 'Esta solicitud ya fue resuelta y no puede modificarse.')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': False, 'error': 'Solicitud ya resuelta.'}, status=400)
         return redirect('solicitudes:detalle', pk=pk)
 
     estado_nuevo  = request.POST.get('estado_nuevo', '').strip()
@@ -352,7 +361,6 @@ def evaluar_solicitud(request, pk):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
-    import json
     solicitud = get_object_or_404(Solicitud, pk=pk)
 
     if not solicitud.equipo_no_listado:
