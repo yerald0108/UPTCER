@@ -28,15 +28,44 @@
       <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
       Volver
     </a>
-    <div style="display:flex;gap:8px;">
-      <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
-        <i data-lucide="printer" style="width:16px;height:16px;"></i>
-        Imprimir / PDF
-      </button>
-      <button type="button" onclick="enviarFormulario()" class="f43-btn-accion f43-btn-enviar">
-        <i data-lucide="send" style="width:16px;height:16px;"></i>
-        Enviar solicitud
-      </button>
+
+    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+
+      <!-- Control de zoom -->
+      <div class="f43-zoom-control" title="Ajustar tamaño del documento">
+        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(-10)"
+          title="Reducir tamaño de texto" aria-label="Reducir tamaño">
+          <i data-lucide="zoom-out" style="width:15px;height:15px;"></i>
+        </button>
+
+        <span class="f43-zoom-nivel" id="zoom-nivel">100%</span>
+
+        <div class="f43-zoom-divisor"></div>
+
+        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()"
+          title="Restablecer tamaño original" aria-label="Restablecer tamaño">
+          <i data-lucide="search" style="width:15px;height:15px;"></i>
+        </button>
+
+        <div class="f43-zoom-divisor"></div>
+
+        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(10)"
+          title="Aumentar tamaño de texto" aria-label="Aumentar tamaño">
+          <i data-lucide="zoom-in" style="width:15px;height:15px;"></i>
+        </button>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
+          <i data-lucide="printer" style="width:16px;height:16px;"></i>
+          Imprimir / PDF
+        </button>
+        <button type="button" onclick="enviarFormulario()" class="f43-btn-accion f43-btn-enviar">
+          <i data-lucide="send" style="width:16px;height:16px;"></i>
+          Enviar solicitud
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -442,106 +471,44 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/f43.js' %}"></script>
 <script>
-  let filaCount = 1;
+  /* ─── Control de zoom del documento F43 ─────────────────────────────────── */
+  const ZOOM_MIN     = 70;
+  const ZOOM_MAX     = 130;
+  const ZOOM_DEFECTO = 100;
+  const ZOOM_CLAVE   = 'uptcer_f43_zoom';
 
-  function agregarFila() {
-    filaCount++;
-    const tbody = document.getElementById('equipos-tbody');
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
-      <td style="text-align:center;">${filaCount}</td>
-      <td><input type="text" placeholder="Función principal del equipo"></td>
-      <td><input type="text" placeholder="Marca"></td>
-      <td><input type="text" placeholder="Modelo"></td>
-      <td><input type="number" min="1" placeholder="1" value="1"></td>
-      <td class="no-print" style="text-align:center;">
-        <button type="button" onclick="eliminarFila(this)"
-          style="background:none;border:none;cursor:pointer;color:#C62828;font-size:14px;padding:2px;">✕</button>
-      </td>
-    `;
-    tbody.appendChild(fila);
-    lucide.createIcons();
+  function aplicarZoom(nivel) {
+    const hoja = document.querySelector('.f43-hoja');
+    if (!hoja) return;
+    hoja.style.fontSize = (nivel / 100) + 'rem';
+    const indicador = document.getElementById('zoom-nivel');
+    if (indicador) indicador.textContent = nivel + '%';
+    localStorage.setItem(ZOOM_CLAVE, nivel);
   }
 
-  function eliminarFila(btn) {
-    const filas = document.querySelectorAll('#equipos-tbody tr');
-    if (filas.length <= 1) return;
-    btn.closest('tr').remove();
-    renumerarFilas();
+  function cambiarZoom(delta) {
+    const actual = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO);
+    const nuevo  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, actual + delta));
+    aplicarZoom(nuevo);
+    if (nuevo === ZOOM_MIN && delta < 0) {
+      mostrarToast({ tipo: 'info', mensaje: 'Tamaño mínimo alcanzado.', duracion: 2000 });
+    }
+    if (nuevo === ZOOM_MAX && delta > 0) {
+      mostrarToast({ tipo: 'info', mensaje: 'Tamaño máximo alcanzado.', duracion: 2000 });
+    }
   }
 
-  function renumerarFilas() {
-    document.querySelectorAll('#equipos-tbody tr').forEach((fila, i) => {
-      fila.cells[0].textContent = i + 1;
-    });
-    filaCount = document.querySelectorAll('#equipos-tbody tr').length;
+  function resetearZoom() {
+    aplicarZoom(ZOOM_DEFECTO);
+    mostrarToast({ tipo: 'info', mensaje: 'Tamaño del documento restablecido.', duracion: 2000 });
   }
 
-  function toggleRAD(checked) {
-    document.getElementById('modo_importacion_hidden').value = checked ? 'rad' : 'equipaje';
-  }
-
-  function toggleOtros(checked) {
-    document.getElementById('campo-otros').style.display = checked ? 'block' : 'none';
-    const hidden = document.getElementById('objetivo_importacion_hidden');
-    hidden.value = checked ? 'otros' : 'empleo_directo';
-  }
-
-  function toggleTemporal(checked) {
-    const input = document.getElementById('id_tiempo_solicitado');
-    input.disabled = !checked;
-    if (!checked) input.value = '';
-  }
-
-  document.querySelectorAll('input[name="periodo_importacion"]').forEach(r => {
-    r.addEventListener('change', function() {
-      toggleTemporal(this.value === 'temporal');
-    });
+  // Restaurar zoom guardado al cargar
+  document.addEventListener('DOMContentLoaded', () => {
+    const guardado = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO);
+    aplicarZoom(guardado);
   });
-
-  function recopilarEquipos() {
-    const filas = document.querySelectorAll('#equipos-tbody tr');
-    const equipos = [];
-    filas.forEach(fila => {
-      const inputs = fila.querySelectorAll('input[type="text"], input[type="number"]');
-      if (inputs.length >= 4) {
-        const descripcion = inputs[0].value.trim();
-        const marca       = inputs[1].value.trim();
-        const modelo      = inputs[2].value.trim();
-        const cantidad    = parseInt(inputs[3].value) || 1;
-        if (descripcion || marca || modelo) {
-          equipos.push({ descripcion, marca, modelo, cantidad });
-        }
-      }
-    });
-    return equipos;
-  }
-
-  function enviarFormulario() {
-    const equipos = recopilarEquipos();
-
-    if (!document.getElementById('id_nombre_apellidos').value.trim()) {
-      mostrarToast({ tipo: 'warning', mensaje: 'Complete el nombre y apellidos del solicitante.' });
-      document.getElementById('id_nombre_apellidos').focus();
-      return;
-    }
-    if (!document.getElementById('id_numero_pasaporte').value.trim()) {
-      mostrarToast({ tipo: 'warning', mensaje: 'Complete el número de pasaporte.' });
-      document.getElementById('id_numero_pasaporte').focus();
-      return;
-    }
-    if (!document.getElementById('id_provincia').value) {
-      mostrarToast({ tipo: 'warning', mensaje: 'Seleccione la provincia.' });
-      return;
-    }
-    if (equipos.length === 0) {
-      mostrarToast({ tipo: 'warning', mensaje: 'Agregue al menos un equipo a la relación.' });
-      return;
-    }
-
-    document.getElementById('equipos-json').value = JSON.stringify(equipos);
-    document.getElementById('form-f43').submit();
-  }
 </script>
 {% endblock %}

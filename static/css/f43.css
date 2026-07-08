@@ -402,3 +402,57 @@
   color: #1B5E20;
   border: 1px solid #A5D6A7;
 }
+
+/* ─── Control de zoom del documento F43 ─────────────────────────────────── */
+.f43-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  background: white;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: 4px 8px;
+  box-shadow: var(--sombra-sm);
+}
+
+.f43-zoom-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radio-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-texto-secundario);
+  transition: var(--transicion-rapida);
+  font-family: var(--fuente-principal);
+  flex-shrink: 0;
+}
+
+.f43-zoom-btn:hover {
+  background: var(--color-primario-light);
+  color: var(--color-primario);
+}
+
+.f43-zoom-btn:active {
+  transform: scale(0.92);
+}
+
+.f43-zoom-nivel {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  color: var(--color-texto-secundario);
+  min-width: 36px;
+  text-align: center;
+  font-family: var(--fuente-principal);
+  user-select: none;
+}
+
+.f43-zoom-divisor {
+  width: 1px;
+  height: 16px;
+  background: var(--color-borde);
+  flex-shrink: 0;
+}

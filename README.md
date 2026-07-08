@@ -22,6 +22,7 @@
 14. [Configuración del proyecto](#14-configuración-del-proyecto)
 15. [Guía de despliegue](#15-guía-de-despliegue)
 16. [Convenciones y buenas prácticas](#16-convenciones-y-buenas-prácticas)
+17. [Sistema de tests automatizados](#17-sistema-de-tests-automatizados)
 
 ---
 
