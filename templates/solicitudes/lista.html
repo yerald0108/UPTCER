@@ -75,6 +75,7 @@
               <th>Tipo</th>
               <th>Solicitante</th>
               <th>Estado</th>
+              <th>Días en cola</th>
               <th>Operador asignado</th>
               <th>Fecha</th>
               <th></th>
@@ -94,6 +95,19 @@
                 <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ s.solicitante.email }}</div>
               </td>
               <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+              <td>
+                {% if s.dias_en_cola is not None %}
+                  {% if s.dias_en_cola > 5 %}
+                    <span class="badge badge-denegado">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
+                  {% elif s.dias_en_cola >= 3 %}
+                    <span class="badge badge-pendiente">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
+                  {% else %}
+                    <span class="badge badge-info">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
+                  {% endif %}
+                {% else %}
+                  <span style="color:var(--color-texto-muted);">—</span>
+                {% endif %}
+              </td>
               <td style="color:var(--color-texto-muted);">
                 {{ s.operador_asignado.get_nombre_completo|default:"Sin asignar" }}
               </td>
@@ -101,7 +115,7 @@
                 {{ s.fecha_creacion|date:"d/m/Y H:i" }}
               </td>
               <td>
-                <a href="{% url 'solicitudes:detalle' s.pk %}" class="btn btn-ghost btn-sm">
+                <a href="{% url 'solicitudes:detalle' s.pk %}?volver={{ request.get_full_path|urlencode }}" class="btn btn-ghost btn-sm">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </a>
               </td>

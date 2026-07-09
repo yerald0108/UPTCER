@@ -29,7 +29,7 @@
   <div class="f43-acciones">
     <div style="display:flex;align-items:center;gap:var(--espacio-3);">
       {% if puede_gestionar %}
-        <a href="{% url 'solicitudes:lista' %}" class="f43-btn-accion f43-btn-volver">
+        <a href="{% if volver_url %}{{ volver_url }}{% else %}{% url 'solicitudes:lista' %}{% endif %}" class="f43-btn-accion f43-btn-volver">
           <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Volver
         </a>
       {% else %}
@@ -46,6 +46,96 @@
       Imprimir / PDF
     </button>
   </div>
+
+  {% if user.es_persona_natural %}
+    <div class="tracker-solicitud">
+      <div class="tracker-header">
+        <h2 class="tracker-titulo">Seguimiento de su solicitud</h2>
+        <p class="tracker-subtitulo">Estado actual: <strong>{{ solicitud.get_estado_display }}</strong></p>
+      </div>
+
+      <div class="tracker-pasos">
+
+        <!-- Paso 1: Enviada -->
+        <div class="tracker-paso completado">
+          <div class="tracker-paso-icono">
+            <i data-lucide="send" style="width:22px;height:22px;"></i>
+          </div>
+          <div class="tracker-paso-titulo">Solicitud enviada</div>
+          <div class="tracker-paso-fecha">{{ solicitud.fecha_creacion|date:"d/m/Y H:i" }}</div>
+        </div>
+
+        <div class="tracker-linea {% if solicitud.estado != 'enviada' %}completada{% endif %}"></div>
+
+        <!-- Paso 2: En revisión -->
+        <div class="tracker-paso {% if solicitud.estado == 'enviada' %}pendiente{% elif solicitud.estado == 'en_revision' %}activo{% else %}completado{% endif %}">
+          <div class="tracker-paso-icono">
+            <i data-lucide="search-check" style="width:22px;height:22px;"></i>
+          </div>
+          <div class="tracker-paso-titulo">En revisión</div>
+          <div class="tracker-paso-fecha">
+            {% if solicitud.estado == 'enviada' %}En espera{% else %}Operador asignado{% endif %}
+          </div>
+        </div>
+
+        <div class="tracker-linea {% if solicitud.esta_resuelta %}completada{% endif %}"></div>
+
+        <!-- Paso 3: Resolución -->
+        <div class="tracker-paso {% if solicitud.estado == 'aprobada' %}completado{% elif solicitud.estado == 'denegada' %}denegado{% else %}pendiente{% endif %}">
+          <div class="tracker-paso-icono">
+            {% if solicitud.estado == 'denegada' %}
+              <i data-lucide="x-circle" style="width:22px;height:22px;"></i>
+            {% else %}
+              <i data-lucide="check-circle" style="width:22px;height:22px;"></i>
+            {% endif %}
+          </div>
+          <div class="tracker-paso-titulo">
+            {% if solicitud.estado == 'aprobada' %}Aprobada
+            {% elif solicitud.estado == 'denegada' %}Denegada
+            {% else %}Resolución{% endif %}
+          </div>
+          <div class="tracker-paso-fecha">
+            {% if solicitud.fecha_resolucion %}{{ solicitud.fecha_resolucion|date:"d/m/Y H:i" }}{% else %}Pendiente{% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      {% if solicitud.estado == 'enviada' %}
+        <div class="alerta alerta-info">
+          <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Su solicitud fue recibida correctamente y está en espera de revisión por un operador del Ministerio de Comunicaciones. Le notificaremos cualquier actualización.
+        </div>
+      {% elif solicitud.estado == 'en_revision' %}
+        <div class="alerta alerta-info">
+          <i data-lucide="clock" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Un operador está revisando su solicitud. Si su equipo requiere evaluación técnica especializada, un especialista del Ministerio la evaluará antes de la resolución final.
+        </div>
+      {% elif solicitud.estado == 'aprobada' %}
+        <div class="alerta alerta-success">
+          <i data-lucide="check-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
+          <div>
+            Su solicitud fue aprobada.
+            {% if solicitud.licencia %}
+              Ya puede consultar su licencia de importación
+              <a href="{% url 'licencias:detalle' solicitud.licencia.numero %}" style="font-weight:600;color:#1B5E20;">{{ solicitud.licencia.numero }}</a>.
+            {% endif %}
+          </div>
+        </div>
+      {% elif solicitud.estado == 'denegada' %}
+        <div class="alerta alerta-error">
+          <i data-lucide="x-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Su solicitud fue denegada. Puede revisar las observaciones del operador en el documento a continuación.
+        </div>
+      {% elif solicitud.estado == 'cancelada' %}
+        <div class="alerta alerta-warning">
+          <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Esta solicitud fue cancelada.
+        </div>
+      {% endif %}
+
+    </div>
+    {% endif %}
 
   <!-- ── HOJA A4 — Solo lectura ────────────────────────────────────────────── -->
   <div class="f43-hoja">

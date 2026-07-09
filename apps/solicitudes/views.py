@@ -173,6 +173,7 @@ def detalle_solicitud(request, pk):
         'puede_gestionar': usuario.es_operador or usuario.es_directivo,
         'puede_evaluar':   usuario.es_especialista,
         'ESTADOS': Solicitud.ESTADOS,
+        'volver_url': request.GET.get('volver', ''),
     }
 
     return render(request, 'solicitudes/detalle.html', contexto)
@@ -317,6 +318,11 @@ def lista_solicitudes(request):
         solicitudes = paginator.page(1)
     except EmptyPage:
         solicitudes = paginator.page(paginator.num_pages)
+
+    # Calcular días en cola solo para solicitudes pendientes (página actual)
+    ahora = timezone.now()
+    for s in solicitudes:
+        s.dias_en_cola = (ahora - s.fecha_creacion).days if s.esta_pendiente else None
 
     return render(request, 'solicitudes/lista.html', {
         'solicitudes':   solicitudes,

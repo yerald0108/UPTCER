@@ -456,3 +456,125 @@
   background: var(--color-borde);
   flex-shrink: 0;
 }
+
+/* ─── Tracker de seguimiento — persona natural ──────────────────────────── */
+.tracker-solicitud {
+  width: 210mm;
+  max-width: 100%;
+  background-color: var(--color-fondo-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+  padding: var(--espacio-8);
+  margin-bottom: var(--espacio-6);
+  font-family: var(--fuente-principal);
+}
+
+.tracker-header {
+  margin-bottom: var(--espacio-6);
+  text-align: center;
+}
+
+.tracker-titulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-bold);
+  color: var(--color-texto-principal);
+}
+
+.tracker-subtitulo {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  margin-top: var(--espacio-1);
+}
+
+.tracker-pasos {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--espacio-6);
+}
+
+.tracker-paso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.tracker-paso-icono {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--color-borde);
+  background-color: var(--color-fondo-blanco);
+  color: var(--color-texto-muted);
+  transition: var(--transicion-normal);
+  margin-bottom: var(--espacio-3);
+  flex-shrink: 0;
+}
+
+.tracker-paso-titulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--color-texto-principal);
+  margin-bottom: 2px;
+}
+
+.tracker-paso-fecha {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-muted);
+}
+
+.tracker-paso.completado .tracker-paso-icono {
+  border-color: var(--color-secundario);
+  background-color: var(--color-secundario);
+  color: white;
+}
+
+.tracker-paso.activo .tracker-paso-icono {
+  border-color: var(--color-primario);
+  background-color: var(--color-primario-light);
+  color: var(--color-primario);
+  animation: tracker-pulso 2s ease infinite;
+}
+
+.tracker-paso.denegado .tracker-paso-icono {
+  border-color: var(--color-acento);
+  background-color: var(--color-acento);
+  color: white;
+}
+
+.tracker-paso.pendiente .tracker-paso-icono {
+  border-color: var(--color-borde);
+  background-color: var(--color-fondo);
+  color: var(--color-texto-muted);
+}
+
+@keyframes tracker-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26,58,92,0.25); }
+  50%      { box-shadow: 0 0 0 8px rgba(26,58,92,0); }
+}
+
+.tracker-linea {
+  flex: 1;
+  height: 3px;
+  background-color: var(--color-borde);
+  margin-top: 27px;
+  transition: var(--transicion-normal);
+}
+
+.tracker-linea.completada {
+  background-color: var(--color-secundario);
+}
+
+@media (max-width: 700px) {
+  .tracker-solicitud   { padding: var(--espacio-5); }
+  .tracker-paso-titulo { font-size: 11px; }
+  .tracker-paso-fecha  { display: none; }
+  .tracker-paso-icono  { width: 44px; height: 44px; }
+  .tracker-linea       { margin-top: 21px; }
+}
