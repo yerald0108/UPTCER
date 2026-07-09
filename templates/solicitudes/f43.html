@@ -482,7 +482,7 @@
   function aplicarZoom(nivel) {
     const hoja = document.querySelector('.f43-hoja');
     if (!hoja) return;
-    hoja.style.fontSize = (nivel / 100) + 'rem';
+    hoja.style.zoom = (nivel / 100);
     const indicador = document.getElementById('zoom-nivel');
     if (indicador) indicador.textContent = nivel + '%';
     localStorage.setItem(ZOOM_CLAVE, nivel);
