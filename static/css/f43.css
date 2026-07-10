@@ -578,3 +578,99 @@
   .tracker-paso-icono  { width: 44px; height: 44px; }
   .tracker-linea       { margin-top: 21px; }
 }
+
+/* ─── Estilos de impresión ───────────────────────────────────────────────── */
+@media print {
+  /* Ocultar elementos que no son del documento */
+  .layout-sidebar,
+  .layout-navbar,
+  .f43-acciones,
+  .f43-zoom-control,
+  .f43-btn-accion,
+  .f43-btn-imprimir,
+  .f43-btn-enviar,
+  .f43-btn-volver,
+  .btn-scroll-top,
+  .btn-colapsar-sidebar,
+  .no-print,
+  .f43-instrucciones,
+  .tracker-solicitud,
+  nav,
+  header,
+  aside,
+  button,
+  .badge,
+  #btn-colapsar,
+  #btn-menu-movil,
+  #sidebar-overlay,
+  .sidebar-tooltip,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  /* Resetear layout */
+  .layout-wrapper {
+    display: block !important;
+  }
+
+  .layout-main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .layout-contenido {
+    padding: 0 !important;
+  }
+
+  .f43-pagina-fondo {
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  /* ⚠️ FORZAR ZOOM A 1 PARA IMPRIMIR CORRECTAMENTE */
+  .f43-hoja {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    width: 210mm !important;
+    margin: 0 auto !important;
+    padding: 10mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    zoom: 1 !important;
+    -moz-transform: scale(1) !important;
+    -ms-zoom: 1 !important;
+  }
+
+  /* Asegurar que todo el contenido interno sea visible */
+  .f43-hoja * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .f43-tabla {
+    border: 1px solid #000 !important;
+    page-break-inside: avoid;
+  }
+
+  .f43-tabla th,
+  .f43-tabla td {
+    border: 1px solid #000 !important;
+    padding: 4px 6px !important;
+  }
+
+  .f43-hoja input,
+  .f43-hoja select,
+  .f43-hoja textarea {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: black !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}

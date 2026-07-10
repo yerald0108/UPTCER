@@ -31,7 +31,7 @@ function confirmarAccion({
   titulo      = '¿Está seguro?',
   mensaje     = 'Esta acción no se puede deshacer.',
   labelConfirmar = 'Confirmar',
-  tipo        = 'peligro',      // peligro | warning | info
+  tipo        = 'peligro',
   icono       = 'alert-triangle',
   onConfirmar = null,
   formId      = null,
@@ -77,8 +77,9 @@ function _ejecutarConfirmacion() {
     }
   }
   if (_modalCallback) {
+    const callback = _modalCallback;  // ← Guardar referencia antes de cerrar
     cerrarModal('modal-confirmacion-global');
-    _modalCallback();
+    callback();                       // ← Ejecutar después de cerrar
     return;
   }
   cerrarModal('modal-confirmacion-global');

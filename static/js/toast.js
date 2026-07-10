@@ -44,6 +44,12 @@ function mostrarToast({ tipo = 'info', titulo = '', mensaje = '', duracion = 400
   contenedor.appendChild(toast);
   lucide.createIcons({ nodes: [toast] });
 
+  // ⚠️ Hacer que los elementos internos no capturen el mouse
+  // pero el botón de cerrar SÍ debe seguir funcionando
+  toast.querySelectorAll('i, .toast-cuerpo, .toast-icono, .toast-titulo, .toast-mensaje').forEach(el => {
+    el.style.pointerEvents = 'none';
+  });
+
   // Animar entrada
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -51,25 +57,52 @@ function mostrarToast({ tipo = 'info', titulo = '', mensaje = '', duracion = 400
     });
   });
 
+  // ─── Sistema de pausa/reanudación ──────────────────────────────────────
+  let tiempoRestante = duracion;
+  let temporizador = null;
+
+  function iniciarTemporizador() {
+    temporizador = setTimeout(() => {
+      cerrarToast(toast);
+    }, tiempoRestante);
+  }
+
   // Cerrar al hacer click en X
-  toast.querySelector('.toast-cerrar').addEventListener('click', () => {
+  toast.querySelector('.toast-cerrar').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (temporizador) clearTimeout(temporizador);
     cerrarToast(toast);
   });
 
-  // Auto cerrar
-  const temporizador = setTimeout(() => cerrarToast(toast), duracion);
-
   // Pausar al pasar el mouse
-  toast.addEventListener('mouseenter', () => clearTimeout(temporizador));
-  toast.addEventListener('mouseleave', () => {
-    setTimeout(() => cerrarToast(toast), 1000);
+  toast.addEventListener('mouseenter', () => {
+    if (temporizador) {
+      clearTimeout(temporizador);
+      temporizador = null;
+    }
   });
+
+  // Reanudar al quitar el mouse
+  toast.addEventListener('mouseleave', () => {
+    if (!temporizador) {
+      temporizador = setTimeout(() => {
+        cerrarToast(toast);
+      }, tiempoRestante);
+    }
+  });
+
+  // Iniciar temporizador
+  iniciarTemporizador();
 }
 
 function cerrarToast(toast) {
   toast.classList.remove('visible');
   toast.classList.add('saliendo');
-  toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.remove();
+    }
+  }, 300);
 }
 
 // ─── Leer mensajes de Django desde el DOM ────────────────────────────────────

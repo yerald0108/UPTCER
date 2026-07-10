@@ -68,7 +68,16 @@
         </button>
       </div>
 
-      <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
+      <button type="button" onclick="imprimirDocumento({
+        selector: '.f43-hoja',
+        titulo: 'Solicitud {{ solicitud.numero }}',
+        estilos: `
+          .f43-encabezado { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5mm; }
+          .f43-encabezado-titulo { font-size: 11px; font-weight: bold; text-align: center; flex: 1; }
+          .f43-encabezado-codigo { font-size: 14px; font-weight: bold; border: 2px solid #000; padding: 4px 8px; }
+          .f43-campo-label { font-weight: bold; width: 30%; background-color: #f8f8f8; }
+        `
+      })" class="f43-btn-accion f43-btn-imprimir">
         <i data-lucide="printer" style="width:16px;height:16px;"></i>
         Imprimir / PDF
       </button>
@@ -83,8 +92,6 @@
       </div>
 
       <div class="tracker-pasos">
-
-        <!-- Paso 1: Enviada -->
         <div class="tracker-paso completado">
           <div class="tracker-paso-icono">
             <i data-lucide="send" style="width:22px;height:22px;"></i>
@@ -95,7 +102,6 @@
 
         <div class="tracker-linea {% if solicitud.estado != 'enviada' %}completada{% endif %}"></div>
 
-        <!-- Paso 2: En revisión -->
         <div class="tracker-paso {% if solicitud.estado == 'enviada' %}pendiente{% elif solicitud.estado == 'en_revision' %}activo{% else %}completado{% endif %}">
           <div class="tracker-paso-icono">
             <i data-lucide="search-check" style="width:22px;height:22px;"></i>
@@ -108,7 +114,6 @@
 
         <div class="tracker-linea {% if solicitud.esta_resuelta %}completada{% endif %}"></div>
 
-        <!-- Paso 3: Resolución -->
         <div class="tracker-paso {% if solicitud.estado == 'aprobada' %}completado{% elif solicitud.estado == 'denegada' %}denegado{% else %}pendiente{% endif %}">
           <div class="tracker-paso-icono">
             {% if solicitud.estado == 'denegada' %}
@@ -126,7 +131,6 @@
             {% if solicitud.fecha_resolucion %}{{ solicitud.fecha_resolucion|date:"d/m/Y H:i" }}{% else %}Pendiente{% endif %}
           </div>
         </div>
-
       </div>
 
       {% if solicitud.estado == 'enviada' %}
@@ -161,14 +165,12 @@
           Esta solicitud fue cancelada.
         </div>
       {% endif %}
-
     </div>
-    {% endif %}
+  {% endif %}
 
   <!-- ── HOJA A4 — Solo lectura ────────────────────────────────────────────── -->
   <div class="f43-hoja">
 
-    <!-- Encabezado oficial -->
     <div class="f43-encabezado">
       <div class="f43-encabezado-titulo">
         SOLICITUD DE AUTORIZACIÓN TÉCNICA POR PERSONAS NATURALES PARA LA IMPORTACIÓN
@@ -177,161 +179,57 @@
       <div class="f43-encabezado-codigo">F.43</div>
     </div>
 
-    <!-- SECCIÓN 1: DATOS DEL SOLICITANTE -->
     <table class="f43-tabla">
-      <thead>
-        <tr><th colspan="4">Datos de la Persona Solicitante</th></tr>
-      </thead>
+      <thead><tr><th colspan="4">Datos de la Persona Solicitante</th></tr></thead>
       <tbody>
-        <tr>
-          <td class="f43-campo-label">1. Nombre y Apellidos</td>
-          <td colspan="3">{{ datos_f43.nombre_apellidos|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">2. Número de Pasaporte</td>
-          <td>{{ datos_f43.numero_pasaporte|default:"—" }}</td>
-          <td class="f43-campo-label">3. País de Residencia</td>
-          <td>{{ datos_f43.pais_residencia|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">4. Dirección de Residencia</td>
-          <td colspan="3">{{ datos_f43.direccion_residencia|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">5. Correo Electrónico</td>
-          <td>{{ datos_f43.correo_electronico|default:"—" }}</td>
-          <td class="f43-campo-label">6. Teléfono</td>
-          <td>{{ datos_f43.telefono|default:"—" }}</td>
-        </tr>
+        <tr><td class="f43-campo-label">1. Nombre y Apellidos</td><td colspan="3">{{ datos_f43.nombre_apellidos|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">2. Número de Pasaporte</td><td>{{ datos_f43.numero_pasaporte|default:"—" }}</td><td class="f43-campo-label">3. País de Residencia</td><td>{{ datos_f43.pais_residencia|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">4. Dirección de Residencia</td><td colspan="3">{{ datos_f43.direccion_residencia|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">5. Correo Electrónico</td><td>{{ datos_f43.correo_electronico|default:"—" }}</td><td class="f43-campo-label">6. Teléfono</td><td>{{ datos_f43.telefono|default:"—" }}</td></tr>
       </tbody>
     </table>
 
-    <!-- SECCIÓN 2: DATOS DE IMPORTACIÓN -->
     <table class="f43-tabla">
-      <thead>
-        <tr><th colspan="4">Datos referentes a la importación</th></tr>
-      </thead>
+      <thead><tr><th colspan="4">Datos referentes a la importación</th></tr></thead>
       <tbody>
-        <tr>
-          <td class="f43-campo-label">1. Provincia</td>
-          <td colspan="3">{{ datos_f43.provincia|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">2. Modo de Importación</td>
-          <td colspan="3">{{ datos_f43.modo_importacion|default:"—"|capfirst }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">3. No. de vuelo</td>
-          <td>{{ datos_f43.numero_vuelo|default:"—" }}</td>
-          <td class="f43-campo-label">4. Fecha de Arribo</td>
-          <td>{{ datos_f43.fecha_arribo|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">5. País de procedencia</td>
-          <td>{{ datos_f43.pais_procedencia|default:"—" }}</td>
-          <td class="f43-campo-label">6. Aduana de acceso</td>
-          <td>{{ datos_f43.aduana_acceso|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">7. Lugar de acceso</td>
-          <td>{{ datos_f43.lugar_acceso|default:"—" }}</td>
-          <td class="f43-campo-label">8. No. del RAD</td>
-          <td>{{ datos_f43.numero_rad|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">9. Objetivo</td>
-          <td colspan="3">
-            {{ datos_f43.objetivo_importacion|default:"—"|capfirst }}
-            {% if datos_f43.objetivo_otros_detalle %}
-              — {{ datos_f43.objetivo_otros_detalle }}
-            {% endif %}
-          </td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">10. Período</td>
-          <td colspan="3">
-            {{ datos_f43.periodo_importacion|default:"—"|capfirst }}
-            {% if datos_f43.tiempo_solicitado %}
-              — {{ datos_f43.tiempo_solicitado }} meses
-            {% endif %}
-          </td>
-        </tr>
+        <tr><td class="f43-campo-label">1. Provincia</td><td colspan="3">{{ datos_f43.provincia|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">2. Modo de Importación</td><td colspan="3">{{ datos_f43.modo_importacion|default:"—"|capfirst }}</td></tr>
+        <tr><td class="f43-campo-label">3. No. de vuelo</td><td>{{ datos_f43.numero_vuelo|default:"—" }}</td><td class="f43-campo-label">4. Fecha de Arribo</td><td>{{ datos_f43.fecha_arribo|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">5. País de procedencia</td><td>{{ datos_f43.pais_procedencia|default:"—" }}</td><td class="f43-campo-label">6. Aduana de acceso</td><td>{{ datos_f43.aduana_acceso|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">7. Lugar de acceso</td><td>{{ datos_f43.lugar_acceso|default:"—" }}</td><td class="f43-campo-label">8. No. del RAD</td><td>{{ datos_f43.numero_rad|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label">9. Objetivo</td><td colspan="3">{{ datos_f43.objetivo_importacion|default:"—"|capfirst }}{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}</td></tr>
+        <tr><td class="f43-campo-label">10. Período</td><td colspan="3">{{ datos_f43.periodo_importacion|default:"—"|capfirst }}{% if datos_f43.tiempo_solicitado %} — {{ datos_f43.tiempo_solicitado }} meses{% endif %}</td></tr>
       </tbody>
     </table>
 
-    <!-- SECCIÓN 3: EQUIPOS -->
     <table class="f43-tabla">
       <thead>
         <tr><th colspan="5">11. Relación de Equipos y Medios</th></tr>
-        <tr>
-          <th style="width:5%;">No.</th>
-          <th style="width:40%;">DESCRIPCIÓN</th>
-          <th style="width:20%;">MARCA</th>
-          <th style="width:20%;">MODELO</th>
-          <th style="width:15%;">CANTIDAD</th>
-        </tr>
+        <tr><th style="width:5%;">No.</th><th style="width:40%;">DESCRIPCIÓN</th><th style="width:20%;">MARCA</th><th style="width:20%;">MODELO</th><th style="width:15%;">CANTIDAD</th></tr>
       </thead>
       <tbody>
         {% for eq in equipos %}
-        <tr>
-          <td style="text-align:center;">{{ forloop.counter }}</td>
-          <td>{{ eq.descripcion }}</td>
-          <td>{{ eq.marca }}</td>
-          <td>{{ eq.modelo }}</td>
-          <td style="text-align:center;">{{ eq.cantidad }}</td>
-        </tr>
+        <tr><td style="text-align:center;">{{ forloop.counter }}</td><td>{{ eq.descripcion }}</td><td>{{ eq.marca }}</td><td>{{ eq.modelo }}</td><td style="text-align:center;">{{ eq.cantidad }}</td></tr>
         {% empty %}
-        <tr>
-          <td colspan="5" style="text-align:center;color:#888;">Sin equipos registrados</td>
-        </tr>
+        <tr><td colspan="5" style="text-align:center;color:#888;">Sin equipos registrados</td></tr>
         {% endfor %}
       </tbody>
     </table>
 
-    <!-- SECCIÓN 4: FIRMA Y FECHA -->
     <table class="f43-tabla">
       <tbody>
-        <tr>
-          <td class="f43-campo-label" style="width:20%;">Fecha de Solicitud</td>
-          <td style="width:30%;">{{ datos_f43.fecha_solicitud|default:solicitud.fecha_creacion|date:"d/m/Y" }}</td>
-          <td class="f43-campo-label" style="width:20%;">FIRMA</td>
-          <td style="width:30%;">{{ datos_f43.firma_ci|default:"—" }}</td>
-        </tr>
+        <tr><td class="f43-campo-label" style="width:20%;">Fecha de Solicitud</td><td style="width:30%;">{{ datos_f43.fecha_solicitud|default:solicitud.fecha_creacion|date:"d/m/Y" }}</td><td class="f43-campo-label" style="width:20%;">FIRMA</td><td style="width:30%;">{{ datos_f43.firma_ci|default:"—" }}</td></tr>
       </tbody>
     </table>
 
-    <!-- SECCIÓN 5: CONTROL DE TRÁMITES -->
     <table class="f43-tabla">
-      <thead>
-        <tr><th colspan="3">Para uso del Control de Trámites</th></tr>
-      </thead>
+      <thead><tr><th colspan="3">Para uso del Control de Trámites</th></tr></thead>
       <tbody>
-        <tr>
-          <td class="f43-campo-label" style="width:33%;">REGISTRO ENTRADA</td>
-          <td class="f43-campo-label" style="width:33%;">FECHA APROBACIÓN</td>
-          <td class="f43-campo-label" style="width:34%;">REGISTRO SALIDA</td>
-        </tr>
-        <tr>
-          <td>{{ solicitud.numero }}</td>
-          <td>
-            {% if solicitud.fecha_resolucion %}
-              {{ solicitud.fecha_resolucion|date:"d/m/Y" }}
-            {% else %}
-              —
-            {% endif %}
-          </td>
-          <td>
-            {% if solicitud.esta_resuelta %}
-              {{ solicitud.numero }}-R
-            {% else %}
-              —
-            {% endif %}
-          </td>
-        </tr>
+        <tr><td class="f43-campo-label" style="width:33%;">REGISTRO ENTRADA</td><td class="f43-campo-label" style="width:33%;">FECHA APROBACIÓN</td><td class="f43-campo-label" style="width:34%;">REGISTRO SALIDA</td></tr>
+        <tr><td>{{ solicitud.numero }}</td><td>{% if solicitud.fecha_resolucion %}{{ solicitud.fecha_resolucion|date:"d/m/Y" }}{% else %}—{% endif %}</td><td>{% if solicitud.esta_resuelta %}{{ solicitud.numero }}-R{% else %}—{% endif %}</td></tr>
       </tbody>
     </table>
 
-    <!-- Enlace a licencia si está aprobada -->
     {% if solicitud.es_aprobada %}
       {% with licencia=solicitud.licencia %}
         {% if licencia %}
@@ -340,53 +238,33 @@
             <span style="font-size:9.5pt;font-weight:bold;color:#1B5E20;">Licencia generada:</span>
             <span style="font-size:9.5pt;font-family:monospace;color:#1B5E20;">{{ licencia.numero }}</span>
           </div>
-          <a href="{% url 'licencias:detalle' licencia.numero %}"
-            style="font-size:9.5pt;color:#1B5E20;font-weight:bold;text-decoration:none;">
-            Ver licencia →
-          </a>
+          <a href="{% url 'licencias:detalle' licencia.numero %}" style="font-size:9.5pt;color:#1B5E20;font-weight:bold;text-decoration:none;">Ver licencia →</a>
         </div>
         {% endif %}
       {% endwith %}
     {% endif %}
 
-    <!-- Observaciones del solicitante -->
     {% if solicitud.observaciones_solicitante %}
-    <div style="margin-top:4mm;">
-      <strong style="font-size:9.5pt;">Observaciones del solicitante:</strong>
-      <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_solicitante }}</p>
-    </div>
+    <div style="margin-top:4mm;"><strong style="font-size:9.5pt;">Observaciones del solicitante:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_solicitante }}</p></div>
     {% endif %}
 
-    <!-- Criterio técnico -->
     {% if solicitud.observaciones_tecnicas %}
-    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;">
-      <strong style="font-size:9.5pt;">Criterio técnico del especialista:</strong>
-      <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_tecnicas }}</p>
-    </div>
+    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;"><strong style="font-size:9.5pt;">Criterio técnico del especialista:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_tecnicas }}</p></div>
     {% endif %}
 
-    <!-- Observaciones del operador -->
     {% if solicitud.observaciones_operador %}
-    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;">
-      <strong style="font-size:9.5pt;">Observaciones del operador:</strong>
-      <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p>
-    </div>
+    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;"><strong style="font-size:9.5pt;">Observaciones del operador:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p></div>
     {% endif %}
 
   </div>
   <!-- FIN HOJA A4 -->
 
-  <!-- ── PANEL DE GESTIÓN (solo operador/especialista) ──────────────────────── -->
   {% if puede_gestionar or puede_evaluar %}
   <div style="width:210mm;margin-top:var(--espacio-6);">
-
-    <!-- Historial de cambios -->
     <div class="tarjeta" style="margin-bottom:var(--espacio-5);">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
-            <i data-lucide="history" style="width:18px;height:18px;"></i>
-          </div>
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;"><i data-lucide="history" style="width:18px;height:18px;"></i></div>
           <h2 class="tarjeta-titulo">Historial de la solicitud</h2>
         </div>
       </div>
@@ -394,107 +272,62 @@
         {% if historial %}
           <div class="tabla-contenedor" style="border:none;border-radius:0;">
             <table class="tabla">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Realizado por</th>
-                  <th>Estado anterior</th>
-                  <th>Estado nuevo</th>
-                  <th>Observación</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Fecha</th><th>Realizado por</th><th>Estado anterior</th><th>Estado nuevo</th><th>Observación</th></tr></thead>
               <tbody>
                 {% for h in historial %}
                 <tr>
-                  <td style="white-space:nowrap;color:var(--color-texto-muted);">
-                    {{ h.fecha|date:"d/m/Y H:i" }}
-                  </td>
-                  <td>
-                    <div style="font-weight:var(--peso-medio);">{{ h.usuario.get_nombre_completo }}</div>
-                    <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ h.usuario.get_rol_display }}</div>
-                  </td>
-                  <td>
-                    {% if h.estado_anterior %}
-                      <span class="badge badge-info">{{ h.get_estado_anterior_display }}</span>
-                    {% else %}
-                      <span style="color:var(--color-texto-muted);">—</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    <span class="badge {{ h.clase_badge_nuevo }}">{{ h.get_estado_nuevo_display }}</span>
-                  </td>
-                  <td style="color:var(--color-texto-secundario);">
-                    {{ h.observacion|default:"—" }}
-                  </td>
+                  <td style="white-space:nowrap;color:var(--color-texto-muted);">{{ h.fecha|date:"d/m/Y H:i" }}</td>
+                  <td><div style="font-weight:var(--peso-medio);">{{ h.usuario.get_nombre_completo }}</div><div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ h.usuario.get_rol_display }}</div></td>
+                  <td>{% if h.estado_anterior %}<span class="badge badge-info">{{ h.get_estado_anterior_display }}</span>{% else %}<span style="color:var(--color-texto-muted);">—</span>{% endif %}</td>
+                  <td><span class="badge {{ h.clase_badge_nuevo }}">{{ h.get_estado_nuevo_display }}</span></td>
+                  <td style="color:var(--color-texto-secundario);">{{ h.observacion|default:"—" }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
         {% else %}
-          <div style="padding:var(--espacio-8);text-align:center;color:var(--color-texto-muted);">
-            <p style="font-size:var(--texto-sm);">Sin cambios registrados aún.</p>
-          </div>
+          <div style="padding:var(--espacio-8);text-align:center;color:var(--color-texto-muted);"><p style="font-size:var(--texto-sm);">Sin cambios registrados aún.</p></div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Formulario cambio de estado -->
     {% if not solicitud.esta_resuelta %}
     <div class="tarjeta">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
-            <i data-lucide="settings-2" style="width:18px;height:18px;"></i>
-          </div>
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;"><i data-lucide="settings-2" style="width:18px;height:18px;"></i></div>
           <h2 class="tarjeta-titulo">Gestionar solicitud</h2>
         </div>
       </div>
       <div class="tarjeta-cuerpo">
         <form method="post" action="{% url 'solicitudes:cambiar_estado' solicitud.pk %}" id="form-cambiar-estado">
           {% csrf_token %}
-
           <div class="campo-grupo">
             <label class="campo-etiqueta requerido">Cambiar estado a</label>
             <div style="display:flex;flex-wrap:wrap;gap:var(--espacio-3);">
               {% for valor, etiqueta in ESTADOS %}
                 {% if valor != solicitud.estado and valor != 'borrador' %}
-                <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-4);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
-                  onmouseover="this.style.borderColor='var(--color-primario)'"
-                  onmouseout="this.style.borderColor='var(--color-borde)'">
-                  <input type="radio" name="estado_nuevo" value="{{ valor }}" required>
-                  {{ etiqueta }}
+                <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-4);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);" onmouseover="this.style.borderColor='var(--color-primario)'" onmouseout="this.style.borderColor='var(--color-borde)'">
+                  <input type="radio" name="estado_nuevo" value="{{ valor }}" required> {{ etiqueta }}
                 </label>
                 {% endif %}
               {% endfor %}
             </div>
           </div>
-
           <div class="campo-grupo">
-            <label class="campo-etiqueta" for="observacion">
-              {% if puede_evaluar %}Criterio técnico{% else %}Observaciones{% endif %}
-            </label>
-            <textarea name="observacion" id="observacion" class="campo-textarea" rows="3"
-              placeholder="{% if puede_evaluar %}Escriba el criterio técnico sobre el equipo{% else %}Escriba las observaciones sobre esta solicitud{% endif %}"></textarea>
+            <label class="campo-etiqueta" for="observacion">{% if puede_evaluar %}Criterio técnico{% else %}Observaciones{% endif %}</label>
+            <textarea name="observacion" id="observacion" class="campo-textarea" rows="3" placeholder="{% if puede_evaluar %}Escriba el criterio técnico sobre el equipo{% else %}Escriba las observaciones sobre esta solicitud{% endif %}"></textarea>
           </div>
-
           <div style="display:flex;justify-content:flex-end;gap:var(--espacio-3);">
-            <button type="button" class="btn btn-primario" id="btn-guardar-estado"
-              onclick="confirmarCambioEstado()">
-              <i data-lucide="save" style="width:16px;height:16px;"></i>
-              Guardar cambio de estado
-            </button>
+            <button type="button" class="btn btn-primario" id="btn-guardar-estado" onclick="confirmarCambioEstado()"><i data-lucide="save" style="width:16px;height:16px;"></i> Guardar cambio de estado</button>
           </div>
         </form>
       </div>
     </div>
     {% else %}
-    <div class="alerta alerta-info">
-      <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
-      Esta solicitud ya fue resuelta el {{ solicitud.fecha_resolucion|date:"d/m/Y \a \l\a\s H:i" }} y no puede modificarse.
-    </div>
+    <div class="alerta alerta-info"><i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i> Esta solicitud ya fue resuelta el {{ solicitud.fecha_resolucion|date:"d/m/Y \a \l\a\s H:i" }} y no puede modificarse.</div>
     {% endif %}
-
   </div>
   {% endif %}
 
@@ -510,138 +343,46 @@
 
 {% block scripts_extra %}
 <script>
-  // Identificador de página para el zoom
   document.body.dataset.pagina = 'solicitud-detalle';
 
-  // ── Cambio de estado via AJAX ──────────────────────────────────────────────
   function confirmarCambioEstado() {
     const estadoSeleccionado = document.querySelector('input[name="estado_nuevo"]:checked');
-
-    if (!estadoSeleccionado) {
-      mostrarToast({ tipo: 'warning', mensaje: 'Seleccione un estado antes de continuar.' });
-      return;
-    }
-
-    const estado      = estadoSeleccionado.value;
+    if (!estadoSeleccionado) { mostrarToast({ tipo: 'warning', mensaje: 'Seleccione un estado antes de continuar.' }); return; }
+    const estado = estadoSeleccionado.value;
     const esDenegacion = estado === 'denegada';
     const esAprobacion = estado === 'aprobada';
-
     const ejecutar = () => enviarCambioEstado();
-
     if (esDenegacion) {
-      confirmarAccion({
-        titulo:         'Denegar solicitud',
-        mensaje:        'Esta acción notificará al solicitante que su solicitud ha sido denegada.',
-        labelConfirmar: 'Sí, denegar solicitud',
-        tipo:           'peligro',
-        icono:          'x-circle',
-        onConfirmar:    ejecutar,
-      });
+      confirmarAccion({ titulo: 'Denegar solicitud', mensaje: 'Esta acción notificará al solicitante que su solicitud ha sido denegada.', labelConfirmar: 'Sí, denegar solicitud', tipo: 'peligro', icono: 'x-circle', onConfirmar: ejecutar });
     } else if (esAprobacion) {
-      confirmarAccion({
-        titulo:         'Aprobar solicitud',
-        mensaje:        'Se aprobará la solicitud y se generará automáticamente la licencia de importación.',
-        labelConfirmar: 'Sí, aprobar y generar licencia',
-        tipo:           'info',
-        icono:          'check-circle',
-        onConfirmar:    ejecutar,
-      });
-    } else {
-      ejecutar();
-    }
+      confirmarAccion({ titulo: 'Aprobar solicitud', mensaje: 'Se aprobará la solicitud y se generará automáticamente la licencia de importación.', labelConfirmar: 'Sí, aprobar y generar licencia', tipo: 'info', icono: 'check-circle', onConfirmar: ejecutar });
+    } else { ejecutar(); }
   }
 
   function enviarCambioEstado() {
-    const form     = document.getElementById('form-cambiar-estado');
-    const btn      = document.getElementById('btn-guardar-estado');
+    const form = document.getElementById('form-cambiar-estado');
+    const btn = document.getElementById('btn-guardar-estado');
     const formData = new FormData(form);
-
-    // Estado de carga manual en el botón
     const textoOriginal = btn.innerHTML;
-    btn.disabled    = true;
+    btn.disabled = true;
     btn.style.opacity = '0.75';
-    btn.innerHTML = `
-      <span style="display:inline-flex;align-items:center;gap:8px;">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-          style="animation:girar 0.7s linear infinite;"
-          xmlns="http://www.w3.org/2000/svg">
-          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"
-            stroke-dasharray="25" stroke-dashoffset="10" opacity="0.4"/>
-          <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span>Guardando...</span>
-      </span>
-    `;
-
-    fetch(form.action, {
-      method:  'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      body:    formData,
-    })
+    btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="animation:girar 0.7s linear infinite;" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="25" stroke-dashoffset="10" opacity="0.4"/><path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Guardando...</span></span>`;
+    fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: formData })
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        // Actualizar badge de estado en la barra de acciones
         const badgeEstado = document.getElementById('badge-estado-solicitud');
-        if (badgeEstado) {
-          badgeEstado.textContent = data.estado_label;
-          badgeEstado.className   = `badge ${data.clase_badge}`;
-          badgeEstado.style.fontSize = '13px';
-          badgeEstado.style.padding  = '6px 14px';
-        }
-
-        // Toast de éxito
-        mostrarToast({
-          tipo:    'success',
-          titulo:  'Estado actualizado',
-          mensaje: `La solicitud cambió a "${data.estado_label}" correctamente.`,
-        });
-
-        // Si se generó una licencia, mostrar enlace
-        if (data.licencia_numero) {
-          mostrarToast({
-            tipo:    'info',
-            titulo:  'Licencia generada',
-            mensaje: `Licencia ${data.licencia_numero} creada automáticamente.`,
-            duracion: 6000,
-          });
-          // Recargar para mostrar el panel de licencia y ocultar el formulario
-          setTimeout(() => location.reload(), 1800);
-          return;
-        }
-
-        // Ocultar el formulario de gestión si la solicitud quedó resuelta
+        if (badgeEstado) { badgeEstado.textContent = data.estado_label; badgeEstado.className = `badge ${data.clase_badge}`; badgeEstado.style.fontSize = '13px'; badgeEstado.style.padding = '6px 14px'; }
+        mostrarToast({ tipo: 'success', titulo: 'Estado actualizado', mensaje: `La solicitud cambió a "${data.estado_label}" correctamente.` });
+        if (data.licencia_numero) { mostrarToast({ tipo: 'info', titulo: 'Licencia generada', mensaje: `Licencia ${data.licencia_numero} creada automáticamente.`, duracion: 6000 }); setTimeout(() => location.reload(), 1800); return; }
         const estadosResueltos = ['aprobada', 'denegada', 'cancelada'];
-        if (estadosResueltos.includes(data.estado_nuevo)) {
-          setTimeout(() => location.reload(), 1200);
-          return;
-        }
-
-        // Restaurar botón
-        btn.disabled    = false;
-        btn.style.opacity = '';
-        btn.innerHTML   = textoOriginal;
-
-        // Limpiar observación
-        const textarea = form.querySelector('textarea[name="observacion"]');
-        if (textarea) textarea.value = '';
-
-        // Limpiar selección de estado
+        if (estadosResueltos.includes(data.estado_nuevo)) { setTimeout(() => location.reload(), 1200); return; }
+        btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = textoOriginal;
+        const textarea = form.querySelector('textarea[name="observacion"]'); if (textarea) textarea.value = '';
         document.querySelectorAll('input[name="estado_nuevo"]').forEach(r => r.checked = false);
-
-      } else {
-        throw new Error('Error en el servidor');
-      }
+      } else { throw new Error('Error en el servidor'); }
     })
-    .catch(() => {
-      mostrarToast({
-        tipo:    'error',
-        mensaje: 'Ocurrió un error al guardar. Intente de nuevo.',
-      });
-      btn.disabled    = false;
-      btn.style.opacity = '';
-      btn.innerHTML   = textoOriginal;
-    });
+    .catch(() => { mostrarToast({ tipo: 'error', mensaje: 'Ocurrió un error al guardar. Intente de nuevo.' }); btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = textoOriginal; });
   }
 </script>
 {% endblock %}

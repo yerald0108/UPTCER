@@ -6,56 +6,6 @@
 
 {% block estilos_extra %}
 <link rel="stylesheet" href="{% static 'css/f43.css' %}">
-<style>
-  /* ─── Botón flotante "Volver arriba" ─────────────────────────────────── */
-  .btn-scroll-top {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    z-index: 1000;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background-color: var(--color-primario, #1A3A5C);
-    color: white;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
-  }
-
-  .btn-scroll-top.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-
-  .btn-scroll-top:hover {
-    background-color: var(--color-primario-hover, #0F2A47);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-  }
-
-  .btn-scroll-top:active {
-    transform: translateY(0);
-  }
-
-  /* Ajuste para móviles */
-  @media (max-width: 768px) {
-    .btn-scroll-top {
-      bottom: 20px;
-      right: 20px;
-      width: 42px;
-      height: 42px;
-    }
-  }
-</style>
 {% endblock %}
 
 {% block breadcrumb %}
@@ -106,7 +56,22 @@
       </div>
 
       <div style="display:flex;gap:8px;">
-        <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
+        <button type="button" onclick="imprimirDocumento({
+          selector: '.f43-hoja',
+          titulo: 'F43',
+          estilos: `
+            body { zoom: 0.78; }
+            th, td { font-size: 9px; }
+            input, select, textarea { font-size: 9px !important; }
+            .f43-encabezado { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3mm; }
+            .f43-encabezado-titulo { font-size: 9px; font-weight: bold; text-align: center; flex: 1; }
+            .f43-encabezado-codigo { font-size: 12px; font-weight: bold; border: 2px solid #000; padding: 2px 6px; }
+            .f43-campo-label { font-weight: bold; width: 30%; background-color: #f8f8f8; font-size: 9px; }
+            .f43-check-grupo { display: flex; gap: 6px; flex-wrap: wrap; font-size: 9px; }
+            .f43-nota { font-size: 7px; margin-top: 3px; padding: 3px; border: 1px solid #000; }
+            .f43-instrucciones { display: none !important; }
+          `
+        })" class="f43-btn-accion f43-btn-imprimir">
           <i data-lucide="printer" style="width:16px;height:16px;"></i>
           Imprimir / PDF
         </button>
@@ -205,7 +170,6 @@
           <tr><th colspan="4">Datos referentes a la importación</th></tr>
         </thead>
         <tbody>
-          <!-- Provincia -->
           <tr>
             <td class="f43-campo-label" style="width:25%;">1. Provincia donde será realizada la solicitud</td>
             <td colspan="3">
@@ -220,7 +184,6 @@
             </td>
           </tr>
 
-          <!-- Modo de importación -->
           <tr>
             <td class="f43-campo-label">2. Modo de la Importación</td>
             <td colspan="3">
@@ -246,7 +209,6 @@
             </td>
           </tr>
 
-          <!-- Vuelo y arribo -->
           <tr>
             <td class="f43-campo-label">3. No. de vuelo</td>
             <td>
@@ -261,7 +223,6 @@
             </td>
           </tr>
 
-          <!-- País procedencia y aduana -->
           <tr>
             <td class="f43-campo-label">5. País de procedencia</td>
             <td>
@@ -277,7 +238,6 @@
             </td>
           </tr>
 
-          <!-- Lugar acceso y RAD -->
           <tr>
             <td class="f43-campo-label">7. Lugar de acceso</td>
             <td>
@@ -293,7 +253,6 @@
             </td>
           </tr>
 
-          <!-- Objetivo -->
           <tr>
             <td class="f43-campo-label">9. Objetivo de la Importación</td>
             <td colspan="3">
@@ -324,7 +283,6 @@
             </td>
           </tr>
 
-          <!-- Período -->
           <tr>
             <td class="f43-campo-label">10. Periodo de la Importación</td>
             <td colspan="3">
@@ -412,7 +370,6 @@
       </tbody>
       </table>
 
-      <!-- Botones agregar/eliminar fila -->
       <div class="no-print" style="display:flex;gap:8px;margin-bottom:4mm;">
         <button type="button" onclick="agregarFila()"
           style="font-family:var(--fuente-principal);font-size:12px;padding:4px 12px;background:var(--color-primario);color:white;border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:4px;">
@@ -425,7 +382,6 @@
         <strong>En esta relación de medios se pondrán exclusivamente los equipos y componentes que se encuentran regulados por la legislación vigente.</strong>
       </p>
 
-      <!-- Documento adjunto -->
       <div class="no-print" style="margin-bottom:5mm;">
         <label style="font-family:var(--fuente-principal);font-size:12px;font-weight:600;display:block;margin-bottom:4px;">
           Documento adjunto (opcional — copia del RAD u otro):
@@ -530,60 +486,6 @@
 {% block scripts_extra %}
 <script src="{% static 'js/f43.js' %}"></script>
 <script>
-  /* ─── Control de zoom del documento F43 ─────────────────────────────────── */
-  const ZOOM_MIN     = 70;
-  const ZOOM_MAX     = 130;
-  const ZOOM_DEFECTO = 100;
-  const ZOOM_CLAVE   = 'uptcer_f43_zoom';
-
-  function aplicarZoom(nivel) {
-    const hoja = document.querySelector('.f43-hoja');
-    if (!hoja) return;
-    hoja.style.zoom = (nivel / 100);
-    const indicador = document.getElementById('zoom-nivel');
-    if (indicador) indicador.textContent = nivel + '%';
-    localStorage.setItem(ZOOM_CLAVE, nivel);
-  }
-
-  function cambiarZoom(delta) {
-    const actual = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO);
-    const nuevo  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, actual + delta));
-    aplicarZoom(nuevo);
-    if (nuevo === ZOOM_MIN && delta < 0) {
-      mostrarToast({ tipo: 'info', mensaje: 'Tamaño mínimo alcanzado.', duracion: 2000 });
-    }
-    if (nuevo === ZOOM_MAX && delta > 0) {
-      mostrarToast({ tipo: 'info', mensaje: 'Tamaño máximo alcanzado.', duracion: 2000 });
-    }
-  }
-
-  function resetearZoom() {
-    aplicarZoom(ZOOM_DEFECTO);
-    mostrarToast({ tipo: 'info', mensaje: 'Tamaño del documento restablecido.', duracion: 2000 });
-  }
-
-  // Restaurar zoom guardado al cargar
-  document.addEventListener('DOMContentLoaded', () => {
-    const guardado = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO);
-    aplicarZoom(guardado);
-  });
-
-  /* ─── Botón flotante "Volver arriba" ───────────────────────────────────── */
-  (function() {
-    const btnScrollTop = document.getElementById('btn-scroll-top');
-
-    if (!btnScrollTop) return;
-
-    window.addEventListener('scroll', function() {
-      // Mostrar el botón cuando el scroll supera la mitad de la ventana
-      const mitadPantalla = window.innerHeight / 2;
-
-      if (window.scrollY > mitadPantalla) {
-        btnScrollTop.classList.add('visible');
-      } else {
-        btnScrollTop.classList.remove('visible');
-      }
-    });
-  })();
+  document.body.dataset.pagina = 'f43';
 </script>
 {% endblock %}

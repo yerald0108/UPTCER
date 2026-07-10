@@ -31,11 +31,16 @@
         <p class="login-bienvenida-subtitulo">Ingrese sus credenciales para acceder al sistema</p>
       </div>
 
-      <!-- Errores -->
+      <!-- Mensajes Django → se convierten en toasts -->
       {% if messages %}
-        <div class="alerta alerta-error" style="margin-bottom:var(--espacio-5);">
-          <i data-lucide="x-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
-          <span>Usuario o contraseña incorrectos. Por favor intente de nuevo.</span>
+        <div id="django-messages" style="display:none;">
+          {% for message in messages %}
+            <span
+              data-toast
+              data-tipo="{{ message.tags }}"
+              data-mensaje="{{ message }}"
+            ></span>
+          {% endfor %}
         </div>
       {% endif %}
 
@@ -56,6 +61,12 @@
             required
             value="{{ username_valor|default:'' }}"
           >
+          {% if form.username.errors %}
+            <span class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.username.errors.0 }}
+            </span>
+          {% endif %}
         </div>
 
         <div class="campo-grupo">
@@ -65,7 +76,7 @@
               type="password"
               name="password"
               id="id_password"
-              class="campo-input"
+              class="campo-input {% if form.password.errors %}error{% endif %}"
               placeholder="Contraseña"
               autocomplete="current-password"
               required
@@ -80,7 +91,22 @@
               <i data-lucide="eye" id="icono-ojo" style="width:18px;height:18px;"></i>
             </button>
           </div>
+          {% if form.password.errors %}
+            <span class="campo-error">
+              <i data-lucide="alert-circle" style="width:14px;height:14px;"></i>
+              {{ form.password.errors.0 }}
+            </span>
+          {% endif %}
         </div>
+
+        <!-- Errores no asociados a campos específicos (ej: credenciales inválidas) -->
+        {% if form.non_field_errors %}
+          <div id="login-errors" style="display:none;">
+            {% for error in form.non_field_errors %}
+              <span data-toast data-tipo="error" data-mensaje="{{ error }}"></span>
+            {% endfor %}
+          </div>
+        {% endif %}
 
         <button type="submit" class="btn btn-primario btn-bloque btn-lg" style="margin-top:var(--espacio-2);">
           <i data-lucide="log-in" style="width:18px;height:18px;"></i>
@@ -100,6 +126,7 @@
 
 {% block scripts_extra %}
 <script>
+  // Mostrar/ocultar contraseña
   function alternarContrasena() {
     const input  = document.getElementById('id_password');
     const icono  = document.getElementById('icono-ojo');
@@ -112,5 +139,19 @@
     }
     lucide.createIcons();
   }
+
+  // Mostrar errores como toasts al cargar la página
+  document.addEventListener('DOMContentLoaded', () => {
+    const errores = document.querySelectorAll('#login-errors [data-toast]');
+    errores.forEach(el => {
+      if (typeof mostrarToast === 'function') {
+        mostrarToast({
+          tipo: el.dataset.tipo || 'error',
+          mensaje: el.dataset.mensaje,
+          duracion: 5000,
+        });
+      }
+    });
+  });
 </script>
 {% endblock %}
