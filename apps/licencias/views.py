@@ -82,7 +82,11 @@ def lista_licencias(request):
     # Si es una petición AJAX, devolver solo el HTML de la tabla
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render(request, 'licencias/tabla_licencias.html', {
-            'licencias': licencias,
+            'licencias':     licencias,
+            'estado_actual': estado,
+            'fecha_desde':   fecha_desde,
+            'fecha_hasta':   fecha_hasta,
+            'busqueda':      busqueda,
         })
 
     return render(request, 'licencias/lista.html', {

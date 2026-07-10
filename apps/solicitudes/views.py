@@ -336,7 +336,12 @@ def lista_solicitudes(request):
     # Si es una petición AJAX, devolver solo el HTML de la tabla
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render(request, 'solicitudes/tabla_solicitudes.html', {
-            'solicitudes': solicitudes,
+            'solicitudes':   solicitudes,
+            'estado_actual': estado,
+            'flujo_actual':  flujo,
+            'fecha_desde':   fecha_desde,
+            'fecha_hasta':   fecha_hasta,
+            'busqueda':      q,
         })
 
     return render(request, 'solicitudes/lista.html', {
@@ -350,7 +355,7 @@ def lista_solicitudes(request):
         'ESTADOS':       Solicitud.ESTADOS,
         'FLUJOS':        Solicitud.FLUJOS,
     })
-    
+
 
 # ─── Cola de evaluaciones del especialista ────────────────────────────────────
 @never_cache
