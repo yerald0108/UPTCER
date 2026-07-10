@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="{% static 'css/global.css' %}">
   <link rel="stylesheet" href="{% static 'css/toast.css' %}">
   <link rel="stylesheet" href="{% static 'css/modal.css' %}">
+  <link rel="stylesheet" href="{% static 'css/componentes.css' %}">
   {% block estilos_extra %}{% endblock %}
 </head>
 <body>
@@ -71,7 +72,8 @@
           <i data-lucide="inbox" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes</span>
         </a>
-        <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">          <i data-lucide="cpu" class="icono"></i>
+        <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">
+          <i data-lucide="cpu" class="icono"></i>
           <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
         </a>
         <a href="{% url 'licencias:lista' %}" class="sidebar-enlace {% block nav_licencias %}{% endblock %}" data-tooltip="Licencias">
@@ -86,7 +88,8 @@
           <i data-lucide="layout-dashboard" class="icono"></i>
           <span class="sidebar-enlace-texto">Inicio</span>
         </a>
-        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">          <i data-lucide="clipboard-check" class="icono"></i>
+        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">
+          <i data-lucide="clipboard-check" class="icono"></i>
           <span class="sidebar-enlace-texto">Evaluaciones</span>
         </a>
         <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_equipos_no_listados %}{% endblock %}" data-tooltip="Equipos No Listados">
@@ -121,7 +124,8 @@
           <i data-lucide="bar-chart-2" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes y Reportes</span>
         </a>
-        <a href="{% url 'accounts:lista_usuarios' %}" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">          <i data-lucide="users" class="icono"></i>
+        <a href="{% url 'accounts:lista_usuarios' %}" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">
+          <i data-lucide="users" class="icono"></i>
           <span class="sidebar-enlace-texto">Usuarios</span>
         </a>
       {% endif %}
@@ -257,6 +261,7 @@
 <!-- Overlay para móvil -->
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;" onclick="cerrarSidebar()"></div>
 
+<!-- ── Scripts base ────────────────────────────────────────────────────── -->
 <script>
   // Inicializar iconos Lucide
   lucide.createIcons();
@@ -362,9 +367,14 @@
   setInterval(actualizarContadorNotificaciones, 60000);
 </script>
 
+<!-- ── Scripts externos ────────────────────────────────────────────────── -->
 <script src="{% static 'js/modal.js' %}"></script>
 <script src="{% static 'js/toast.js' %}"></script>
 <script src="{% static 'js/forms.js' %}"></script>
+<script src="{% static 'js/scroll-top.js' %}"></script>
+<script src="{% static 'js/zoom-documento.js' %}"></script>
+<script src="{% static 'js/busqueda-ajax.js' %}"></script>
+
 {% block scripts_extra %}{% endblock %}
 </body>
 </html>

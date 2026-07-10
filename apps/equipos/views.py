@@ -42,6 +42,15 @@ def lista_equipos(request):
     except EmptyPage:
         equipos = paginator.page(paginator.num_pages)
 
+    # Si es una petición AJAX, devolver solo el HTML de la tabla
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'equipos/tabla_equipos.html', {
+            'equipos':       equipos,
+            'busqueda':      busqueda,
+            'categoria_sel': categoria,
+            'banda_sel':     banda,
+        })
+
     return render(request, 'equipos/lista.html', {
         'equipos':       equipos,
         'categorias':    categorias,

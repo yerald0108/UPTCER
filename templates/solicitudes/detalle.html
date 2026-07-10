@@ -41,10 +41,38 @@
         {{ solicitud.get_estado_display }}
       </span>
     </div>
-    <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
-      <i data-lucide="printer" style="width:16px;height:16px;"></i>
-      Imprimir / PDF
-    </button>
+
+    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+
+      <!-- Control de zoom -->
+      <div class="f43-zoom-control" title="Ajustar tamaño del documento">
+        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(-10)"
+          title="Reducir tamaño de texto" aria-label="Reducir tamaño">
+          <i data-lucide="zoom-out" style="width:15px;height:15px;"></i>
+        </button>
+
+        <span class="f43-zoom-nivel" id="zoom-nivel">100%</span>
+
+        <div class="f43-zoom-divisor"></div>
+
+        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()"
+          title="Restablecer tamaño original" aria-label="Restablecer tamaño">
+          <i data-lucide="search" style="width:15px;height:15px;"></i>
+        </button>
+
+        <div class="f43-zoom-divisor"></div>
+
+        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(10)"
+          title="Aumentar tamaño de texto" aria-label="Aumentar tamaño">
+          <i data-lucide="zoom-in" style="width:15px;height:15px;"></i>
+        </button>
+      </div>
+
+      <button type="button" onclick="window.print()" class="f43-btn-accion f43-btn-imprimir">
+        <i data-lucide="printer" style="width:16px;height:16px;"></i>
+        Imprimir / PDF
+      </button>
+    </div>
   </div>
 
   {% if user.es_persona_natural %}
@@ -423,7 +451,8 @@
         </div>
       </div>
       <div class="tarjeta-cuerpo">
-        <form method="post" action="{% url 'solicitudes:cambiar_estado' solicitud.pk %}" id="form-cambiar-estado">          {% csrf_token %}
+        <form method="post" action="{% url 'solicitudes:cambiar_estado' solicitud.pk %}" id="form-cambiar-estado">
+          {% csrf_token %}
 
           <div class="campo-grupo">
             <label class="campo-etiqueta requerido">Cambiar estado a</label>
@@ -469,11 +498,21 @@
   </div>
   {% endif %}
 
+  <!-- Botón flotante "Volver arriba" -->
+  <button type="button" class="btn-scroll-top" id="btn-scroll-top"
+    title="Volver arriba" aria-label="Volver arriba"
+    onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">
+    <i data-lucide="chevron-up" style="width:22px;height:22px;"></i>
+  </button>
+
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
 <script>
+  // Identificador de página para el zoom
+  document.body.dataset.pagina = 'solicitud-detalle';
+
   // ── Cambio de estado via AJAX ──────────────────────────────────────────────
   function confirmarCambioEstado() {
     const estadoSeleccionado = document.querySelector('input[name="estado_nuevo"]:checked');

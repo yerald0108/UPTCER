@@ -4,6 +4,7 @@
 {% block titulo %}Licencia {{ licencia.numero }}{% endblock %}
 
 {% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
 <link rel="stylesheet" href="{% static 'css/licencia.css' %}">
 {% endblock %}
 
@@ -32,22 +33,52 @@
         {{ licencia.get_estado_display }}
       </span>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button type="button"
-        onclick="abrirModal('modal-revocar')"
-        class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">        <i data-lucide="printer" style="width:16px;height:16px;"></i>
-        Imprimir / PDF
-      </button>
-      {% if user.es_operador or user.es_directivo %}
-        {% if licencia.estado == 'vigente' %}
-        <button type="button"
-          onclick="document.getElementById('modal-revocar').style.display='flex'"
-          class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">
-          <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
-          Revocar licencia
+
+    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+
+      <!-- Control de zoom -->
+      <div class="f43-zoom-control" title="Ajustar tamaño del documento">
+        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(-10)"
+          title="Reducir tamaño de texto" aria-label="Reducir tamaño">
+          <i data-lucide="zoom-out" style="width:15px;height:15px;"></i>
         </button>
+
+        <span class="f43-zoom-nivel" id="zoom-nivel">100%</span>
+
+        <div class="f43-zoom-divisor"></div>
+
+        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()"
+          title="Restablecer tamaño original" aria-label="Restablecer tamaño">
+          <i data-lucide="search" style="width:15px;height:15px;"></i>
+        </button>
+
+        <div class="f43-zoom-divisor"></div>
+
+        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(10)"
+          title="Aumentar tamaño de texto" aria-label="Aumentar tamaño">
+          <i data-lucide="zoom-in" style="width:15px;height:15px;"></i>
+        </button>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="button"
+          onclick="window.print()"
+          class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">
+          <i data-lucide="printer" style="width:16px;height:16px;"></i>
+          Imprimir / PDF
+        </button>
+        {% if user.es_operador or user.es_directivo %}
+          {% if licencia.estado == 'vigente' %}
+          <button type="button"
+            onclick="abrirModal('modal-revocar')"
+            class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">
+            <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
+            Revocar licencia
+          </button>
+          {% endif %}
         {% endif %}
-      {% endif %}
+      </div>
+
     </div>
   </div>
 
@@ -250,6 +281,13 @@
   </div>
   <!-- FIN DOCUMENTO -->
 
+  <!-- Botón flotante "Volver arriba" -->
+  <button type="button" class="btn-scroll-top" id="btn-scroll-top"
+    title="Volver arriba" aria-label="Volver arriba"
+    onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">
+    <i data-lucide="chevron-up" style="width:22px;height:22px;"></i>
+  </button>
+
 </div>
 
 <!-- Modal de revocación -->
@@ -290,10 +328,13 @@
 
 {% block scripts_extra %}
 <script>
+  // Identificador de página para el zoom
+  document.body.dataset.pagina = 'licencia-detalle';
+
   // Cerrar modal con Escape
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      document.getElementById('modal-revocar').style.display = 'none';
+      cerrarModal('modal-revocar');
     }
   });
 </script>

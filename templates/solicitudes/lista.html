@@ -21,10 +21,10 @@
 <!-- Filtros -->
 <div class="tarjeta mb-6">
   <div class="tarjeta-cuerpo">
-    <form method="get" style="display:flex;gap:var(--espacio-4);align-items:flex-end;flex-wrap:wrap;">
-      <div class="campo-grupo" style="margin-bottom:0;min-width:200px;">
+    <form method="get" id="form-filtros" style="display:flex;gap:var(--espacio-4);align-items:flex-end;flex-wrap:wrap;">
+      <div class="campo-grupo" style="margin-bottom:0;min-width:180px;">
         <label class="campo-etiqueta">Filtrar por estado</label>
-        <select name="estado" class="campo-select" onchange="this.form.submit()">
+        <select name="estado" class="campo-select">
           <option value="">Todos los estados</option>
           {% for valor, etiqueta in ESTADOS %}
             <option value="{{ valor }}" {% if estado_actual == valor %}selected{% endif %}>
@@ -33,9 +33,9 @@
           {% endfor %}
         </select>
       </div>
-      <div class="campo-grupo" style="margin-bottom:0;min-width:200px;">
+      <div class="campo-grupo" style="margin-bottom:0;min-width:180px;">
         <label class="campo-etiqueta">Filtrar por tipo</label>
-        <select name="flujo" class="campo-select" onchange="this.form.submit()">
+        <select name="flujo" class="campo-select">
           <option value="">Todos los tipos</option>
           {% for valor, etiqueta in FLUJOS %}
             <option value="{{ valor }}" {% if flujo_actual == valor %}selected{% endif %}>
@@ -43,6 +43,16 @@
             </option>
           {% endfor %}
         </select>
+      </div>
+      <div class="campo-grupo" style="margin-bottom:0;min-width:160px;">
+        <label class="campo-etiqueta">Fecha desde</label>
+        <input type="date" name="fecha_desde"
+          class="campo-input" value="{{ fecha_desde }}">
+      </div>
+      <div class="campo-grupo" style="margin-bottom:0;min-width:160px;">
+        <label class="campo-etiqueta">Fecha hasta</label>
+        <input type="date" name="fecha_hasta"
+          class="campo-input" value="{{ fecha_hasta }}">
       </div>
       <div class="campo-grupo" style="margin-bottom:0;flex:1;min-width:200px;">
         <label class="campo-etiqueta">Buscar</label>
@@ -53,85 +63,23 @@
             placeholder="Número o nombre del solicitante...">
         </div>
       </div>
-      {% if estado_actual or flujo_actual %}
-        <a href="{% url 'solicitudes:lista' %}" class="btn btn-ghost">
-          <i data-lucide="x" style="width:15px;height:15px;"></i>
-          Limpiar filtros
-        </a>
-      {% endif %}
     </form>
   </div>
 </div>
 
 <!-- Tabla -->
 <div class="tarjeta">
-  <div class="tarjeta-cuerpo" style="padding:0;">
-    {% if solicitudes %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
-        <table class="tabla">
-          <thead>
-            <tr>
-              <th>Número</th>
-              <th>Tipo</th>
-              <th>Solicitante</th>
-              <th>Estado</th>
-              <th>Días en cola</th>
-              <th>Operador asignado</th>
-              <th>Fecha</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for s in solicitudes %}
-            <tr>
-              <td>
-                <span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
-                  {{ s.numero }}
-                </span>
-              </td>
-              <td><span class="badge badge-info">{{ s.get_flujo_display }}</span></td>
-              <td>
-                <div style="font-weight:var(--peso-medio);">{{ s.solicitante.get_nombre_completo }}</div>
-                <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ s.solicitante.email }}</div>
-              </td>
-              <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
-              <td>
-                {% if s.dias_en_cola is not None %}
-                  {% if s.dias_en_cola > 5 %}
-                    <span class="badge badge-denegado">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
-                  {% elif s.dias_en_cola >= 3 %}
-                    <span class="badge badge-pendiente">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
-                  {% else %}
-                    <span class="badge badge-info">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
-                  {% endif %}
-                {% else %}
-                  <span style="color:var(--color-texto-muted);">—</span>
-                {% endif %}
-              </td>
-              <td style="color:var(--color-texto-muted);">
-                {{ s.operador_asignado.get_nombre_completo|default:"Sin asignar" }}
-              </td>
-              <td style="color:var(--color-texto-muted);white-space:nowrap;">
-                {{ s.fecha_creacion|date:"d/m/Y H:i" }}
-              </td>
-              <td>
-                <a href="{% url 'solicitudes:detalle' s.pk %}?volver={{ request.get_full_path|urlencode }}" class="btn btn-ghost btn-sm">
-                  <i data-lucide="eye" style="width:15px;height:15px;"></i>
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
-        <i data-lucide="inbox" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
-        <p style="font-size:var(--texto-base);font-weight:var(--peso-medio);margin-bottom:var(--espacio-2);">No hay solicitudes</p>
-        <p style="font-size:var(--texto-sm);">No se encontraron solicitudes con los filtros aplicados.</p>
-      </div>
-    {% endif %}
-    {% include 'base/paginacion.html' with page_obj=solicitudes %}
+  <div class="tarjeta-cuerpo" style="padding:0;" id="contenedor-tabla">
+    {% include 'solicitudes/tabla_solicitudes.html' %}
   </div>
 </div>
+
+<!-- Botón flotante "Volver arriba" -->
+<button type="button" class="btn-scroll-top" id="btn-scroll-top"
+  title="Volver arriba" aria-label="Volver arriba"
+  onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">
+  <i data-lucide="chevron-up" style="width:22px;height:22px;"></i>
+</button>
 {% endblock %}
+
+{% block scripts_extra %}{% endblock %}

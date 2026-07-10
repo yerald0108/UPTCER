@@ -1,0 +1,78 @@
+{% if estado_actual or flujo_actual or busqueda or fecha_desde or fecha_hasta %}
+<div style="padding:var(--espacio-3) var(--espacio-4);border-bottom:1px solid var(--color-borde);display:flex;align-items:center;justify-content:space-between;">
+  <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">
+    Filtros activos
+  </span>
+  <a href="{% url 'solicitudes:lista' %}" class="btn btn-ghost btn-sm">
+    <i data-lucide="x" style="width:14px;height:14px;"></i>
+    Limpiar filtros
+  </a>
+</div>
+{% endif %}
+
+{% if solicitudes %}
+  <div class="tabla-contenedor" style="border:none;border-radius:0;">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Tipo</th>
+          <th>Solicitante</th>
+          <th>Estado</th>
+          <th>Días en cola</th>
+          <th>Operador asignado</th>
+          <th>Fecha</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in solicitudes %}
+        <tr>
+          <td>
+            <span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
+              {{ s.numero }}
+            </span>
+          </td>
+          <td><span class="badge badge-info">{{ s.get_flujo_display }}</span></td>
+          <td>
+            <div style="font-weight:var(--peso-medio);">{{ s.solicitante.get_nombre_completo }}</div>
+            <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ s.solicitante.email }}</div>
+          </td>
+          <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+          <td>
+            {% if s.dias_en_cola is not None %}
+              {% if s.dias_en_cola > 5 %}
+                <span class="badge badge-denegado">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
+              {% elif s.dias_en_cola >= 3 %}
+                <span class="badge badge-pendiente">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
+              {% else %}
+                <span class="badge badge-info">{{ s.dias_en_cola }} día{{ s.dias_en_cola|pluralize }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color:var(--color-texto-muted);">—</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--color-texto-muted);">
+            {{ s.operador_asignado.get_nombre_completo|default:"Sin asignar" }}
+          </td>
+          <td style="color:var(--color-texto-muted);white-space:nowrap;">
+            {{ s.fecha_creacion|date:"d/m/Y H:i" }}
+          </td>
+          <td>
+            <a href="{% url 'solicitudes:detalle' s.pk %}?volver={{ request.get_full_path|urlencode }}" class="btn btn-ghost btn-sm">
+              <i data-lucide="eye" style="width:15px;height:15px;"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include 'base/paginacion.html' with page_obj=solicitudes %}
+{% else %}
+  <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
+    <i data-lucide="inbox" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
+    <p style="font-size:var(--texto-base);font-weight:var(--peso-medio);margin-bottom:var(--espacio-2);">No hay solicitudes</p>
+    <p style="font-size:var(--texto-sm);">No se encontraron solicitudes con los filtros aplicados.</p>
+  </div>
+{% endif %}

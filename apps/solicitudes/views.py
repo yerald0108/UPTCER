@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.db.models import Q
+
 from .models import Solicitud, HistorialSolicitud
 from .forms import FormularioF43
 from apps.notificaciones.servicios import (
@@ -239,7 +240,6 @@ def cambiar_estado(request, pk):
     )
 
     # Notificaciones automáticas
-    # Siempre notificar al solicitante
     notificar_cambio_estado(solicitud, estado_anterior, usuario)
 
     # Si se deriva al especialista
@@ -249,8 +249,8 @@ def cambiar_estado(request, pk):
     # Si el especialista emitió criterio técnico
     if usuario.es_especialista and observacion:
         notificar_criterio_tecnico(solicitud)
-        
-     # Generar licencia automáticamente si la solicitud fue aprobada
+
+    # Generar licencia automáticamente si la solicitud fue aprobada
     if estado_nuevo == Solicitud.ESTADO_APROBADA:
         generar_licencia(solicitud, usuario)
 
@@ -302,6 +302,15 @@ def lista_solicitudes(request):
         solicitudes_qs = solicitudes_qs.filter(estado=estado)
     if flujo:
         solicitudes_qs = solicitudes_qs.filter(flujo=flujo)
+
+    # Filtro por fechas
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    if fecha_desde:
+        solicitudes_qs = solicitudes_qs.filter(fecha_creacion__date__gte=fecha_desde)
+    if fecha_hasta:
+        solicitudes_qs = solicitudes_qs.filter(fecha_creacion__date__lte=fecha_hasta)
+
     if q:
         solicitudes_qs = solicitudes_qs.filter(
             Q(numero__icontains=q) |
@@ -324,16 +333,25 @@ def lista_solicitudes(request):
     for s in solicitudes:
         s.dias_en_cola = (ahora - s.fecha_creacion).days if s.esta_pendiente else None
 
+    # Si es una petición AJAX, devolver solo el HTML de la tabla
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'solicitudes/tabla_solicitudes.html', {
+            'solicitudes': solicitudes,
+        })
+
     return render(request, 'solicitudes/lista.html', {
         'solicitudes':   solicitudes,
         'paginator':     paginator,
         'estado_actual': estado,
         'flujo_actual':  flujo,
+        'fecha_desde':   fecha_desde,
+        'fecha_hasta':   fecha_hasta,
         'busqueda':      q,
         'ESTADOS':       Solicitud.ESTADOS,
         'FLUJOS':        Solicitud.FLUJOS,
     })
     
+
 # ─── Cola de evaluaciones del especialista ────────────────────────────────────
 @never_cache
 @login_required
