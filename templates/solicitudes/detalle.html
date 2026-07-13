@@ -261,6 +261,48 @@
 
   {% if puede_gestionar or puede_evaluar %}
   <div style="width:210mm;margin-top:var(--espacio-6);">
+
+    <!-- Panel de supervisión directiva -->
+    {% if user.es_directivo %}
+    <div class="tarjeta" style="margin-bottom:var(--espacio-5);">
+      <div class="tarjeta-cuerpo" style="display:flex;align-items:center;justify-content:space-between;gap:var(--espacio-4);">
+        <div style="display:flex;align-items:center;gap:var(--espacio-4);">
+          <div style="width:40px;height:40px;border-radius:var(--radio-md);
+            {% if solicitud.revisada_directivo %}background:#E8F5E9;color:#1B5E20;{% else %}background:var(--color-primario-light);color:var(--color-primario);{% endif %}
+            display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="{% if solicitud.revisada_directivo %}shield-check{% else %}shield{% endif %}" style="width:20px;height:20px;"></i>
+          </div>
+          <div>
+            <div style="font-size:var(--texto-sm);font-weight:var(--peso-semi);color:var(--color-texto-principal);">
+              Supervisión Directiva
+            </div>
+            {% if solicitud.revisada_directivo %}
+              <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+                Revisada por {{ solicitud.revisada_por.get_nombre_completo }}
+                el {{ solicitud.fecha_revision_directivo|date:"d/m/Y \a \l\a\s H:i" }}
+              </div>
+            {% else %}
+              <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+                Esta solicitud aún no ha sido revisada por dirección.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <form method="post" action="{% url 'solicitudes:supervision' solicitud.pk %}" id="form-supervision">
+          {% csrf_token %}
+          <button type="button"
+            class="btn {% if solicitud.revisada_directivo %}btn-ghost{% else %}btn-primario{% endif %}"
+            id="btn-supervision"
+            onclick="confirmarSupervision()">
+            <i data-lucide="{% if solicitud.revisada_directivo %}shield-off{% else %}shield-check{% endif %}" style="width:16px;height:16px;"></i>
+            {% if solicitud.revisada_directivo %}Retirar supervisión{% else %}Marcar como revisada{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Historial de cambios -->
     <div class="tarjeta" style="margin-bottom:var(--espacio-5);">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
@@ -383,6 +425,42 @@
       } else { throw new Error('Error en el servidor'); }
     })
     .catch(() => { mostrarToast({ tipo: 'error', mensaje: 'Ocurrió un error al guardar. Intente de nuevo.' }); btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = textoOriginal; });
+  }
+
+  // ─── Supervisión directiva ─────────────────────────────────────────────────
+  function confirmarSupervision() {
+    const revisada = {{ solicitud.revisada_directivo|yesno:"true,false" }};
+    confirmarAccion({
+      titulo:         revisada ? 'Retirar supervisión' : 'Marcar como revisada',
+      mensaje:        revisada
+        ? 'Se retirará la marca de supervisión directiva de esta solicitud.'
+        : 'Se marcará esta solicitud como revisada por la dirección.',
+      labelConfirmar: revisada ? 'Sí, retirar' : 'Sí, marcar como revisada',
+      tipo:           revisada ? 'warning' : 'info',
+      icono:          revisada ? 'shield-off' : 'shield-check',
+      onConfirmar: () => {
+        const form     = document.getElementById('form-supervision');
+        const formData = new FormData(form);
+        fetch(form.action, {
+          method:  'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body:    formData,
+        })
+        .then(r => r.json())
+        .then(() => {
+          mostrarToast({
+            tipo:    'success',
+            mensaje: revisada
+              ? 'Supervisión retirada correctamente.'
+              : 'Solicitud marcada como revisada por dirección.',
+          });
+          setTimeout(() => location.reload(), 1000);
+        })
+        .catch(() => {
+          mostrarToast({ tipo: 'error', mensaje: 'Error al actualizar. Intente de nuevo.' });
+        });
+      }
+    });
   }
 </script>
 {% endblock %}
