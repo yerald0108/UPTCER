@@ -92,6 +92,18 @@ class Solicitud(models.Model):
     fecha_actualizacion = models.DateTimeField('Última actualización', auto_now=True)
     fecha_resolucion    = models.DateTimeField('Fecha de resolución', null=True, blank=True)
 
+    # Supervisión directiva
+    revisada_directivo      = models.BooleanField('Revisada por dirección', default=False)
+    fecha_revision_directivo = models.DateTimeField('Fecha de revisión directiva', null=True, blank=True)
+    revisada_por            = models.ForeignKey(
+                                settings.AUTH_USER_MODEL,
+                                on_delete=models.SET_NULL,
+                                null=True,
+                                blank=True,
+                                verbose_name='Revisada por',
+                                related_name='solicitudes_supervisadas'
+                              )
+
     class Meta:
         verbose_name        = 'Solicitud'
         verbose_name_plural = 'Solicitudes'

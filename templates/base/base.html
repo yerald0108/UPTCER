@@ -68,10 +68,40 @@
           <i data-lucide="layout-dashboard" class="icono"></i>
           <span class="sidebar-enlace-texto">Inicio</span>
         </a>
-        <a href="{% url 'solicitudes:lista' %}" class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}" data-tooltip="Solicitudes">
+
+        <!-- Solicitudes con dropdown -->
+        <button type="button"
+          class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}"
+          data-tooltip="Solicitudes"
+          onclick="toggleDropdownSolicitudes()"
+          id="btn-dropdown-solicitudes"
+          style="width:100%;background:none;border:none;cursor:pointer;text-align:left;">
           <i data-lucide="inbox" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes</span>
-        </a>
+          <i data-lucide="chevron-down" class="sidebar-enlace-flecha"></i>
+        </button>
+
+        <div class="sidebar-dropdown" id="dropdown-solicitudes">
+          <a href="{% url 'solicitudes:lista' %}"
+            class="sidebar-dropdown-item {% block nav_sol_todas %}{% endblock %}"
+            data-tooltip="Todas las solicitudes">
+            <span class="sidebar-dropdown-punto"></span>
+            <span class="sidebar-enlace-texto">Todas</span>
+          </a>
+          <a href="{% url 'solicitudes:lista' %}?supervision=revisadas"
+            class="sidebar-dropdown-item {% block nav_sol_revisadas %}{% endblock %}"
+            data-tooltip="Revisadas por dirección">
+            <span class="sidebar-dropdown-punto" style="background-color:#22C55E;"></span>
+            <span class="sidebar-enlace-texto">Revisadas por Dirección</span>
+          </a>
+          <a href="{% url 'solicitudes:lista' %}?supervision=pendientes"
+            class="sidebar-dropdown-item {% block nav_sol_pendientes %}{% endblock %}"
+            data-tooltip="Pendientes de supervisión">
+            <span class="sidebar-dropdown-punto" style="background-color:#F57F17;"></span>
+            <span class="sidebar-enlace-texto">Pendientes de Supervisión</span>
+          </a>
+        </div>
+
         <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">
           <i data-lucide="cpu" class="icono"></i>
           <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
@@ -263,6 +293,28 @@
 
 <!-- ── Scripts base ────────────────────────────────────────────────────── -->
 <script>
+
+  // ─── Dropdown de solicitudes en sidebar ───────────────────────────────────
+  function toggleDropdownSolicitudes() {
+    const dropdown = document.getElementById('dropdown-solicitudes');
+    const btn      = document.getElementById('btn-dropdown-solicitudes');
+    if (!dropdown) return;
+    const abierto = dropdown.classList.toggle('abierto');
+    btn.classList.toggle('dropdown-abierto', abierto);
+    localStorage.setItem('uptcer_sol_dropdown', abierto ? '1' : '0');
+  }
+
+  // Restaurar estado del dropdown al cargar
+  document.addEventListener('DOMContentLoaded', () => {
+    const guardado  = localStorage.getItem('uptcer_sol_dropdown');
+    const dropdown  = document.getElementById('dropdown-solicitudes');
+    const btn       = document.getElementById('btn-dropdown-solicitudes');
+    if (dropdown && btn && guardado === '1') {
+      dropdown.classList.add('abierto');
+      btn.classList.add('dropdown-abierto');
+    }
+  });
+
   // Inicializar iconos Lucide
   lucide.createIcons();
 

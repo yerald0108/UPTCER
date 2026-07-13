@@ -56,31 +56,11 @@
       </div>
 
       <div style="display:flex;gap:8px;">
-        <button type="button" onclick="imprimirDocumento({
-          selector: '.f43-hoja',
-          titulo: 'F43',
-          estilos: `
-            body { zoom: 0.78; }
-            th, td { font-size: 9px; }
-            input, select, textarea { font-size: 9px !important; }
-            .f43-encabezado { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3mm; }
-            .f43-encabezado-titulo { font-size: 9px; font-weight: bold; text-align: center; flex: 1; }
-            .f43-encabezado-codigo { font-size: 12px; font-weight: bold; border: 2px solid #000; padding: 2px 6px; }
-            .f43-campo-label { font-weight: bold; width: 30%; background-color: #f8f8f8; font-size: 9px; }
-            .f43-check-grupo { display: flex; gap: 6px; flex-wrap: wrap; font-size: 9px; }
-            .f43-nota { font-size: 7px; margin-top: 3px; padding: 3px; border: 1px solid #000; }
-            .f43-instrucciones { display: none !important; }
-          `
-        })" class="f43-btn-accion f43-btn-imprimir">
-          <i data-lucide="printer" style="width:16px;height:16px;"></i>
-          Imprimir / PDF
-        </button>
         <button type="button" onclick="enviarFormulario()" class="f43-btn-accion f43-btn-enviar">
           <i data-lucide="send" style="width:16px;height:16px;"></i>
           Enviar solicitud
         </button>
       </div>
-
     </div>
   </div>
 

@@ -318,6 +318,13 @@ def lista_solicitudes(request):
             Q(solicitante__apellidos__icontains=q)
         )
 
+    # Filtro de supervisión directiva
+    supervision = request.GET.get('supervision', '')
+    if supervision == 'revisadas':
+        solicitudes_qs = solicitudes_qs.filter(revisada_directivo=True)
+    elif supervision == 'pendientes':
+        solicitudes_qs = solicitudes_qs.filter(revisada_directivo=False)
+    
     paginator = Paginator(solicitudes_qs, 15)
     pagina    = request.GET.get('pagina', 1)
 
@@ -352,6 +359,7 @@ def lista_solicitudes(request):
         'fecha_desde':   fecha_desde,
         'fecha_hasta':   fecha_hasta,
         'busqueda':      q,
+        'supervision':   supervision,
         'ESTADOS':       Solicitud.ESTADOS,
         'FLUJOS':        Solicitud.FLUJOS,
     })
@@ -500,3 +508,50 @@ def evaluar_solicitud(request, pk):
         'categorias': categorias,
         'BANDAS':     Equipo.BANDAS,
     })
+    
+# ─── Marcar / desmarcar supervisión directiva ─────────────────────────────────
+@never_cache
+@login_required
+def marcar_supervision(request, pk):
+    if not request.user.es_directivo:
+        messages.error(request, 'No tiene permisos para realizar esta acción.')
+        return redirect('solicitudes:detalle', pk=pk)
+
+    if request.method != 'POST':
+        return redirect('solicitudes:detalle', pk=pk)
+
+    solicitud = get_object_or_404(Solicitud, pk=pk)
+
+    if solicitud.revisada_directivo:
+        # Desmarcar
+        solicitud.revisada_directivo       = False
+        solicitud.fecha_revision_directivo = None
+        solicitud.revisada_por             = None
+        solicitud.save(update_fields=[
+            'revisada_directivo',
+            'fecha_revision_directivo',
+            'revisada_por'
+        ])
+        messages.success(request, f'Supervisión retirada de la solicitud {solicitud.numero}.')
+    else:
+        # Marcar como revisada
+        solicitud.revisada_directivo       = True
+        solicitud.fecha_revision_directivo = timezone.now()
+        solicitud.revisada_por             = request.user
+        solicitud.save(update_fields=[
+            'revisada_directivo',
+            'fecha_revision_directivo',
+            'revisada_por'
+        ])
+        messages.success(request, f'Solicitud {solicitud.numero} marcada como revisada por dirección.')
+
+    # Respuesta AJAX
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'ok':               True,
+            'revisada':         solicitud.revisada_directivo,
+            'revisada_por':     solicitud.revisada_por.get_nombre_completo() if solicitud.revisada_por else '',
+            'fecha_revision':   solicitud.fecha_revision_directivo.strftime('%d/%m/%Y %H:%M') if solicitud.fecha_revision_directivo else '',
+        })
+
+    return redirect('solicitudes:detalle', pk=pk)

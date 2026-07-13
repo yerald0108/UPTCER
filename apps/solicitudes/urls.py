@@ -11,4 +11,5 @@ urlpatterns = [
     path('<int:pk>/estado/',    views.cambiar_estado,      name='cambiar_estado'),
     path('evaluaciones/',       views.cola_evaluaciones,   name='cola_evaluaciones'),
     path('<int:pk>/evaluar/',   views.evaluar_solicitud,   name='evaluar'),
+    path('<int:pk>/supervision/', views.marcar_supervision, name='supervision'),
 ]

@@ -20,6 +20,7 @@
           <th>Solicitante</th>
           <th>Estado</th>
           <th>Días en cola</th>
+          <th>Supervisión</th>
           <th>Operador asignado</th>
           <th>Fecha</th>
           <th></th>
@@ -50,6 +51,17 @@
               {% endif %}
             {% else %}
               <span style="color:var(--color-texto-muted);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if s.revisada_directivo %}
+              <span class="badge badge-aprobado"
+                title="Revisada por {{ s.revisada_por.get_nombre_completo }} el {{ s.fecha_revision_directivo|date:'d/m/Y H:i' }}">
+                <i data-lucide="shield-check" style="width:11px;height:11px;"></i>
+                Revisada
+              </span>
+            {% else %}
+              <span style="color:var(--color-texto-muted);font-size:var(--texto-xs);">—</span>
             {% endif %}
           </td>
           <td style="color:var(--color-texto-muted);">

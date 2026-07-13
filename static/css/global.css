@@ -816,3 +816,69 @@ body {
   background-color: var(--color-primario);
   color: var(--color-texto-inverso);
 }
+
+/* ─── Dropdown del sidebar ───────────────────────────────────────────────── */
+.sidebar-dropdown {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease;
+  opacity: 0;
+}
+
+.sidebar-dropdown.abierto {
+  max-height: 200px;
+  opacity: 1;
+}
+
+.sidebar-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-2) var(--espacio-3) var(--espacio-2) calc(var(--espacio-3) + 28px);
+  border-radius: var(--radio-md);
+  color: var(--sidebar-texto);
+  text-decoration: none;
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medio);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  margin-bottom: 1px;
+  white-space: nowrap;
+}
+
+.sidebar-dropdown-item:hover {
+  background-color: var(--sidebar-hover-bg);
+  color: var(--color-texto-inverso);
+}
+
+.sidebar-dropdown-item.activo {
+  background-color: var(--sidebar-activo-bg);
+  color: var(--sidebar-activo-texto);
+}
+
+.sidebar-dropdown-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.sidebar-enlace-flecha {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+  opacity: 0.6;
+}
+
+.sidebar-enlace.dropdown-abierto .sidebar-enlace-flecha {
+  transform: rotate(180deg);
+}
+
+/* Ocultar dropdown cuando sidebar está colapsado */
+.layout-sidebar.colapsado .sidebar-dropdown {
+  display: none;
+}
