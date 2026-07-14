@@ -404,6 +404,11 @@ def evaluar_solicitud(request, pk):
         messages.error(request, 'Esta solicitud no requiere evaluación técnica.')
         return redirect('solicitudes:detalle', pk=pk)
 
+    # No permitir re-evaluar solicitudes ya resueltas
+    if solicitud.esta_resuelta:
+        messages.error(request, 'Esta solicitud ya fue evaluada y no puede modificarse.')
+        return redirect('solicitudes:detalle', pk=pk)
+
     datos_f43 = {}
     equipos   = []
     try:

@@ -48,12 +48,20 @@ def notificar_solicitud_nueva(solicitud):
 
 def notificar_derivacion_especialista(solicitud):
     """Notifica a especialistas cuando una solicitud tiene equipo no listado."""
+    # Construir descripción del equipo de forma segura
+    marca  = solicitud.equipo_marca_manual or ''
+    modelo = solicitud.equipo_modelo_manual or ''
+    descripcion_equipo = f'{marca} {modelo}'.strip()
+    
+    if not descripcion_equipo:
+        descripcion_equipo = 'equipo no identificado'
+    
     notificar_especialistas(
         tipo      = Notificacion.TIPO_DERIVADA_ESPECIALISTA,
         titulo    = f'Equipo no listado — {solicitud.numero}',
         mensaje   = (
             f'La solicitud {solicitud.numero} contiene un equipo no registrado en el catálogo '
-            f'({solicitud.equipo_marca_manual} {solicitud.equipo_modelo_manual}). '
+            f'({descripcion_equipo}). '
             f'Se requiere evaluación técnica.'
         ),
         solicitud = solicitud,

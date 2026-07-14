@@ -42,6 +42,7 @@ def detalle_licencia(request, numero):
 @login_required
 def lista_licencias(request):
     usuario = request.user
+    hoy = timezone.now().date()
 
     if usuario.es_persona_natural:
         licencias = Licencia.objects.filter(
@@ -51,6 +52,12 @@ def lista_licencias(request):
         licencias = Licencia.objects.select_related(
             'solicitud', 'emitida_por', 'solicitud__solicitante'
         ).all()
+
+    # ─── Actualizar vencimientos en un solo UPDATE ───────────────────────
+    licencias.filter(
+        estado=Licencia.ESTADO_VIGENTE,
+        fecha_vencimiento__lt=hoy
+    ).update(estado=Licencia.ESTADO_VENCIDA)
 
     # Filtro por estado
     estado = request.GET.get('estado', '')
@@ -74,10 +81,6 @@ def lista_licencias(request):
             Q(solicitud__solicitante__nombre__icontains=busqueda) |
             Q(solicitud__solicitante__apellidos__icontains=busqueda)
         )
-
-    # Verificar vencimiento de cada licencia
-    for lic in licencias:
-        lic.verificar_vencimiento()
 
     # Si es una petición AJAX, devolver solo el HTML de la tabla
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

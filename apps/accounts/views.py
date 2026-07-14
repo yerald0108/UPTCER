@@ -13,7 +13,6 @@ from dateutil.relativedelta import relativedelta
 import json
 
 from apps.solicitudes.models import Solicitud
-from apps.accounts.models import Usuario
 from apps.licencias.models import Licencia
 from .forms import FormularioCrearUsuario
 from .forms import FormularioCambiarPassword
@@ -435,6 +434,7 @@ def cambiar_password_usuario(request, pk):
 
 @never_cache
 @login_required
+@require_http_methods(['POST'])
 def togglear_usuario(request, pk):
     if not request.user.es_directivo:
         messages.error(request, 'No tiene permisos para realizar esta acción.')
@@ -442,19 +442,18 @@ def togglear_usuario(request, pk):
 
     usuario_obj = get_object_or_404(Usuario, pk=pk)
 
-    if request.method == 'POST':
-        # No permitir desactivarse a sí mismo
-        if usuario_obj.pk == request.user.pk:
-            messages.error(request, 'No puede desactivar su propia cuenta.')
-            return redirect('accounts:detalle_usuario', pk=pk)
+    # No permitir desactivarse a sí mismo
+    if usuario_obj.pk == request.user.pk:
+        messages.error(request, 'No puede desactivar su propia cuenta.')
+        return redirect('accounts:detalle_usuario', pk=pk)
 
-        usuario_obj.is_active = not usuario_obj.is_active
-        usuario_obj.save()
-        estado = 'activado' if usuario_obj.is_active else 'desactivado'
-        messages.success(
-            request,
-            f'Usuario "{usuario_obj.get_nombre_completo()}" {estado} correctamente.'
-        )
+    usuario_obj.is_active = not usuario_obj.is_active
+    usuario_obj.save()
+    estado = 'activado' if usuario_obj.is_active else 'desactivado'
+    messages.success(
+        request,
+        f'Usuario "{usuario_obj.get_nombre_completo()}" {estado} correctamente.'
+    )
 
     return redirect('accounts:detalle_usuario', pk=pk)
 

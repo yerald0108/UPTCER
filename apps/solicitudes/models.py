@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.utils import timezone
 
@@ -114,16 +114,28 @@ class Solicitud(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.numero:
-            self.numero = self._generar_numero()
-        super().save(*args, **kwargs)
+            with transaction.atomic():
+                self.numero = self._generar_numero()
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def _generar_numero(self):
         año = timezone.now().year
         prefijo = 'F43' if self.flujo == self.FLUJO_F43 else 'RAT'
-        ultimo = Solicitud.objects.filter(
+
+        # Bloquear filas del mismo prefijo/año para evitar concurrencia
+        ultimo = Solicitud.objects.select_for_update().filter(
             numero__startswith=f'{prefijo}-{año}'
-        ).count()
-        return f'{prefijo}-{año}-{str(ultimo + 1).zfill(4)}'
+        ).aggregate(max_num=models.Max('numero'))['max_num']
+
+        if ultimo:
+            # Extraer el número secuencial y sumar 1
+            seq = int(ultimo.split('-')[-1]) + 1
+        else:
+            seq = 1
+
+        return f'{prefijo}-{año}-{str(seq).zfill(4)}'
 
     # ─── Helpers de estado ────────────────────────────────────────────────────
     @property
@@ -149,7 +161,8 @@ class Solicitud(models.Model):
             self.ESTADO_CANCELADA:   'badge-denegado',
         }
         return mapa.get(self.estado, 'badge-info')
-    
+
+
 class HistorialSolicitud(models.Model):
     solicitud       = models.ForeignKey(
                         Solicitud,

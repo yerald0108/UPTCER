@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from .models import Licencia
+import json
 
 
 def generar_licencia(solicitud, emitida_por):
@@ -8,10 +9,11 @@ def generar_licencia(solicitud, emitida_por):
     Genera automáticamente una licencia cuando una solicitud es aprobada.
     Si ya existe una licencia para esta solicitud, la retorna sin crear otra.
     """
-    if hasattr(solicitud, 'licencia'):
+    try:
         return solicitud.licencia
+    except Licencia.DoesNotExist:
+        pass
 
-    import json
     fecha_vencimiento = None
 
     # Calcular fecha de vencimiento si es importación temporal
