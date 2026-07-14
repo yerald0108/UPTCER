@@ -335,10 +335,7 @@ def lista_solicitudes(request):
     except EmptyPage:
         solicitudes = paginator.page(paginator.num_pages)
 
-    # Calcular días en cola solo para solicitudes pendientes (página actual)
-    ahora = timezone.now()
-    for s in solicitudes:
-        s.dias_en_cola = (ahora - s.fecha_creacion).days if s.esta_pendiente else None
+    # Ya no se necesita el bucle: dias_en_cola es propiedad del modelo
 
     # Si es una petición AJAX, devolver solo el HTML de la tabla
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

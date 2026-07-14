@@ -175,6 +175,7 @@ def lista_categorias(request):
 
 
 # ─── Búsqueda AJAX para el formulario F43 ────────────────────────────────────
+@never_cache
 @login_required
 def buscar_equipos_ajax(request):
     q = request.GET.get('q', '').strip()
