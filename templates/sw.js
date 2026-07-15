@@ -2,7 +2,7 @@
 
 // Incrementar esta versión cada vez que se modifiquen recursos estáticos.
 // Así los clientes no conservan CSS o JavaScript desactualizado.
-const CACHE_NAME = 'uptcer-v4';
+const CACHE_NAME = 'uptcer-v6';
 
 // Archivos a cachear en la primera carga
 const ESTATICOS = [

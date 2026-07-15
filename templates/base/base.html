@@ -16,7 +16,7 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
   </style>
-  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=4">
+  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=6">
   <link rel="stylesheet" href="{% static 'css/toast.css' %}">
   <link rel="stylesheet" href="{% static 'css/modal.css' %}">
   <link rel="stylesheet" href="{% static 'css/componentes.css' %}">
@@ -313,6 +313,7 @@ function inicializarLayoutBase() {
   // ─── Dropdown de solicitudes ──────────────────────────────────────────────
   const dropdownSolicitudes = document.getElementById('dropdown-solicitudes');
   const btnDropdownSolicitudes = document.getElementById('btn-dropdown-solicitudes');
+  let cierreDropdownTimeout = null;
 
   function posicionarDropdownSolicitudes() {
     if (!dropdownSolicitudes || !btnDropdownSolicitudes || !sidebar.classList.contains('colapsado')) return;
@@ -324,15 +325,25 @@ function inicializarLayoutBase() {
   function cerrarDropdownSolicitudes() {
     if (!dropdownSolicitudes || !btnDropdownSolicitudes) return;
 
+    clearTimeout(cierreDropdownTimeout);
+    const estabaAbierto = dropdownSolicitudes.classList.contains('abierto');
+    if (estabaAbierto) dropdownSolicitudes.classList.add('cerrando');
     dropdownSolicitudes.classList.remove('abierto');
     btnDropdownSolicitudes.classList.remove('dropdown-abierto');
-    dropdownSolicitudes.style.removeProperty('top');
     if (tooltip) tooltip.classList.remove('oculto');
+
+    cierreDropdownTimeout = setTimeout(() => {
+      if (dropdownSolicitudes.classList.contains('abierto')) return;
+      dropdownSolicitudes.classList.remove('cerrando');
+      dropdownSolicitudes.style.removeProperty('top');
+    }, estabaAbierto ? 240 : 0);
   }
 
   function abrirDropdownSolicitudes() {
     if (!dropdownSolicitudes || !btnDropdownSolicitudes) return;
 
+    clearTimeout(cierreDropdownTimeout);
+    dropdownSolicitudes.classList.remove('cerrando');
     if (sidebar.classList.contains('colapsado')) {
       posicionarDropdownSolicitudes();
       if (tooltip) {

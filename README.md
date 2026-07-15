@@ -603,17 +603,17 @@ Esto es importante cuando se corrige la interfaz. Por ejemplo, un ajuste al drop
 
 #### Regla obligatoria al cambiar CSS o JavaScript estático
 
-Cada vez que se modifique un archivo dentro de `static/`, se debe incrementar la versión de la caché en `templates/sw.js`. Para una modificación posterior a la versión actual, el cambio sería de `v4` a `v5`:
+Cada vez que se modifique un archivo dentro de `static/`, se debe incrementar la versión de la caché en `templates/sw.js`. Para una modificación posterior a la versión actual, el cambio sería de `v6` a `v7`:
 
 ```javascript
 // templates/sw.js
-const CACHE_NAME = 'uptcer-v5';
+const CACHE_NAME = 'uptcer-v7';
 ```
 
 Cuando el cambio afecte `global.css`, actualizar también el parámetro de versión de su enlace en `templates/base/base.html`:
 
 ```html
-<link rel="stylesheet" href="{% static 'css/global.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'css/global.css' %}?v=7">
 ```
 
 El parámetro evita que un Service Worker antiguo reutilice el CSS previo mientras detecta y activa la nueva versión de caché.
@@ -621,7 +621,7 @@ El parámetro evita que un Service Worker antiguo reutilice el CSS previo mientr
 #### Lista de comprobación para el equipo
 
 1. Modificar el archivo estático necesario en `static/css/` o `static/js/`.
-2. Elegir la siguiente versión consecutiva de caché: `v4` → `v5` → `v6`.
+2. Elegir la siguiente versión consecutiva de caché: `v6` → `v7` → `v8`.
 3. Actualizar `CACHE_NAME` en `templates/sw.js` con esa versión.
 4. Si se modificó `static/css/global.css`, cambiar el mismo número en `?v=` dentro de `templates/base/base.html`.
 5. Si se agregó un recurso nuevo que debe funcionar sin conexión, incluir su ruta en el arreglo `ESTATICOS` de `templates/sw.js`.
