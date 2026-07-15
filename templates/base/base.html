@@ -6,19 +6,21 @@
   <meta name="description" content="UPTCER — Sistema de Gestión de Trámites de Telecomunicaciones">
   <title>{% block titulo %}UPTCER{% endblock %} — Ministerio de Comunicaciones</title>
 
-  <!-- Fuente Inter desde Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  {% load static %}
 
   <!-- Lucide Icons (iconos profesionales SVG) -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="{% static 'js/lucide.min.js' %}"></script>
 
-  {% load static %}
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  </style>
   <link rel="stylesheet" href="{% static 'css/global.css' %}">
   <link rel="stylesheet" href="{% static 'css/toast.css' %}">
   <link rel="stylesheet" href="{% static 'css/modal.css' %}">
   <link rel="stylesheet" href="{% static 'css/componentes.css' %}">
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
   {% block estilos_extra %}{% endblock %}
 </head>
 <body>
@@ -304,15 +306,9 @@
     localStorage.setItem('uptcer_sol_dropdown', abierto ? '1' : '0');
   }
 
-  // Restaurar estado del dropdown al cargar
+  // NO restaurar dropdown al cargar — siempre empieza cerrado
   document.addEventListener('DOMContentLoaded', () => {
-    const guardado  = localStorage.getItem('uptcer_sol_dropdown');
-    const dropdown  = document.getElementById('dropdown-solicitudes');
-    const btn       = document.getElementById('btn-dropdown-solicitudes');
-    if (dropdown && btn && guardado === '1') {
-      dropdown.classList.add('abierto');
-      btn.classList.add('dropdown-abierto');
-    }
+    localStorage.setItem('uptcer_sol_dropdown', '0');
   });
 
   // Inicializar iconos Lucide
@@ -440,6 +436,59 @@
         });
     });
   }
+
+  // ─── Dropdown de solicitudes en sidebar ───────────────────────────────────
+  function toggleDropdownSolicitudes() {
+    const dropdown = document.getElementById('dropdown-solicitudes');
+    const btn      = document.getElementById('btn-dropdown-solicitudes');
+    const sidebar  = document.getElementById('sidebar');
+    const tooltip  = document.getElementById('sidebar-tooltip');
+    if (!dropdown || !btn) return;
+
+    const colapsado = sidebar.classList.contains('colapsado');
+    const abierto = dropdown.classList.contains('abierto');
+
+    if (abierto) {
+      // CERRAR
+      dropdown.classList.remove('abierto');
+      btn.classList.remove('dropdown-abierto');
+      localStorage.setItem('uptcer_sol_dropdown', '0');
+      if (tooltip) tooltip.classList.remove('oculto');
+      return;
+    }
+
+    // ABRIR
+    dropdown.classList.add('abierto');
+    btn.classList.add('dropdown-abierto');
+    localStorage.setItem('uptcer_sol_dropdown', '1');
+
+    if (colapsado) {
+      const btnRect = btn.getBoundingClientRect();
+      dropdown.style.top = (btnRect.top - 4) + 'px';
+      if (tooltip) {
+        tooltip.classList.add('oculto');
+        tooltip.classList.remove('visible');
+      }
+    }
+  }
+
+  // Cerrar dropdown flotante al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar || !sidebar.classList.contains('colapsado')) return;
+
+    const dropdown = document.getElementById('dropdown-solicitudes');
+    const btn = document.getElementById('btn-dropdown-solicitudes');
+    const tooltip = document.getElementById('sidebar-tooltip');
+    if (!dropdown || !btn) return;
+
+    if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+      dropdown.classList.remove('abierto');
+      btn.classList.remove('dropdown-abierto');
+      localStorage.setItem('uptcer_sol_dropdown', '0');
+      if (tooltip) tooltip.classList.remove('oculto');
+    }
+  });
 </script>
 
 <!-- ── Scripts externos ────────────────────────────────────────────────── -->

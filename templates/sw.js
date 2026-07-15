@@ -1,9 +1,13 @@
 /* ─── Service Worker — UPTCER ────────────────────────────────────────────── */
 
-const CACHE_NAME = 'uptcer-v1';
+const CACHE_NAME = 'uptcer-v2';
 
 // Archivos a cachear en la primera carga
 const ESTATICOS = [
+  '/static/js/lucide.min.js', 
+  '/static/css/fonts.css',         
+  '/static/fonts/Inter_24pt-Regular.ttf', 
+  '/static/fonts/Inter_28pt-Bold.ttf',
   '/static/css/global.css',
   '/static/css/toast.css',
   '/static/css/modal.css',

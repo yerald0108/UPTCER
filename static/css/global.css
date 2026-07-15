@@ -755,7 +755,6 @@ body {
     width: var(--sidebar-ancho) !important;
   }
 
-  /* En móvil, el sidebar siempre se muestra expandido sin importar el estado */
   .layout-sidebar.colapsado {
     width: var(--sidebar-ancho) !important;
   }
@@ -764,7 +763,6 @@ body {
     transform: translateX(0);
   }
 
-  /* Restaurar todos los elementos ocultos por el estado colapsado */
   .layout-sidebar.colapsado .sidebar-logo-info {
     opacity: 1 !important;
     max-width: 200px !important;
@@ -878,7 +876,69 @@ body {
   transform: rotate(180deg);
 }
 
-/* Ocultar dropdown cuando sidebar está colapsado */
+/* ─── Dropdown en sidebar colapsado: menú flotante ──────────────────────── */
 .layout-sidebar.colapsado .sidebar-dropdown {
+  position: fixed;
+  left: calc(var(--sidebar-ancho-colapsado) + var(--espacio-2));
+  top: auto;
+  background-color: var(--sidebar-bg);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radio-md);
+  box-shadow: var(--sombra-lg);
+  padding: var(--espacio-2);
+  min-width: 220px;
+  z-index: 10000;
+  display: block !important;
+  opacity: 0;
+  pointer-events: none;
+  max-height: none;
+  overflow: visible;
+}
+
+.layout-sidebar.colapsado .sidebar-dropdown.abierto {
+  opacity: 1;
+  pointer-events: auto;
+  max-height: none;
+}
+
+.layout-sidebar.colapsado .sidebar-dropdown-item,
+.layout-sidebar.colapsado .sidebar-dropdown-item .sidebar-enlace-texto {
+  padding: var(--espacio-3) var(--espacio-4) !important;
+  border-radius: var(--radio-sm);
+  color: #ffffff !important;
+  font-size: var(--texto-sm);
+  white-space: nowrap;
+  opacity: 1 !important;
+  max-width: none !important;
+  pointer-events: auto !important;
+}
+
+.layout-sidebar.colapsado .sidebar-dropdown-item:hover {
+  background-color: rgba(255,255,255,0.15);
+  color: #ffffff;
+}
+
+.layout-sidebar.colapsado .sidebar-dropdown-item:hover {
+  background-color: var(--sidebar-hover-bg);
+  color: var(--color-texto-inverso);
+}
+
+.layout-sidebar.colapsado .sidebar-dropdown-item.activo {
+  background-color: var(--sidebar-activo-bg);
+  color: var(--sidebar-activo-texto);
+}
+
+.layout-sidebar.colapsado .sidebar-dropdown-punto {
   display: none;
+}
+
+/* Ocultar flecha en estado colapsado */
+.layout-sidebar.colapsado .sidebar-enlace-flecha {
+  display: none;
+}
+
+/* Ocultar tooltip cuando el dropdown está abierto */
+.layout-sidebar.colapsado .sidebar-tooltip.oculto {
+  opacity: 0 !important;
+  pointer-events: none;
 }
