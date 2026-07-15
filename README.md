@@ -595,6 +595,40 @@ static/
     └── f43.js              ← Lógica del formulario F43: búsqueda, filas dinámicas, envío
 ```
 
+### Service Worker y actualización de recursos estáticos
+
+El sistema usa un *Service Worker* (`templates/sw.js`) para guardar los recursos de `static/` y permitir una carga rápida. Su estrategia es **cache first**: si el navegador ya tiene una copia de un CSS o JavaScript en caché, la entrega antes de consultar el servidor.
+
+Esto es importante cuando se corrige la interfaz. Por ejemplo, un ajuste al dropdown del sidebar puede estar correctamente implementado en `static/css/global.css`, pero el navegador puede seguir aplicando la versión anterior del archivo. El resultado aparenta ser que el bug continúa, incluso después de recargar la página.
+
+#### Regla obligatoria al cambiar CSS o JavaScript estático
+
+Cada vez que se modifique un archivo dentro de `static/`, se debe incrementar la versión de la caché en `templates/sw.js`. Para una modificación posterior a la versión actual, el cambio sería de `v4` a `v5`:
+
+```javascript
+// templates/sw.js
+const CACHE_NAME = 'uptcer-v5';
+```
+
+Cuando el cambio afecte `global.css`, actualizar también el parámetro de versión de su enlace en `templates/base/base.html`:
+
+```html
+<link rel="stylesheet" href="{% static 'css/global.css' %}?v=5">
+```
+
+El parámetro evita que un Service Worker antiguo reutilice el CSS previo mientras detecta y activa la nueva versión de caché.
+
+#### Lista de comprobación para el equipo
+
+1. Modificar el archivo estático necesario en `static/css/` o `static/js/`.
+2. Elegir la siguiente versión consecutiva de caché: `v4` → `v5` → `v6`.
+3. Actualizar `CACHE_NAME` en `templates/sw.js` con esa versión.
+4. Si se modificó `static/css/global.css`, cambiar el mismo número en `?v=` dentro de `templates/base/base.html`.
+5. Si se agregó un recurso nuevo que debe funcionar sin conexión, incluir su ruta en el arreglo `ESTATICOS` de `templates/sw.js`.
+6. Probar una navegación normal y una recarga fuerte (`Ctrl + F5`) antes de entregar el cambio.
+
+No reutilizar una versión anterior de `CACHE_NAME`. Al cambiarla, el evento `activate` del Service Worker elimina las cachés viejas y permite que el navegador reciba los estilos y scripts corregidos.
+
 ---
 
 ## 9. Sistema de estilos y diseño
