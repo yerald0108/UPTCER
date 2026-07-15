@@ -627,7 +627,7 @@
     padding: 0 !important;
   }
 
-  /* ⚠️ FORZAR ZOOM A 1 PARA IMPRIMIR CORRECTAMENTE */
+  /* FORZAR ZOOM A 1 PARA IMPRIMIR CORRECTAMENTE */
   .f43-hoja {
     display: block !important;
     visibility: visible !important;
@@ -673,4 +673,34 @@
     size: A4;
     margin: 0;
   }
+}
+
+/* ─── Estado de carga en búsqueda AJAX ──────────────────────────────────── */
+
+.f43-input-busqueda.f43-buscando {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Ccircle cx='8' cy='8' r='6' stroke='%23999' stroke-width='2' opacity='0.3'/%3E%3Cpath d='M8 2a6 6 0 0 1 6 6' stroke='%233B82F6' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
+  padding-right: 34px;
+}
+
+.f43-dropdown-cargando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  color: var(--color-texto-muted);
+  font-size: 13px;
+  font-family: var(--fuente-principal);
+}
+
+.f43-spinner {
+  animation: f43-girar 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes f43-girar {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

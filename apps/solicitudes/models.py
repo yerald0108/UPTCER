@@ -1,6 +1,7 @@
 from django.db import models, transaction
 from django.conf import settings
 from django.utils import timezone
+from apps.core.utils import generar_numero_secuencial
 
 
 class Solicitud(models.Model):
@@ -121,21 +122,12 @@ class Solicitud(models.Model):
             super().save(*args, **kwargs)
 
     def _generar_numero(self):
-        año = timezone.now().year
         prefijo = 'F43' if self.flujo == self.FLUJO_F43 else 'RAT'
-
-        # Bloquear filas del mismo prefijo/año para evitar concurrencia
-        ultimo = Solicitud.objects.select_for_update().filter(
-            numero__startswith=f'{prefijo}-{año}'
-        ).aggregate(max_num=models.Max('numero'))['max_num']
-
-        if ultimo:
-            # Extraer el número secuencial y sumar 1
-            seq = int(ultimo.split('-')[-1]) + 1
-        else:
-            seq = 1
-
-        return f'{prefijo}-{año}-{str(seq).zfill(4)}'
+        return generar_numero_secuencial(
+            queryset=Solicitud.objects,
+            prefijo=prefijo,
+            ancho=4
+        )
 
     # ─── Helpers de estado ────────────────────────────────────────────────────
     @property
@@ -149,6 +141,13 @@ class Solicitud(models.Model):
     @property
     def es_aprobada(self):
         return self.estado == self.ESTADO_APROBADA
+
+    @property
+    def dias_en_cola(self):
+        """Días transcurridos desde la creación si la solicitud está pendiente."""
+        if self.esta_pendiente:
+            return (timezone.now() - self.fecha_creacion).days
+        return None
 
     @property
     def clase_badge(self):

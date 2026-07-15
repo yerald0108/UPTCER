@@ -85,71 +85,79 @@ def vista_dashboard(request):
 # ─── Dashboards por rol ───────────────────────────────────────────────────────
 
 def _dashboard_persona_natural(request, usuario):
-
-    solicitudes = Solicitud.objects.filter(solicitante=usuario)
+    stats = Solicitud.objects.filter(solicitante=usuario).aggregate(
+        total=Count('id'),
+        aprobadas=Count('id', filter=Q(estado=Solicitud.ESTADO_APROBADA)),
+        en_revision=Count('id', filter=Q(estado__in=[
+            Solicitud.ESTADO_ENVIADA,
+            Solicitud.ESTADO_EN_REVISION
+        ])),
+        denegadas=Count('id', filter=Q(estado=Solicitud.ESTADO_DENEGADA)),
+    )
 
     contexto = {
         'usuario': usuario,
-        'total_solicitudes':   solicitudes.count(),
-        'aprobadas':           solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count(),
-        'en_revision':         solicitudes.filter(estado__in=[
-                                   Solicitud.ESTADO_ENVIADA,
-                                   Solicitud.ESTADO_EN_REVISION
-                               ]).count(),
-        'denegadas':           solicitudes.filter(estado=Solicitud.ESTADO_DENEGADA).count(),
-        'solicitudes_recientes': solicitudes.select_related('equipo')[:5],
+        'total_solicitudes':   stats['total'],
+        'aprobadas':           stats['aprobadas'],
+        'en_revision':         stats['en_revision'],
+        'denegadas':           stats['denegadas'],
+        'solicitudes_recientes': Solicitud.objects.filter(solicitante=usuario)
+                                    .select_related('equipo')[:5],
     }
     return render(request, 'accounts/dashboard_persona_natural.html', contexto)
 
 
 def _dashboard_operador(request, usuario):
-
     hoy = timezone.now().date()
-    solicitudes = Solicitud.objects.select_related('solicitante', 'equipo')
+    
+    stats = Solicitud.objects.aggregate(
+        nuevas=Count('id', filter=Q(estado=Solicitud.ESTADO_ENVIADA)),
+        en_proceso=Count('id', filter=Q(estado=Solicitud.ESTADO_EN_REVISION)),
+        aprobadas_hoy=Count('id', filter=Q(
+            estado=Solicitud.ESTADO_APROBADA,
+            fecha_resolucion__date=hoy
+        )),
+        denegadas_hoy=Count('id', filter=Q(
+            estado=Solicitud.ESTADO_DENEGADA,
+            fecha_resolucion__date=hoy
+        )),
+    )
 
     contexto = {
         'usuario': usuario,
-        'nuevas':        solicitudes.filter(estado=Solicitud.ESTADO_ENVIADA).count(),
-        'en_proceso':    solicitudes.filter(estado=Solicitud.ESTADO_EN_REVISION).count(),
-        'aprobadas_hoy': solicitudes.filter(
-                             estado=Solicitud.ESTADO_APROBADA,
-                             fecha_resolucion__date=hoy
-                         ).count(),
-        'denegadas_hoy': solicitudes.filter(
-                             estado=Solicitud.ESTADO_DENEGADA,
-                             fecha_resolucion__date=hoy
-                         ).count(),
-        'solicitudes_recientes': solicitudes.filter(
+        'nuevas':        stats['nuevas'],
+        'en_proceso':    stats['en_proceso'],
+        'aprobadas_hoy': stats['aprobadas_hoy'],
+        'denegadas_hoy': stats['denegadas_hoy'],
+        'solicitudes_recientes': Solicitud.objects.filter(
                                      estado__in=[
                                          Solicitud.ESTADO_ENVIADA,
                                          Solicitud.ESTADO_EN_REVISION,
                                      ]
-                                 ).order_by('-fecha_creacion')[:8],
+                                 ).select_related('solicitante', 'equipo')
+                                  .order_by('-fecha_creacion')[:8],
     }
     return render(request, 'accounts/dashboard_operador.html', contexto)
 
 
 def _dashboard_especialista(request, usuario):
+    hoy = timezone.now()
+    
+    stats = Solicitud.objects.filter(equipo_no_listado=True).aggregate(
+        por_evaluar=Count('id', filter=Q(estado=Solicitud.ESTADO_EN_REVISION)),
+        evaluadas_mes=Count('id', filter=Q(
+            estado__in=[Solicitud.ESTADO_APROBADA, Solicitud.ESTADO_DENEGADA],
+            fecha_resolucion__month=hoy.month,
+            fecha_resolucion__year=hoy.year,
+        )),
+        aprobadas_total=Count('id', filter=Q(estado=Solicitud.ESTADO_APROBADA)),
+    )
 
     contexto = {
         'usuario': usuario,
-        'por_evaluar':       Solicitud.objects.filter(
-                                 equipo_no_listado=True,
-                                 estado=Solicitud.ESTADO_EN_REVISION
-                             ).count(),
-        'evaluadas_mes':     Solicitud.objects.filter(
-                                 equipo_no_listado=True,
-                                 estado__in=[
-                                     Solicitud.ESTADO_APROBADA,
-                                     Solicitud.ESTADO_DENEGADA,
-                                 ],
-                                 fecha_resolucion__month=timezone.now().month,
-                                 fecha_resolucion__year=timezone.now().year,
-                             ).count(),
-        'aprobadas_total':   Solicitud.objects.filter(
-                                 equipo_no_listado=True,
-                                 estado=Solicitud.ESTADO_APROBADA
-                             ).count(),
+        'por_evaluar':       stats['por_evaluar'],
+        'evaluadas_mes':     stats['evaluadas_mes'],
+        'aprobadas_total':   stats['aprobadas_total'],
         'pendientes_recientes': Solicitud.objects.filter(
                                     equipo_no_listado=True,
                                     estado=Solicitud.ESTADO_EN_REVISION
@@ -180,22 +188,34 @@ def _dashboard_aduana(request, usuario):
 
 
 def _dashboard_directivo(request, usuario):
+    # ─── Estadísticas consolidadas en una sola query ──────────────────────
+    stats = Solicitud.objects.aggregate(
+        total=Count('id'),
+        aprobadas=Count('id', filter=Q(estado=Solicitud.ESTADO_APROBADA)),
+        denegadas=Count('id', filter=Q(estado=Solicitud.ESTADO_DENEGADA)),
+        pendientes=Count('id', filter=Q(estado__in=[
+            Solicitud.ESTADO_ENVIADA,
+            Solicitud.ESTADO_EN_REVISION
+        ])),
+    )
+    
+    total      = stats['total']
+    aprobadas  = stats['aprobadas']
+    denegadas  = stats['denegadas']
+    pendientes = stats['pendientes']
 
-    solicitudes = Solicitud.objects.all()
-    total       = solicitudes.count()
-    aprobadas   = solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count()
-    denegadas   = solicitudes.filter(estado=Solicitud.ESTADO_DENEGADA).count()
-    pendientes  = solicitudes.filter(estado__in=[
-                      Solicitud.ESTADO_ENVIADA,
-                      Solicitud.ESTADO_EN_REVISION
-                  ]).count()
+    # Solicitudes por flujo (consolidado)
+    flujo_stats = Solicitud.objects.aggregate(
+        f43=Count('id', filter=Q(flujo=Solicitud.FLUJO_F43)),
+        rats=Count('id', filter=Q(flujo=Solicitud.FLUJO_RATS)),
+    )
 
     # Solicitudes por mes (últimos 6 meses)
-    hoy        = timezone.now()
-    hace_6m    = hoy - relativedelta(months=5)
+    hoy     = timezone.now()
+    hace_6m = hoy - relativedelta(months=5)
 
     por_mes_qs = (
-        solicitudes
+        Solicitud.objects
         .filter(fecha_creacion__gte=hace_6m)
         .annotate(mes=TruncMonth('fecha_creacion'))
         .values('mes')
@@ -203,11 +223,9 @@ def _dashboard_directivo(request, usuario):
         .order_by('mes')
     )
 
-    # Construir labels y datos para los últimos 6 meses
     meses_labels = []
     meses_data   = []
     meses_map    = {item['mes'].strftime('%Y-%m'): item['total'] for item in por_mes_qs}
-
     MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
     for i in range(6):
@@ -218,19 +236,13 @@ def _dashboard_directivo(request, usuario):
 
     # Solicitudes por estado
     estados_qs = (
-        solicitudes
+        Solicitud.objects
         .values('estado')
         .annotate(total=Count('id'))
         .order_by('estado')
     )
     estados_labels = [dict(Solicitud.ESTADOS).get(e['estado'], e['estado']) for e in estados_qs]
     estados_data   = [e['total'] for e in estados_qs]
-
-    # Solicitudes por flujo
-    por_flujo = {
-        'f43':  solicitudes.filter(flujo=Solicitud.FLUJO_F43).count(),
-        'rats': solicitudes.filter(flujo=Solicitud.FLUJO_RATS).count(),
-    }
 
     # Usuarios por rol
     usuarios_por_rol = (
@@ -251,14 +263,14 @@ def _dashboard_directivo(request, usuario):
         'aprobadas':         aprobadas,
         'denegadas':         denegadas,
         'licencias_vigentes': Licencia.objects.filter(estado=Licencia.ESTADO_VIGENTE).count(),
-        'por_flujo':         por_flujo,
-        'solicitudes_recientes': solicitudes.select_related(
+        'por_flujo':         {'f43': flujo_stats['f43'], 'rats': flujo_stats['rats']},
+        'solicitudes_recientes': Solicitud.objects.select_related(
                                      'solicitante', 'equipo'
                                  ).order_by('-fecha_creacion')[:8],
 
         # Datos para Chart.js (JSON)
-        'chart_meses_labels':  json.dumps(meses_labels),
-        'chart_meses_data':    json.dumps(meses_data),
+        'chart_meses_labels':   json.dumps(meses_labels),
+        'chart_meses_data':     json.dumps(meses_data),
         'chart_estados_labels': json.dumps(estados_labels),
         'chart_estados_data':   json.dumps(estados_data),
         'chart_roles_labels':   json.dumps(roles_labels),
@@ -351,23 +363,29 @@ def detalle_usuario(request, pk):
 
     usuario_obj = get_object_or_404(Usuario, pk=pk)
 
-    # Estadísticas del usuario
-    solicitudes = Solicitud.objects.filter(solicitante=usuario_obj)
+    # Estadísticas del usuario en una sola consulta
+    stats = Solicitud.objects.filter(solicitante=usuario_obj).aggregate(
+        total=Count('id'),
+        aprobadas=Count('id', filter=Q(estado=Solicitud.ESTADO_APROBADA)),
+        denegadas=Count('id', filter=Q(estado=Solicitud.ESTADO_DENEGADA)),
+        pendientes=Count('id', filter=Q(estado__in=[
+            Solicitud.ESTADO_ENVIADA,
+            Solicitud.ESTADO_EN_REVISION
+        ])),
+    )
 
     estadisticas = {
-        'total':       solicitudes.count(),
-        'aprobadas':   solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count(),
-        'denegadas':   solicitudes.filter(estado=Solicitud.ESTADO_DENEGADA).count(),
-        'pendientes':  solicitudes.filter(estado__in=[
-                           Solicitud.ESTADO_ENVIADA,
-                           Solicitud.ESTADO_EN_REVISION
-                       ]).count(),
+        'total':      stats['total'],
+        'aprobadas':  stats['aprobadas'],
+        'denegadas':  stats['denegadas'],
+        'pendientes': stats['pendientes'],
     }
 
     return render(request, 'accounts/usuarios/detalle.html', {
         'usuario_obj':   usuario_obj,
         'estadisticas':  estadisticas,
-        'solicitudes_recientes': solicitudes.order_by('-fecha_creacion')[:5],
+        'solicitudes_recientes': Solicitud.objects.filter(solicitante=usuario_obj)
+                                    .order_by('-fecha_creacion')[:5],
     })
 
 
@@ -474,18 +492,23 @@ def perfil(request):
     else:
         form = FormularioEditarPerfil(instance=usuario)
 
-    solicitudes = Solicitud.objects.filter(solicitante=usuario)
+    # Estadísticas del usuario en una sola consulta
+    stats = Solicitud.objects.filter(solicitante=usuario).aggregate(
+        total=Count('id'),
+        aprobadas=Count('id', filter=Q(estado=Solicitud.ESTADO_APROBADA)),
+        pendientes=Count('id', filter=Q(estado__in=[
+            Solicitud.ESTADO_ENVIADA,
+            Solicitud.ESTADO_EN_REVISION
+        ])),
+    )
 
     return render(request, 'accounts/perfil.html', {
         'form':    form,
         'usuario': usuario,
         'estadisticas': {
-            'total':      solicitudes.count(),
-            'aprobadas':  solicitudes.filter(estado=Solicitud.ESTADO_APROBADA).count(),
-            'pendientes': solicitudes.filter(estado__in=[
-                              Solicitud.ESTADO_ENVIADA,
-                              Solicitud.ESTADO_EN_REVISION
-                          ]).count(),
+            'total':      stats['total'],
+            'aprobadas':  stats['aprobadas'],
+            'pendientes': stats['pendientes'],
         }
     })
 

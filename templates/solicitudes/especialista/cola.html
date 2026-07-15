@@ -97,6 +97,26 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Paginación pendientes -->
+      {% if paginator_pendientes.num_pages > 1 %}
+      <div style="display:flex;align-items:center;justify-content:center;gap:var(--espacio-2);padding:var(--espacio-4);border-top:1px solid var(--color-borde);">
+        {% if pendientes.has_previous %}
+          <a href="?pagina_pendientes={{ pendientes.previous_page_number }}&pagina_completadas={{ completadas.number }}" class="btn btn-ghost btn-sm">
+            <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+          </a>
+        {% endif %}
+        <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">
+          Página {{ pendientes.number }} de {{ paginator_pendientes.num_pages }}
+        </span>
+        {% if pendientes.has_next %}
+          <a href="?pagina_pendientes={{ pendientes.next_page_number }}&pagina_completadas={{ completadas.number }}" class="btn btn-ghost btn-sm">
+            <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+          </a>
+        {% endif %}
+      </div>
+      {% endif %}
+
     {% else %}
       <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
         <i data-lucide="check-circle" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
@@ -118,7 +138,7 @@
       <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#E8F5E9;color:var(--color-secundario);display:flex;align-items:center;justify-content:center;">
         <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
       </div>
-      <h2 class="tarjeta-titulo">Evaluaciones recientes completadas</h2>
+      <h2 class="tarjeta-titulo">Evaluaciones completadas</h2>
     </div>
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
@@ -157,6 +177,26 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Paginación completadas -->
+      {% if paginator_completadas.num_pages > 1 %}
+      <div style="display:flex;align-items:center;justify-content:center;gap:var(--espacio-2);padding:var(--espacio-4);border-top:1px solid var(--color-borde);">
+        {% if completadas.has_previous %}
+          <a href="?pagina_completadas={{ completadas.previous_page_number }}&pagina_pendientes={{ pendientes.number }}" class="btn btn-ghost btn-sm">
+            <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+          </a>
+        {% endif %}
+        <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">
+          Página {{ completadas.number }} de {{ paginator_completadas.num_pages }}
+        </span>
+        {% if completadas.has_next %}
+          <a href="?pagina_completadas={{ completadas.next_page_number }}&pagina_pendientes={{ pendientes.number }}" class="btn btn-ghost btn-sm">
+            <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+          </a>
+        {% endif %}
+      </div>
+      {% endif %}
+
     {% else %}
       <div style="padding:var(--espacio-8);text-align:center;color:var(--color-texto-muted);">
         <p style="font-size:var(--texto-sm);">No hay evaluaciones completadas aún.</p>

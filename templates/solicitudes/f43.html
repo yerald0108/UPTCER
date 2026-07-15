@@ -68,7 +68,7 @@
   <div class="f43-hoja">
     <form method="post" enctype="multipart/form-data" id="form-f43" novalidate>
       {% csrf_token %}
-      <input type="hidden" name="equipos_json" id="equipos-json" value="[]">
+      <input type="hidden" name="equipos_json" id="equipos-json" value="{{ equipos_iniciales|default:'[]' }}">
 
       <!-- Encabezado oficial -->
       <div class="f43-encabezado">
@@ -467,5 +467,22 @@
 <script src="{% static 'js/f43.js' %}"></script>
 <script>
   document.body.dataset.pagina = 'f43';
+
+  // Restaurar equipos si el formulario falló la validación
+  {% if equipos_iniciales %}
+    (function() {
+      try {
+        const equiposGuardados = JSON.parse('{{ equipos_iniciales|escapejs }}');
+        if (Array.isArray(equiposGuardados) && equiposGuardados.length > 0) {
+          // Esperar a que el DOM esté listo y las funciones cargadas
+          document.addEventListener('DOMContentLoaded', function() {
+            poblarEquiposDesdeJSON(equiposGuardados);
+          });
+        }
+      } catch(e) {
+        // Silencioso si el JSON es inválido
+      }
+    })();
+  {% endif %}
 </script>
 {% endblock %}

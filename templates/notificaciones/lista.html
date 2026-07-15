@@ -10,9 +10,15 @@
 {% endblock %}
 
 {% block contenido %}
-<div class="pagina-cabecera">
-  <h1 class="pagina-titulo">Notificaciones</h1>
-  <p class="pagina-subtitulo">Historial de todas sus notificaciones del sistema.</p>
+<div class="pagina-cabecera" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--espacio-4);">
+  <div>
+    <h1 class="pagina-titulo">Notificaciones</h1>
+    <p class="pagina-subtitulo">Historial de todas sus notificaciones del sistema.</p>
+  </div>
+  <button type="button" class="btn btn-ghost btn-sm" onclick="marcarTodasLeidas()" id="btn-marcar-todas">
+    <i data-lucide="check-check" style="width:16px;height:16px;"></i>
+    Marcar todas como leídas
+  </button>
 </div>
 
 <div class="tarjeta">
@@ -70,6 +76,40 @@
         </div>
         {% endfor %}
       </div>
+
+      <!-- Paginación -->
+      {% if paginator.num_pages > 1 %}
+      <div style="display:flex;align-items:center;justify-content:center;gap:var(--espacio-2);padding:var(--espacio-5);border-top:1px solid var(--color-borde);">
+        {% if notificaciones.has_previous %}
+          <a href="?pagina={{ notificaciones.previous_page_number }}" class="btn btn-ghost btn-sm">
+            <i data-lucide="chevron-left" style="width:16px;height:16px;"></i>
+            Anterior
+          </a>
+        {% else %}
+          <span class="btn btn-ghost btn-sm" style="opacity:0.4;pointer-events:none;">
+            <i data-lucide="chevron-left" style="width:16px;height:16px;"></i>
+            Anterior
+          </span>
+        {% endif %}
+
+        <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);padding:0 var(--espacio-4);">
+          Página {{ notificaciones.number }} de {{ paginator.num_pages }}
+        </span>
+
+        {% if notificaciones.has_next %}
+          <a href="?pagina={{ notificaciones.next_page_number }}" class="btn btn-ghost btn-sm">
+            Siguiente
+            <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+          </a>
+        {% else %}
+          <span class="btn btn-ghost btn-sm" style="opacity:0.4;pointer-events:none;">
+            Siguiente
+            <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+          </span>
+        {% endif %}
+      </div>
+      {% endif %}
+
     {% else %}
       <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
         <i data-lucide="bell-off" style="width:48px;height:48px;margin-bottom:var(--espacio-4);opacity:0.3;display:block;margin-left:auto;margin-right:auto;"></i>
@@ -83,4 +123,32 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  function marcarTodasLeidas() {
+    const btn = document.getElementById('btn-marcar-todas');
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+
+    fetch('{% url "notificaciones:marcar_todas_leidas" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        location.reload();
+      }
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.style.opacity = '';
+    });
+  }
+</script>
 {% endblock %}

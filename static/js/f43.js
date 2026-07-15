@@ -71,8 +71,94 @@ function crearFila(numero) {
   return tr;
 }
 
+// ─── Poblar equipos desde JSON (restauración tras error de validación) ─────
+function poblarEquiposDesdeJSON(equipos) {
+  const tbody = document.getElementById('equipos-tbody');
+  if (!tbody || !equipos.length) return;
+
+  // Limpiar tabla existente
+  tbody.innerHTML = '';
+
+  equipos.forEach((equipo, index) => {
+    const numero = index + 1;
+    const tr = document.createElement('tr');
+    tr.dataset.equipoId = equipo.equipoId || '';
+    tr.dataset.listado  = equipo.listado ? 'true' : 'false';
+
+    tr.innerHTML = `
+      <td style="text-align:center;vertical-align:top;padding-top:10px;">${numero}</td>
+      <td style="vertical-align:top;">
+        <div style="position:relative;">
+          <input type="text"
+            class="f43-input-busqueda"
+            placeholder="Busque en el catálogo o escriba manualmente..."
+            autocomplete="off"
+            value="${escaparHTML(equipo.descripcion || '')}"
+            oninput="buscarEnCatalogo(this)"
+            onfocus="buscarEnCatalogo(this)">
+          <div class="f43-dropdown" style="display:none;"></div>
+        </div>
+        <div class="f43-badge-no-listado" style="display:${!equipo.listado && equipo.descripcion ? 'flex' : 'none'};margin-top:3px;">
+          <i data-lucide="alert-circle" style="width:11px;height:11px;"></i>
+          Equipo no listado en catálogo
+        </div>
+        <div class="f43-badge-restringido" style="display:none;margin-top:3px;">
+          <i data-lucide="shield-alert" style="width:11px;height:11px;"></i>
+          Frecuencia restringida — requiere evaluación técnica
+        </div>
+        <div class="f43-badge-libre" style="display:none;margin-top:3px;">
+          <i data-lucide="wifi" style="width:11px;height:11px;"></i>
+          Banda libre (2.4 / 5.7 GHz)
+        </div>
+      </td>
+      <td style="vertical-align:top;">
+        <input type="text" class="f43-input-marca" placeholder="Marca" value="${escaparHTML(equipo.marca || '')}">
+      </td>
+      <td style="vertical-align:top;">
+        <input type="text" class="f43-input-modelo" placeholder="Modelo" value="${escaparHTML(equipo.modelo || '')}" style="font-family:var(--fuente-mono);font-size:9pt;">
+      </td>
+      <td style="vertical-align:top;">
+        <input type="number" class="f43-input-cantidad" min="1" value="${equipo.cantidad || 1}" placeholder="1">
+      </td>
+      <td class="no-print" style="text-align:center;vertical-align:top;padding-top:8px;">
+        <button type="button" onclick="eliminarFila(this)"
+          style="background:none;border:none;cursor:pointer;color:#C62828;padding:2px;">
+          <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+        </button>
+      </td>
+    `;
+
+    // Si es equipo del catálogo, poner estilos de seleccionado
+    if (equipo.listado && equipo.equipoId) {
+      const input = tr.querySelector('.f43-input-busqueda');
+      input.style.borderBottom = '2px solid var(--color-secundario)';
+      input.style.backgroundColor = '#F0FBF0';
+      input.dataset.valorOriginal = equipo.descripcion;
+    } else if (equipo.descripcion && !equipo.listado) {
+      const input = tr.querySelector('.f43-input-busqueda');
+      input.style.borderBottom = '2px solid var(--color-advertencia)';
+      input.style.backgroundColor = '#FFFDF0';
+    }
+
+    tbody.appendChild(tr);
+  });
+
+  filaCount = equipos.length;
+
+  // Re-inicializar iconos Lucide
+  lucide.createIcons({ nodes: [tbody] });
+}
+
+// ─── Helper para escapar HTML ────────────────────────────────────────────────
+function escaparHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 // ─── Buscar en catálogo (AJAX) ────────────────────────────────────────────────
 let busquedaTimeout = null;
+let abortController = null;  // Para cancelar peticiones anteriores
 
 function buscarEnCatalogo(input) {
   const q        = input.value.trim();
@@ -89,15 +175,31 @@ function buscarEnCatalogo(input) {
 
   clearTimeout(busquedaTimeout);
 
+  // Cancelar petición anterior si existe
+  if (abortController) {
+    abortController.abort();
+  }
+
   if (q.length < 2) {
     dropdown.style.display = 'none';
+    quitarEstadoCargando(input);
     return;
   }
 
+  // ─── Mostrar estado de carga ──────────────────────────────────────────
+  mostrarEstadoCargando(input, dropdown);
+
   busquedaTimeout = setTimeout(() => {
-    fetch(`/equipos/buscar/?q=${encodeURIComponent(q)}`)
+    abortController = new AbortController();
+
+    fetch(`/equipos/buscar/?q=${encodeURIComponent(q)}`, {
+      signal: abortController.signal
+    })
       .then(r => r.json())
       .then(data => {
+        // Quitar estado de carga
+        quitarEstadoCargando(input);
+
         if (data.equipos.length === 0) {
           dropdown.innerHTML = `
             <div class="f43-dropdown-vacio">
@@ -140,10 +242,35 @@ function buscarEnCatalogo(input) {
           dropdown.style.display = 'block';
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        // Ignorar errores por abort
+        if (err.name === 'AbortError') return;
+        quitarEstadoCargando(input);
         dropdown.style.display = 'none';
       });
   }, 300);
+}
+
+// ─── Estado de carga ──────────────────────────────────────────────────────────
+function mostrarEstadoCargando(input, dropdown) {
+  // Clase visual en el input
+  input.classList.add('f43-buscando');
+
+  // Mostrar spinner en el dropdown
+  dropdown.innerHTML = `
+    <div class="f43-dropdown-cargando">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" class="f43-spinner">
+        <circle cx="9" cy="9" r="7" stroke="var(--color-borde)" stroke-width="2" opacity="0.3"/>
+        <path d="M9 2a7 7 0 0 1 7 7" stroke="var(--color-primario)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Buscando en catálogo...</span>
+    </div>
+  `;
+  dropdown.style.display = 'block';
+}
+
+function quitarEstadoCargando(input) {
+  input.classList.remove('f43-buscando');
 }
 
 // ─── Seleccionar equipo del catálogo ─────────────────────────────────────────
@@ -170,6 +297,9 @@ function seleccionarEquipo(item) {
 
   // Ocultar dropdown
   dropdown.style.display = 'none';
+
+  // Quitar estado de carga
+  quitarEstadoCargando(input);
 
   // Mostrar badge de banda
   ocultarBadges(fila);
@@ -326,12 +456,19 @@ function enviarFormulario() {
   }
 
   document.getElementById('equipos-json').value = JSON.stringify(equipos);
+
+  // Guardar en localStorage como respaldo extra
+  try {
+    localStorage.setItem('f43_equipos_respaldo', JSON.stringify(equipos));
+  } catch(e) {
+    // Silencioso si localStorage está lleno
+  }
+
   document.getElementById('form-f43').submit();
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // La primera fila ya está en el HTML — inicializar eventos
   lucide.createIcons();
 
   // Cerrar dropdowns con Escape
@@ -340,6 +477,11 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.f43-dropdown').forEach(d => d.style.display = 'none');
     }
   });
+
+  // Limpiar respaldo de localStorage si estamos en una carga limpia (sin error previo)
+  if (!document.getElementById('equipos-json').value || document.getElementById('equipos-json').value === '[]') {
+    localStorage.removeItem('f43_equipos_respaldo');
+  }
 
   // ── Validación en tiempo real (on blur) ──────────────────────────────────
 
@@ -397,7 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return false;
     }
 
-    // Validación específica de email
     if (campo.type === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(valor)) {
@@ -407,13 +548,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     limpiarErrorCampo(campo);
-    // Mostrar check verde si es válido
     campo.style.borderBottom = '2px solid #2E7D32';
     campo.style.backgroundColor = '#F0FBF0';
     return true;
   }
 
-  // Aplicar validación on blur a los campos del paso 1
   const camposValidar = [
     'id_nombre_apellidos',
     'id_numero_pasaporte',
@@ -427,14 +566,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const campo = document.getElementById(id);
     if (!campo) return;
 
-    // Validar al salir del campo
     campo.addEventListener('blur', () => {
       if (campo.value.trim()) {
         validarCampoIndividual(campo);
       }
     });
 
-    // Limpiar error mientras escribe si había error
     campo.addEventListener('input', () => {
       if (campo.style.borderBottom.includes('C62828')) {
         if (campo.value.trim()) {
@@ -444,7 +581,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Validar provincia al cambiar
   const provincia = document.getElementById('id_provincia');
   if (provincia) {
     provincia.addEventListener('change', () => {
@@ -458,7 +594,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Validar paso 1 completo antes de avanzar al paso 2
   const btnContinuarPaso1 = document.querySelector('#paso-1 .tarjeta-pie .btn-primario');
   if (btnContinuarPaso1) {
     btnContinuarPaso1.addEventListener('click', (e) => {
@@ -476,7 +611,6 @@ document.addEventListener('DOMContentLoaded', () => {
           titulo:  'Campos incompletos',
           mensaje: 'Complete todos los campos requeridos antes de continuar.',
         });
-        // Scroll al primer error
         const primerError = document.querySelector('.f43-error-inline');
         if (primerError) {
           primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });

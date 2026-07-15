@@ -42,6 +42,7 @@ def nueva_solicitud_f43(request):
                 return render(request, 'solicitudes/f43.html', {
                     'form': form,
                     'today': timezone.now().date().isoformat(),
+                    'equipos_iniciales': equipos_json,
                 })
 
             solicitud = Solicitud(
@@ -104,6 +105,7 @@ def nueva_solicitud_f43(request):
             return render(request, 'solicitudes/f43.html', {
                 'form': form,
                 'today': timezone.now().date().isoformat(),
+                'equipos_iniciales': equipos_json,
             })
 
     else:
@@ -370,22 +372,45 @@ def cola_evaluaciones(request):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
-    pendientes = Solicitud.objects.filter(
+    # Pendientes con paginación
+    pendientes_qs = Solicitud.objects.filter(
         equipo_no_listado=True,
         estado=Solicitud.ESTADO_EN_REVISION
     ).select_related('solicitante').order_by('fecha_creacion')
 
-    completadas = Solicitud.objects.filter(
+    paginator_pendientes = Paginator(pendientes_qs, 10)
+    pagina_pendientes = request.GET.get('pagina_pendientes', 1)
+
+    try:
+        pendientes = paginator_pendientes.page(pagina_pendientes)
+    except PageNotAnInteger:
+        pendientes = paginator_pendientes.page(1)
+    except EmptyPage:
+        pendientes = paginator_pendientes.page(paginator_pendientes.num_pages)
+
+    # Completadas con paginación
+    completadas_qs = Solicitud.objects.filter(
         equipo_no_listado=True,
         estado__in=[Solicitud.ESTADO_APROBADA, Solicitud.ESTADO_DENEGADA]
-    ).select_related('solicitante').order_by('-fecha_resolucion')[:10]
+    ).select_related('solicitante').order_by('-fecha_resolucion')
+
+    paginator_completadas = Paginator(completadas_qs, 10)
+    pagina_completadas = request.GET.get('pagina_completadas', 1)
+
+    try:
+        completadas = paginator_completadas.page(pagina_completadas)
+    except PageNotAnInteger:
+        completadas = paginator_completadas.page(1)
+    except EmptyPage:
+        completadas = paginator_completadas.page(paginator_completadas.num_pages)
 
     return render(request, 'solicitudes/especialista/cola.html', {
-        'pendientes':  pendientes,
+        'pendientes': pendientes,
         'completadas': completadas,
-        'total_pendientes': pendientes.count(),
+        'total_pendientes': pendientes_qs.count(),
+        'paginator_pendientes': paginator_pendientes,
+        'paginator_completadas': paginator_completadas,
     })
-
 
 # ─── Vista de evaluación técnica ──────────────────────────────────────────────
 @never_cache

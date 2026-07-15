@@ -1,6 +1,7 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.utils import timezone
+from apps.core.utils import generar_numero_secuencial
 
 
 class Licencia(models.Model):
@@ -45,15 +46,18 @@ class Licencia(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.numero:
-            self.numero = self._generar_numero()
-        super().save(*args, **kwargs)
+            with transaction.atomic():
+                self.numero = self._generar_numero()
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def _generar_numero(self):
-        año = timezone.now().year
-        ultimo = Licencia.objects.filter(
-            numero__startswith=f'LIC-{año}'
-        ).count()
-        return f'LIC-{año}-{str(ultimo + 1).zfill(5)}'
+        return generar_numero_secuencial(
+            queryset=Licencia.objects,
+            prefijo='LIC',
+            ancho=5
+        )
 
     @property
     def es_vigente(self):
