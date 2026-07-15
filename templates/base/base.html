@@ -296,41 +296,94 @@
 <!-- ── Scripts base ────────────────────────────────────────────────────── -->
 <script>
 
-  // ─── Dropdown de solicitudes en sidebar ───────────────────────────────────
-  function toggleDropdownSolicitudes() {
-    const dropdown = document.getElementById('dropdown-solicitudes');
-    const btn      = document.getElementById('btn-dropdown-solicitudes');
-    if (!dropdown) return;
-    const abierto = dropdown.classList.toggle('abierto');
-    btn.classList.toggle('dropdown-abierto', abierto);
-    localStorage.setItem('uptcer_sol_dropdown', abierto ? '1' : '0');
-  }
-
-  // NO restaurar dropdown al cargar — siempre empieza cerrado
-  document.addEventListener('DOMContentLoaded', () => {
-    localStorage.setItem('uptcer_sol_dropdown', '0');
-  });
+function inicializarLayoutBase() {
 
   // Inicializar iconos Lucide
   lucide.createIcons();
 
-  const sidebar   = document.getElementById('sidebar');
-  const main      = document.querySelector('.layout-main');
-  const overlay   = document.getElementById('sidebar-overlay');
-  const btnMenu   = document.getElementById('btn-menu-movil');
+  const sidebar     = document.getElementById('sidebar');
+  const main        = document.querySelector('.layout-main');
+  const overlay     = document.getElementById('sidebar-overlay');
+  const btnMenu     = document.getElementById('btn-menu-movil');
   const btnColapsar = document.getElementById('btn-colapsar');
-  const iconoBtn  = document.getElementById('icono-colapsar');
-  const tooltip   = document.getElementById('sidebar-tooltip');
-  const CLAVE     = 'uptcer_sidebar_colapsado';
+  const iconoBtn    = document.getElementById('icono-colapsar');
+  const tooltip     = document.getElementById('sidebar-tooltip');
+  const CLAVE       = 'uptcer_sidebar_colapsado';
+
+  // ─── Dropdown de solicitudes ──────────────────────────────────────────────
+  const dropdownSolicitudes = document.getElementById('dropdown-solicitudes');
+  const btnDropdownSolicitudes = document.getElementById('btn-dropdown-solicitudes');
+
+  function posicionarDropdownSolicitudes() {
+    if (!dropdownSolicitudes || !btnDropdownSolicitudes || !sidebar.classList.contains('colapsado')) return;
+
+    const rect = btnDropdownSolicitudes.getBoundingClientRect();
+    dropdownSolicitudes.style.top = `${Math.max(8, rect.top - 4)}px`;
+  }
+
+  function cerrarDropdownSolicitudes() {
+    if (!dropdownSolicitudes || !btnDropdownSolicitudes) return;
+
+    dropdownSolicitudes.classList.remove('abierto');
+    btnDropdownSolicitudes.classList.remove('dropdown-abierto');
+    dropdownSolicitudes.style.removeProperty('top');
+    if (tooltip) tooltip.classList.remove('oculto');
+  }
+
+  function abrirDropdownSolicitudes() {
+    if (!dropdownSolicitudes || !btnDropdownSolicitudes) return;
+
+    if (sidebar.classList.contains('colapsado')) {
+      posicionarDropdownSolicitudes();
+      if (tooltip) {
+        tooltip.classList.add('oculto');
+        tooltip.classList.remove('visible');
+      }
+    }
+
+    dropdownSolicitudes.classList.add('abierto');
+    btnDropdownSolicitudes.classList.add('dropdown-abierto');
+  }
+
+  // El desplegable no se conserva entre vistas: evita que un menú flotante
+  // quede visible al cambiar de página o de modo del sidebar.
+  cerrarDropdownSolicitudes();
+  localStorage.removeItem('uptcer_sol_dropdown');
+
+  window.toggleDropdownSolicitudes = function() {
+    if (!dropdownSolicitudes || !btnDropdownSolicitudes) return;
+
+    if (dropdownSolicitudes.classList.contains('abierto')) {
+      cerrarDropdownSolicitudes();
+    } else {
+      abrirDropdownSolicitudes();
+    }
+  };
+
+  // Cerrar dropdown flotante al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    if (!sidebar || !sidebar.classList.contains('colapsado')) return;
+    if (!dropdownSolicitudes || !btnDropdownSolicitudes) return;
+    if (!dropdownSolicitudes.contains(e.target) && !btnDropdownSolicitudes.contains(e.target)) {
+      cerrarDropdownSolicitudes();
+    }
+  });
+
+  // Al elegir una opción, cerramos y limpiamos la posición flotante antes de
+  // que la navegación (o una actualización parcial de la vista) tenga lugar.
+  document.querySelectorAll('#dropdown-solicitudes .sidebar-dropdown-item').forEach(item => {
+    item.addEventListener('click', cerrarDropdownSolicitudes);
+  });
 
   // ─── Colapsar / expandir ──────────────────────────────────────────────────
-  function alternarSidebar() {
+  window.alternarSidebar = function() {
     const colapsado = sidebar.classList.toggle('colapsado');
     main.classList.toggle('expandido', colapsado);
     btnColapsar.classList.toggle('colapsado', colapsado);
     localStorage.setItem(CLAVE, colapsado ? '1' : '0');
+    cerrarDropdownSolicitudes();
     actualizarIconoBoton(colapsado);
-  }
+  };
 
   function actualizarIconoBoton(colapsado) {
     if (!iconoBtn) return;
@@ -352,7 +405,7 @@
   let tooltipTimeout = null;
 
   document.querySelectorAll('.sidebar-enlace[data-tooltip]').forEach(enlace => {
-    enlace.addEventListener('mouseenter', (e) => {
+    enlace.addEventListener('mouseenter', () => {
       if (!sidebar.classList.contains('colapsado')) return;
       clearTimeout(tooltipTimeout);
       const rect = enlace.getBoundingClientRect();
@@ -360,26 +413,22 @@
       tooltip.style.top = (rect.top + rect.height / 2 - 14) + 'px';
       tooltip.classList.add('visible');
     });
-
     enlace.addEventListener('mouseleave', () => {
       tooltipTimeout = setTimeout(() => tooltip.classList.remove('visible'), 100);
     });
   });
 
   // ─── Menú móvil ───────────────────────────────────────────────────────────
-  function abrirSidebar() {
+  window.abrirSidebar = function() {
     sidebar.classList.add('abierto');
     overlay.style.display = 'block';
-  }
-
-  function cerrarSidebar() {
+  };
+  window.cerrarSidebar = function() {
     sidebar.classList.remove('abierto');
     overlay.style.display = 'none';
-  }
+  };
 
-  if (btnMenu) {
-    btnMenu.addEventListener('click', abrirSidebar);
-  }
+  if (btnMenu) btnMenu.addEventListener('click', abrirSidebar);
 
   function verificarMovil() {
     if (window.innerWidth <= 768) {
@@ -389,9 +438,9 @@
       cerrarSidebar();
     }
   }
-
   verificarMovil();
   window.addEventListener('resize', verificarMovil);
+  window.addEventListener('resize', posicionarDropdownSolicitudes);
 
   // ─── Contador de notificaciones ───────────────────────────────────────────
   function actualizarContadorNotificaciones() {
@@ -410,85 +459,31 @@
       .catch(() => {});
   }
 
-  // Actualizar al cargar la página
   actualizarContadorNotificaciones();
 
-  // Actualizar al hacer clic en la campanita (antes de navegar)
   const btnNotificaciones = document.getElementById('btn-notificaciones');
   if (btnNotificaciones) {
-    btnNotificaciones.addEventListener('click', function() {
-      actualizarContadorNotificaciones();
-    });
+    btnNotificaciones.addEventListener('click', actualizarContadorNotificaciones);
   }
 
-  // Escuchar evento personalizado para actualización desde otras páginas
   document.addEventListener('actualizarNotificaciones', actualizarContadorNotificaciones);
 
   // ─── Service Worker ──────────────────────────────────────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('/sw.js')
-        .then(function(reg) {
-          console.log('[SW] OK. Scope:', reg.scope);
-        })
-        .catch(function(err) {
-          console.error('[SW] Error:', err);
-        });
+        .then(reg => console.log('[SW] OK. Scope:', reg.scope))
+        .catch(err => console.error('[SW] Error:', err));
     });
   }
 
-  // ─── Dropdown de solicitudes en sidebar ───────────────────────────────────
-  function toggleDropdownSolicitudes() {
-    const dropdown = document.getElementById('dropdown-solicitudes');
-    const btn      = document.getElementById('btn-dropdown-solicitudes');
-    const sidebar  = document.getElementById('sidebar');
-    const tooltip  = document.getElementById('sidebar-tooltip');
-    if (!dropdown || !btn) return;
+}
 
-    const colapsado = sidebar.classList.contains('colapsado');
-    const abierto = dropdown.classList.contains('abierto');
-
-    if (abierto) {
-      // CERRAR
-      dropdown.classList.remove('abierto');
-      btn.classList.remove('dropdown-abierto');
-      localStorage.setItem('uptcer_sol_dropdown', '0');
-      if (tooltip) tooltip.classList.remove('oculto');
-      return;
-    }
-
-    // ABRIR
-    dropdown.classList.add('abierto');
-    btn.classList.add('dropdown-abierto');
-    localStorage.setItem('uptcer_sol_dropdown', '1');
-
-    if (colapsado) {
-      const btnRect = btn.getBoundingClientRect();
-      dropdown.style.top = (btnRect.top - 4) + 'px';
-      if (tooltip) {
-        tooltip.classList.add('oculto');
-        tooltip.classList.remove('visible');
-      }
-    }
-  }
-
-  // Cerrar dropdown flotante al hacer clic fuera
-  document.addEventListener('click', function(e) {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar || !sidebar.classList.contains('colapsado')) return;
-
-    const dropdown = document.getElementById('dropdown-solicitudes');
-    const btn = document.getElementById('btn-dropdown-solicitudes');
-    const tooltip = document.getElementById('sidebar-tooltip');
-    if (!dropdown || !btn) return;
-
-    if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
-      dropdown.classList.remove('abierto');
-      btn.classList.remove('dropdown-abierto');
-      localStorage.setItem('uptcer_sol_dropdown', '0');
-      if (tooltip) tooltip.classList.remove('oculto');
-    }
-  });
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', inicializarLayoutBase, { once: true });
+} else {
+  inicializarLayoutBase();
+}
 </script>
 
 <!-- ── Scripts externos ────────────────────────────────────────────────── -->

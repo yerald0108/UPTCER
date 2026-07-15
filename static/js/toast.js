@@ -44,7 +44,7 @@ function mostrarToast({ tipo = 'info', titulo = '', mensaje = '', duracion = 400
   contenedor.appendChild(toast);
   lucide.createIcons({ nodes: [toast] });
 
-  // ⚠️ Hacer que los elementos internos no capturen el mouse
+  // Hacer que los elementos internos no capturen el mouse
   // pero el botón de cerrar SÍ debe seguir funcionando
   toast.querySelectorAll('i, .toast-cuerpo, .toast-icono, .toast-titulo, .toast-mensaje').forEach(el => {
     el.style.pointerEvents = 'none';

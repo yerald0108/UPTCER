@@ -880,7 +880,7 @@ body {
 .layout-sidebar.colapsado .sidebar-dropdown {
   position: fixed;
   left: calc(var(--sidebar-ancho-colapsado) + var(--espacio-2));
-  top: auto;
+  top: 8px;
   background-color: var(--sidebar-bg);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: var(--radio-md);
@@ -890,15 +890,20 @@ body {
   z-index: 10000;
   display: block !important;
   opacity: 0;
+  visibility: hidden;   /* ← evita que el contenido sea visible */
   pointer-events: none;
-  max-height: none;
+  max-height: none !important;  /* ← anula la transición de max-height */
+  height: auto;
   overflow: visible;
+  /* sin transition aquí: la animación de apertura/cierre va en .abierto */
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .layout-sidebar.colapsado .sidebar-dropdown.abierto {
   opacity: 1;
+  visibility: visible;  /* ← se hace visible al abrir */
   pointer-events: auto;
-  max-height: none;
+  max-height: none !important;
 }
 
 .layout-sidebar.colapsado .sidebar-dropdown-item,
@@ -911,11 +916,6 @@ body {
   opacity: 1 !important;
   max-width: none !important;
   pointer-events: auto !important;
-}
-
-.layout-sidebar.colapsado .sidebar-dropdown-item:hover {
-  background-color: rgba(255,255,255,0.15);
-  color: #ffffff;
 }
 
 .layout-sidebar.colapsado .sidebar-dropdown-item:hover {
