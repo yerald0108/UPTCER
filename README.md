@@ -20,9 +20,8 @@
 12. [Catálogo de equipos](#12-catálogo-de-equipos)
 13. [Gestión de usuarios](#13-gestión-de-usuarios)
 14. [Configuración del proyecto](#14-configuración-del-proyecto)
-15. [Guía de despliegue](#15-guía-de-despliegue)
-16. [Convenciones y buenas prácticas](#16-convenciones-y-buenas-prácticas)
-17. [Sistema de tests automatizados](#17-sistema-de-tests-automatizados)
+15. [Convenciones y buenas prácticas](#15-convenciones-y-buenas-prácticas)
+16. [Sistema de tests automatizados](#16-sistema-de-tests-automatizados)
 
 ---
 
@@ -813,116 +812,151 @@ AUTH_PASSWORD_VALIDATORS = [
 
 ## 14. Configuración del proyecto
 
-### Archivo `.env`
+Esta sección guía a cualquier desarrollador desde cero hasta tener el sistema corriendo localmente con datos de prueba.
 
-El archivo `.env` en la raíz del proyecto **nunca debe subirse a git**. Contiene:
+### Requisitos previos
+
+- Python 3.10 o superior
+- Git instalado
+- Conexión a internet para clonar el repositorio e instalar dependencias
+
+---
+
+### Paso 1 — Clonar el repositorio
+
+```bash
+git clone https://github.com/yerald0108/UPTCER.git
+cd UPTCER
+```
+
+---
+
+### Paso 2 — Crear el entorno virtual
+
+```bash
+# Windows (PowerShell)
+python -m venv venv
+
+# Linux / Mac
+python3 -m venv venv
+```
+
+---
+
+### Paso 3 — Activar el entorno virtual
+
+```bash
+# Windows (PowerShell)
+venv\Scripts\Activate.ps1
+
+# Linux / Mac
+source venv/bin/activate
+```
+
+Una vez activado, el prompt del terminal mostrará `(venv)` al inicio. Todos los comandos siguientes deben ejecutarse con el entorno activado.
+
+---
+
+### Paso 4 — Instalar las dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+Las dependencias del proyecto son:
+
+| Paquete | Versión | Para qué se usa |
+|---------|---------|-----------------|
+| Django | 6.0.6 | Framework principal |
+| pillow | 12.2.0 | Procesamiento de imágenes |
+| python-decouple | 3.8 | Leer variables de entorno desde `.env` |
+| python-dateutil | 2.9.0 | Calcular fechas de vencimiento de licencias |
+| sqlparse | 0.5.5 | Dependencia interna de Django |
+| tzdata | 2026.2 | Zonas horarias (America/Havana) |
+
+---
+
+### Paso 5 — Crear el archivo `.env`
+
+En la raíz del proyecto, crear un archivo llamado `.env` con el siguiente contenido:
 
 ```env
-SECRET_KEY=tu-clave-secreta-aqui-cambiar-en-produccion
+SECRET_KEY=clave-secreta-de-desarrollo-cambiar-en-produccion
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 ```
 
-Para producción:
-```env
-SECRET_KEY=clave-larga-aleatoria-de-50-caracteres-minimo
-DEBUG=False
-ALLOWED_HOSTS=tu-dominio.cu,www.tu-dominio.cu
-```
+**Este archivo nunca debe subirse a git.** Ya está incluido en `.gitignore`.
 
-### Instalar dependencias
+---
 
-```bash
-pip install django pillow python-decouple python-dateutil
-```
+### Paso 6 — Aplicar las migraciones
 
-### Primera ejecución
+Crea la base de datos SQLite y todas las tablas del sistema:
 
 ```bash
-# Activar entorno virtual
-venv\Scripts\activate          # Windows
-source venv/bin/activate       # Linux/Mac
-
-# Aplicar migraciones
 python manage.py migrate
+```
 
-# Crear superusuario
-python manage.py createsuperuser
+Si el comando termina sin errores, se habrá creado el archivo `db.sqlite3` en la raíz del proyecto.
 
-# Arrancar servidor
+---
+
+### Paso 7 — Poblar la base de datos con datos de prueba
+
+El proyecto incluye un comando que crea usuarios de todos los roles, un catálogo de equipos y solicitudes de ejemplo:
+
+```bash
+python manage.py poblar_datos
+```
+
+Este comando crea los siguientes usuarios listos para usar:
+
+| Usuario | Contraseña | Rol |
+|---------|------------|-----|
+| `yerald` | `admin1234` | Directivo |
+| `directivo` | `admin1234` | Directivo |
+| `operador1` | `admin1234` | Operador |
+| `operador2` | `admin1234` | Operador |
+| `especialista` | `admin1234` | Especialista |
+| `aduana` | `admin1234` | Aduana |
+| `persona1` | `admin1234` | Persona natural |
+| `persona2` | `admin1234` | Persona natural |
+| `persona3` | `admin1234` | Persona natural |
+
+También crea categorías de equipos, equipos en el catálogo y solicitudes F43 de ejemplo con diferentes estados para poder explorar todos los flujos del sistema desde el primer inicio.
+
+---
+
+### Paso 8 — Arrancar el servidor de desarrollo
+
+```bash
 python manage.py runserver
 ```
 
-### Crear un usuario desde el admin
+El sistema estará disponible en `http://127.0.0.1:8000`.
 
-1. Ir a `http://127.0.0.1:8000/admin/`
-2. Entrar con el superusuario
-3. Ir a Accounts → Usuarios → Agregar usuario
-4. Asignar el rol correspondiente
+Iniciar sesión con cualquiera de los usuarios de la tabla anterior según el flujo que se quiera explorar.
 
 ---
 
-## 15. Guía de despliegue
-
-### Para producción en Linux (Ubuntu)
+### Resumen de comandos (referencia rápida)
 
 ```bash
-# 1. Clonar el repositorio
-git clone <repo-url> /var/www/uptcer
-cd /var/www/uptcer
-
-# 2. Crear entorno virtual
-python3 -m venv venv
-source venv/bin/activate
-
-# 3. Instalar dependencias
-pip install django pillow python-decouple python-dateutil gunicorn
-
-# 4. Configurar .env
-cp .env.example .env
-nano .env  # Editar con valores de producción
-
-# 5. Recolectar archivos estáticos
-python manage.py collectstatic --noinput
-
-# 6. Aplicar migraciones
+git clone https://github.com/yerald0108/UPTCER.git
+cd UPTCER
+python -m venv venv
+venv\Scripts\Activate.ps1       # Windows
+python -m pip install -r requirements.txt
+# Crear .env con SECRET_KEY, DEBUG=True, ALLOWED_HOSTS
 python manage.py migrate
-
-# 7. Crear superusuario
-python manage.py createsuperuser
-
-# 8. Arrancar con Gunicorn
-gunicorn config.wsgi:application --bind 0.0.0.0:8000
-```
-
-### Cambiar a PostgreSQL en producción
-
-En `config/settings.py`:
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME':     config('DB_NAME'),
-        'USER':     config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST':     config('DB_HOST', default='localhost'),
-        'PORT':     config('DB_PORT', default='5432'),
-    }
-}
-```
-
-Y agregar al `.env`:
-```env
-DB_NAME=uptcer_db
-DB_USER=uptcer_user
-DB_PASSWORD=contraseña-segura
-DB_HOST=localhost
-DB_PORT=5432
+python manage.py poblar_datos
+python manage.py runserver
 ```
 
 ---
 
-## 16. Convenciones y buenas prácticas
+## 15. Convenciones y buenas prácticas
 
 ### Nombres en español
 
