@@ -66,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.core.context_processors.static_version',
             ],
         },
     },
@@ -117,3 +118,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 28800  # 8 horas en segundos
 CSRF_COOKIE_HTTPONLY = True
+
+# ─── Versión de estáticos ─────────────────────────────────────────────────────
+# En desarrollo: timestamp para que cada recarga del servidor genere una versión
+# nueva y el navegador no sirva CSS/JS cacheado.
+# En producción: número fijo que solo cambia cuando se despliega.
+if DEBUG:
+    import time
+    STATIC_VERSION = str(int(time.time()))
+else:
+    STATIC_VERSION = '6'

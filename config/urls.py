@@ -12,11 +12,6 @@ urlpatterns = [
     path('equipos/',        include('apps.equipos.urls',    namespace='equipos')),
     path('licencias/',      include('apps.licencias.urls',  namespace='licencias')),
     path('notificaciones/', include('apps.notificaciones.urls', namespace='notificaciones')),
-    
-    path('sw.js', TemplateView.as_view(
-        template_name='sw.js',
-        content_type='application/javascript'
-    ), name='sw-js'),
 ]
 
 if settings.DEBUG:
