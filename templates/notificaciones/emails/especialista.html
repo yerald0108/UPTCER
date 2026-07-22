@@ -1,0 +1,88 @@
+{% extends "notificaciones/emails/base.html" %}
+
+{% block contenido %}
+
+<h2>Evaluación Técnica Requerida</h2>
+
+<p>
+
+{{ mensaje }}
+
+</p>
+
+{% if solicitud %}
+
+<div class="info">
+
+<table>
+
+<tr>
+
+<td class="label">
+
+Solicitud
+
+</td>
+
+<td>
+
+{{ solicitud.numero }}
+
+</td>
+
+</tr>
+
+<tr>
+
+<td class="label">
+
+Equipo
+
+</td>
+
+<td>
+
+{{ solicitud.equipo_marca_manual }}
+
+{{ solicitud.equipo_modelo_manual }}
+
+</td>
+
+</tr>
+
+<tr>
+
+<td class="label">
+
+Solicitante
+
+</td>
+
+<td>
+
+{{ solicitud.solicitante.get_nombre_completo }}
+
+</td>
+
+</tr>
+
+</table>
+
+</div>
+
+{% endif %}
+
+{% if app_url %}
+
+<a
+class="button"
+href="{{ app_url }}"
+>
+
+Revisar Solicitud
+
+</a>
+
+{% endif %}
+
+{% endblock %}

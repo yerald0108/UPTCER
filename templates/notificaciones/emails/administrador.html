@@ -1,0 +1,70 @@
+{% extends "notificaciones/emails/base.html" %}
+
+{% block contenido %}
+
+<h2>Notificación Administrativa</h2>
+
+<p>
+
+{{ mensaje }}
+
+</p>
+
+{% if solicitud %}
+
+<div class="info">
+
+<table>
+
+<tr>
+
+<td class="label">
+
+Solicitud
+
+</td>
+
+<td>
+
+{{ solicitud.numero }}
+
+</td>
+
+</tr>
+
+<tr>
+
+<td class="label">
+
+Estado
+
+</td>
+
+<td>
+
+{{ solicitud.get_estado_display }}
+
+</td>
+
+</tr>
+
+</table>
+
+</div>
+
+{% endif %}
+
+{% if app_url %}
+
+<a
+class="button"
+href="{{ app_url }}"
+>
+
+Ir al Sistema
+
+</a>
+
+{% endif %}
+
+{% endblock %}

@@ -1,97 +1,266 @@
 from .models import Notificacion
 from apps.accounts.models import Usuario
+from .emails import enviar_correo_notificacion
 
 
-def notificar(destinatario, tipo, titulo, mensaje, solicitud=None):
-    """Crea una notificación para un usuario."""
-    return Notificacion.objects.create(
-        destinatario = destinatario,
-        tipo         = tipo,
-        titulo       = titulo,
-        mensaje      = mensaje,
-        solicitud    = solicitud,
+# ==============================================================================
+# FUNCIÓN PRINCIPAL
+# ==============================================================================
+
+def notificar(
+    destinatario,
+    tipo,
+    titulo,
+    mensaje,
+    solicitud=None,
+    enviar_email=True,
+    template=None,
+    contexto_extra=None,
+):
+    """
+    Crea una notificación en la base de datos y opcionalmente envía un correo.
+
+    Parámetros
+    ----------
+    destinatario : Usuario
+    tipo : str
+    titulo : str
+    mensaje : str
+    solicitud : Solicitud | None
+    enviar_email : bool
+    template : str | None
+        Template HTML a utilizar.
+    contexto_extra : dict | None
+        Información adicional para el template.
+    """
+
+    notificacion = Notificacion.objects.create(
+        destinatario=destinatario,
+        tipo=tipo,
+        titulo=titulo,
+        mensaje=mensaje,
+        solicitud=solicitud,
     )
 
+    # Si el usuario no posee correo simplemente termina.
+    if (
+        enviar_email
+        and destinatario
+        and getattr(destinatario, "email", None)
+    ):
 
-def notificar_operadores(tipo, titulo, mensaje, solicitud=None):
-    """Notifica a todos los operadores activos."""
+        contexto = {
+            "titulo": titulo,
+            "mensaje": mensaje,
+            "usuario": destinatario,
+            "solicitud": solicitud,
+            "notificacion": notificacion,
+        }
+
+        if contexto_extra:
+            contexto.update(contexto_extra)
+
+        # Selección automática del template según el rol
+        if template is None:
+
+            if destinatario.rol == Usuario.ROL_OPERADOR:
+                template = "notificaciones/emails/operador.html"
+
+            elif destinatario.rol == Usuario.ROL_ESPECIALISTA:
+                template = "notificaciones/emails/especialista.html"
+
+            else:
+                template = "notificaciones/emails/usuario.html"
+
+        enviar_correo_notificacion(
+            usuario=destinatario,
+            titulo=titulo,
+            mensaje=mensaje,
+            solicitud=solicitud,
+            template=template,
+            contexto=contexto,
+        )
+
+    return notificacion
+
+
+# ==============================================================================
+# OPERADORES
+# ==============================================================================
+
+def notificar_operadores(
+    tipo,
+    titulo,
+    mensaje,
+    solicitud=None,
+    enviar_email=True,
+):
+
     operadores = Usuario.objects.filter(
         rol=Usuario.ROL_OPERADOR,
-        is_active=True
+        is_active=True,
     )
+
     for operador in operadores:
-        notificar(operador, tipo, titulo, mensaje, solicitud)
+
+        notificar(
+            destinatario=operador,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            solicitud=solicitud,
+            enviar_email=enviar_email,
+        )
 
 
-def notificar_especialistas(tipo, titulo, mensaje, solicitud=None):
-    """Notifica a todos los especialistas técnicos activos."""
+# ==============================================================================
+# ESPECIALISTAS
+# ==============================================================================
+
+def notificar_especialistas(
+    tipo,
+    titulo,
+    mensaje,
+    solicitud=None,
+    enviar_email=True,
+):
+
     especialistas = Usuario.objects.filter(
         rol=Usuario.ROL_ESPECIALISTA,
-        is_active=True
+        is_active=True,
     )
-    for especialista in especialistas:
-        notificar(especialista, tipo, titulo, mensaje, solicitud)
 
+    for especialista in especialistas:
+
+        notificar(
+            destinatario=especialista,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            solicitud=solicitud,
+            enviar_email=enviar_email,
+        )
+
+
+# ==============================================================================
+# NUEVA SOLICITUD
+# ==============================================================================
 
 def notificar_solicitud_nueva(solicitud):
-    """Notifica a operadores cuando llega una nueva solicitud F43."""
-    notificar_operadores(
-        tipo      = Notificacion.TIPO_SOLICITUD_NUEVA,
-        titulo    = f'Nueva solicitud {solicitud.numero}',
-        mensaje   = (
-            f'El solicitante {solicitud.solicitante.get_nombre_completo()} '
-            f'ha enviado una nueva solicitud de autorización técnica ({solicitud.get_flujo_display()}).'
-        ),
-        solicitud = solicitud,
+
+    titulo = f"Nueva solicitud {solicitud.numero}"
+
+    mensaje = (
+        f"El solicitante "
+        f"{solicitud.solicitante.get_nombre_completo()} "
+        f"ha registrado una nueva solicitud "
+        f"({solicitud.get_flujo_display()})."
     )
 
+    notificar_operadores(
+        tipo=Notificacion.TIPO_SOLICITUD_NUEVA,
+        titulo=titulo,
+        mensaje=mensaje,
+        solicitud=solicitud,
+    )
+
+
+# ==============================================================================
+# DERIVACIÓN A ESPECIALISTA
+# ==============================================================================
 
 def notificar_derivacion_especialista(solicitud):
-    """Notifica a especialistas cuando una solicitud tiene equipo no listado."""
-    # Construir descripción del equipo de forma segura
-    marca  = solicitud.equipo_marca_manual or ''
-    modelo = solicitud.equipo_modelo_manual or ''
-    descripcion_equipo = f'{marca} {modelo}'.strip()
-    
-    if not descripcion_equipo:
-        descripcion_equipo = 'equipo no identificado'
-    
+
+    marca = solicitud.equipo_marca_manual or ""
+    modelo = solicitud.equipo_modelo_manual or ""
+
+    descripcion = f"{marca} {modelo}".strip()
+
+    if not descripcion:
+        descripcion = "Equipo no identificado"
+
+    titulo = f"Equipo no listado - {solicitud.numero}"
+
+    mensaje = (
+        f"La solicitud {solicitud.numero} "
+        f"requiere evaluación técnica.\n\n"
+        f"Equipo: {descripcion}"
+    )
+
     notificar_especialistas(
-        tipo      = Notificacion.TIPO_DERIVADA_ESPECIALISTA,
-        titulo    = f'Equipo no listado — {solicitud.numero}',
-        mensaje   = (
-            f'La solicitud {solicitud.numero} contiene un equipo no registrado en el catálogo '
-            f'({descripcion_equipo}). '
-            f'Se requiere evaluación técnica.'
-        ),
-        solicitud = solicitud,
+        tipo=Notificacion.TIPO_DERIVADA_ESPECIALISTA,
+        titulo=titulo,
+        mensaje=mensaje,
+        solicitud=solicitud,
     )
 
 
-def notificar_cambio_estado(solicitud, estado_anterior, usuario_responsable):
-    """Notifica al solicitante cuando cambia el estado de su solicitud."""
+# ==============================================================================
+# CAMBIO DE ESTADO
+# ==============================================================================
+
+def notificar_cambio_estado(
+    solicitud,
+    estado_anterior,
+    usuario_responsable,
+):
+
+    estado_viejo = dict(
+        solicitud.ESTADOS
+    ).get(
+        estado_anterior,
+        estado_anterior,
+    )
+
+    estado_nuevo = solicitud.get_estado_display()
+
+    titulo = f"Solicitud {solicitud.numero} actualizada"
+
+    mensaje = (
+        f"Su solicitud "
+        f"{solicitud.numero} "
+        f"ha cambiado de estado.\n\n"
+        f"Estado anterior: {estado_viejo}\n"
+        f"Nuevo estado: {estado_nuevo}\n\n"
+        f"Responsable:\n"
+        f"{usuario_responsable.get_nombre_completo()}"
+    )
+
     notificar(
-        destinatario = solicitud.solicitante,
-        tipo         = Notificacion.TIPO_CAMBIO_ESTADO,
-        titulo       = f'Solicitud {solicitud.numero} actualizada',
-        mensaje      = (
-            f'Su solicitud {solicitud.numero} ha cambiado de estado: '
-            f'"{dict(solicitud.ESTADOS).get(estado_anterior, estado_anterior)}" → '
-            f'"{solicitud.get_estado_display()}". '
-            f'Realizado por: {usuario_responsable.get_nombre_completo()}.'
-        ),
-        solicitud    = solicitud,
+        destinatario=solicitud.solicitante,
+        tipo=Notificacion.TIPO_CAMBIO_ESTADO,
+        titulo=titulo,
+        mensaje=mensaje,
+        solicitud=solicitud,
+        contexto_extra={
+            "estado_anterior": estado_viejo,
+            "estado_actual": estado_nuevo,
+            "responsable": usuario_responsable,
+        },
     )
 
+
+# ==============================================================================
+# CRITERIO TÉCNICO
+# ==============================================================================
 
 def notificar_criterio_tecnico(solicitud):
-    """Notifica a operadores cuando el especialista emite criterio técnico."""
+
+    titulo = (
+        f"Criterio técnico emitido - "
+        f"{solicitud.numero}"
+    )
+
+    mensaje = (
+        f"El especialista técnico ha emitido "
+        f"su criterio para la solicitud "
+        f"{solicitud.numero}.\n\n"
+        f"Ya puede continuar con la resolución."
+    )
+
     notificar_operadores(
-        tipo      = Notificacion.TIPO_CRITERIO_TECNICO,
-        titulo    = f'Criterio técnico emitido — {solicitud.numero}',
-        mensaje   = (
-            f'El especialista técnico ha emitido su criterio sobre la solicitud {solicitud.numero}. '
-            f'Puede proceder con la resolución final.'
-        ),
-        solicitud = solicitud,
+        tipo=Notificacion.TIPO_CRITERIO_TECNICO,
+        titulo=titulo,
+        mensaje=mensaje,
+        solicitud=solicitud,
     )
