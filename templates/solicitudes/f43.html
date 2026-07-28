@@ -452,7 +452,28 @@
     </form>
   </div>
   <!-- FIN HOJA A4 -->
+   
+   <!---- Envio de solicitud-->
+    <div class="f43-acciones">
+    <a href="{% url 'solicitudes:mis_solicitudes' %}" class="f43-btn-accion f43-btn-volver">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+      Volver
+    </a>
 
+    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+      
+      
+
+      <div style="display:flex;gap:8px;">
+        <button type="button" onclick="enviarFormulario()" class="f43-btn-accion f43-btn-enviar">
+          <i data-lucide="send" style="width:16px;height:16px;"></i>
+          Enviar solicitud
+        </button>
+      </div>
+    </div>
+  </div>
+  
+   
   <!-- Botón flotante "Volver arriba" -->
   <button type="button" class="btn-scroll-top" id="btn-scroll-top"
     title="Volver arriba" aria-label="Volver arriba"
