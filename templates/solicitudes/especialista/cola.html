@@ -64,9 +64,9 @@
                 <div style="font-weight:var(--peso-medio);">
                   {{ s.equipo_marca_manual }} {{ s.equipo_modelo_manual }}
                 </div>
-                {% if s.equipo_descripcion %}
+                {% if s.equipo_marca_manual or s.equipo_modelo_manual %}
                   <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
-                    {{ s.equipo_descripcion|truncatechars:60 }}
+                    Equipo no registrado en catálogo
                   </div>
                 {% endif %}
               </td>

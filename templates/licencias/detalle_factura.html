@@ -1,0 +1,216 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Factura {{ factura.numero }}{% endblock %}
+
+{% block nav_facturas %}activo{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <div>
+    <h1 class="pagina-titulo">Factura {{ factura.numero }}</h1>
+    <p class="pagina-subtitulo">Solicitud {{ solicitud.numero }} — {{ solicitud.get_categoria_display }}</p>
+  </div>
+  <div style="display:flex;gap:var(--espacio-3);">
+    <span class="badge {{ factura.clase_badge }}" style="font-size:var(--texto-sm);padding:var(--espacio-2) var(--espacio-3);">
+      {{ factura.get_estado_display }}
+    </span>
+    {% if user.es_directivo and not factura.esta_pagada %}
+      <button class="btn btn-primario"
+        onclick="abrirModalConfirmacion(
+          '¿Registrar pago?',
+          'Esta acción marcará la factura como pagada y generará la licencia automáticamente.',
+          '{% url "licencias:registrar_pago" numero=factura.numero %}')">
+        <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
+        Registrar pago
+      </button>
+    {% endif %}
+    {% if factura.esta_pagada and solicitud.licencia %}
+      <a href="{% url 'licencias:detalle' numero=solicitud.licencia.numero %}" class="btn btn-exito">
+        <i data-lucide="file-badge" style="width:16px;height:16px;"></i>
+        Ver licencia
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--espacio-4);">
+
+  <!-- Datos de la factura -->
+  <div class="card">
+    <div class="card-cabecera">
+      <h2 class="card-titulo">Datos de la factura</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
+      <div class="detalle-fila">
+        <span class="detalle-label">Número</span>
+        <span class="detalle-valor">{{ factura.numero }}</span>
+      </div>
+      <div class="detalle-fila">
+        <span class="detalle-label">Solicitud</span>
+        <a href="{% url 'solicitudes:detalle' pk=solicitud.pk %}" class="detalle-valor">
+          {{ solicitud.numero }}
+        </a>
+      </div>
+      <div class="detalle-fila">
+        <span class="detalle-label">Emitida por</span>
+        <span class="detalle-valor">{{ factura.emitida_por.get_nombre_completo }}</span>
+      </div>
+      <div class="detalle-fila">
+        <span class="detalle-label">Fecha de emisión</span>
+        <span class="detalle-valor">{{ factura.fecha_emision|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% if factura.fecha_pago %}
+      <div class="detalle-fila">
+        <span class="detalle-label">Fecha de pago</span>
+        <span class="detalle-valor">{{ factura.fecha_pago|date:"d/m/Y H:i" }}</span>
+      </div>
+      <div class="detalle-fila">
+        <span class="detalle-label">Pago registrado por</span>
+        <span class="detalle-valor">{{ factura.registrado_pago_por.get_nombre_completo }}</span>
+      </div>
+      {% endif %}
+      {% if factura.observaciones %}
+      <div class="detalle-fila">
+        <span class="detalle-label">Observaciones</span>
+        <span class="detalle-valor">{{ factura.observaciones }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Montos -->
+  <div class="card">
+    <div class="card-cabecera">
+      <h2 class="card-titulo">Desglose de montos</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
+      <div class="detalle-fila">
+        <span class="detalle-label">Subtotal</span>
+        <span class="detalle-valor">{{ factura.subtotal }} CUP</span>
+      </div>
+      <div class="detalle-fila">
+        <span class="detalle-label">Impuesto</span>
+        <span class="detalle-valor">{{ factura.impuesto }} CUP</span>
+      </div>
+      <div class="detalle-fila" style="border-top:1px solid var(--color-borde);padding-top:var(--espacio-3);margin-top:var(--espacio-2);">
+        <span class="detalle-label" style="font-weight:var(--peso-bold);font-size:var(--texto-base);">Total</span>
+        <span class="detalle-valor" style="font-weight:var(--peso-bold);font-size:var(--texto-lg);color:var(--color-primario);">
+          {{ factura.total }} CUP
+        </span>
+      </div>
+    </div>
+    <div style="margin-top:var(--espacio-4);padding:var(--espacio-3);background:var(--color-advertencia-fondo);border-radius:var(--radio-md);">
+      <p style="font-size:var(--texto-sm);color:var(--color-advertencia);margin:0;">
+        <i data-lucide="info" style="width:14px;height:14px;display:inline;"></i>
+        El módulo de cálculo de montos se integrará próximamente. Los valores actuales son referenciales.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Datos del solicitante -->
+<div class="card" style="margin-top:var(--espacio-4);">
+  <div class="card-cabecera">
+    <h2 class="card-titulo">Datos del solicitante</h2>
+  </div>
+  {% if datos_f43 %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--espacio-3);">
+    <div class="detalle-fila">
+      <span class="detalle-label">Nombre</span>
+      <span class="detalle-valor">{{ datos_f43.nombre_apellidos }}</span>
+    </div>
+    <div class="detalle-fila">
+      <span class="detalle-label">Pasaporte / CI</span>
+      <span class="detalle-valor">{{ datos_f43.numero_pasaporte }}</span>
+    </div>
+    <div class="detalle-fila">
+      <span class="detalle-label">Correo</span>
+      <span class="detalle-valor">{{ datos_f43.correo_electronico }}</span>
+    </div>
+    <div class="detalle-fila">
+      <span class="detalle-label">Teléfono</span>
+      <span class="detalle-valor">{{ datos_f43.telefono }}</span>
+    </div>
+    <div class="detalle-fila">
+      <span class="detalle-label">Provincia</span>
+      <span class="detalle-valor">{{ datos_f43.provincia }}</span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Equipos -->
+{% if equipos %}
+<div class="card" style="margin-top:var(--espacio-4);">
+  <div class="card-cabecera">
+    <h2 class="card-titulo">Equipos declarados</h2>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Descripción</th>
+          <th>Marca</th>
+          <th>Modelo</th>
+          <th>Serie</th>
+          <th>Cantidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for equipo in equipos %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ equipo.descripcion|default:"—" }}</td>
+          <td>{{ equipo.marca|default:"—" }}</td>
+          <td>{{ equipo.modelo|default:"—" }}</td>
+          <td>{{ equipo.serie|default:"—" }}</td>
+          <td>{{ equipo.cantidad|default:"1" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal de confirmación de pago -->
+{% if user.es_directivo and not factura.esta_pagada %}
+<div id="modal-pago" class="modal-overlay" style="display:none;">
+  <div class="modal" role="dialog">
+    <div class="modal-cabecera">
+      <div class="modal-icono exito">
+        <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
+      </div>
+      <div>
+        <div class="modal-titulo">Registrar pago</div>
+        <div class="modal-subtitulo">Se generará la licencia automáticamente al confirmar.</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'licencias:registrar_pago' numero=factura.numero %}">
+      {% csrf_token %}
+      <div style="padding:var(--espacio-4);">
+        <label class="campo-label">Observaciones del pago (opcional)</label>
+        <textarea name="observaciones" class="campo-input" rows="3"
+          placeholder="Referencia de pago, método, etc."></textarea>
+      </div>
+      <div class="modal-pie">
+        <span class="modal-esc-hint">ESC para cancelar</span>
+        <button type="button" class="btn btn-ghost" onclick="cerrarModal('modal-pago')">Cancelar</button>
+        <button type="submit" class="btn btn-primario">Confirmar pago</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.querySelector('[onclick*="abrirModalConfirmacion"]')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('modal-pago').style.display = 'flex';
+  });
+</script>
+{% endif %}
+
+{% endblock %}

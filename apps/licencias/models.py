@@ -87,3 +87,85 @@ class Licencia(models.Model):
                 self.fecha_vencimiento < timezone.now().date()):
             self.estado = self.ESTADO_VENCIDA
             self.save(update_fields=['estado'])
+
+
+class Factura(models.Model):
+
+    ESTADO_PENDIENTE = 'pendiente'
+    ESTADO_PAGADA    = 'pagada'
+    ESTADO_ANULADA   = 'anulada'
+
+    ESTADOS = [
+        (ESTADO_PENDIENTE, 'Pendiente de pago'),
+        (ESTADO_PAGADA,    'Pagada'),
+        (ESTADO_ANULADA,   'Anulada'),
+    ]
+
+    numero          = models.CharField('Número de factura', max_length=30, unique=True, editable=False)
+    solicitud       = models.OneToOneField(
+                        'solicitudes.Solicitud',
+                        on_delete=models.PROTECT,
+                        related_name='factura',
+                        verbose_name='Solicitud'
+                      )
+    emitida_por     = models.ForeignKey(
+                        settings.AUTH_USER_MODEL,
+                        on_delete=models.PROTECT,
+                        related_name='facturas_emitidas',
+                        verbose_name='Emitida por'
+                      )
+    estado          = models.CharField('Estado', max_length=20, choices=ESTADOS, default=ESTADO_PENDIENTE)
+
+    # Montos — el módulo de cálculo los llenará más adelante
+    subtotal        = models.DecimalField('Subtotal', max_digits=10, decimal_places=2, default=0)
+    impuesto        = models.DecimalField('Impuesto', max_digits=10, decimal_places=2, default=0)
+    total           = models.DecimalField('Total', max_digits=10, decimal_places=2, default=0)
+
+    # Datos del pago
+    observaciones       = models.TextField('Observaciones', blank=True)
+    fecha_emision       = models.DateTimeField('Fecha de emisión', auto_now_add=True)
+    fecha_pago          = models.DateTimeField('Fecha de pago', null=True, blank=True)
+    registrado_pago_por = models.ForeignKey(
+                            settings.AUTH_USER_MODEL,
+                            on_delete=models.SET_NULL,
+                            null=True,
+                            blank=True,
+                            related_name='pagos_registrados',
+                            verbose_name='Pago registrado por'
+                          )
+
+    class Meta:
+        verbose_name        = 'Factura'
+        verbose_name_plural = 'Facturas'
+        ordering            = ['-fecha_emision']
+
+    def __str__(self):
+        return f'{self.numero} — {self.get_estado_display()}'
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            with transaction.atomic():
+                self.numero = self._generar_numero()
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+    def _generar_numero(self):
+        return generar_numero_secuencial(
+            queryset=Factura.objects,
+            prefijo='FAC',
+            ancho=5
+        )
+
+    @property
+    def esta_pagada(self):
+        return self.estado == self.ESTADO_PAGADA
+
+    @property
+    def clase_badge(self):
+        mapa = {
+            self.ESTADO_PENDIENTE: 'badge-pendiente',
+            self.ESTADO_PAGADA:    'badge-aprobado',
+            self.ESTADO_ANULADA:   'badge-denegado',
+        }
+        return mapa.get(self.estado, 'badge-info')

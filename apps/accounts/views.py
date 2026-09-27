@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 import json
 
 from apps.solicitudes.models import Solicitud
-from apps.licencias.models import Licencia
+from apps.licencias.models import Licencia, Factura
 from .forms import FormularioCrearUsuario
 from .forms import FormularioCambiarPassword
 from .forms import FormularioEditarUsuario
@@ -70,16 +70,16 @@ def vista_dashboard(request):
 
     if usuario.es_persona_natural:
         return _dashboard_persona_natural(request, usuario)
-    if usuario.es_operador:
-        return _dashboard_operador(request, usuario)
-    if usuario.es_especialista:
+    if usuario.es_especialista_base:
         return _dashboard_especialista(request, usuario)
+    if usuario.es_especialista_superior:
+        return _dashboard_especialista_superior(request, usuario)
     if usuario.es_aduana:
         return _dashboard_aduana(request, usuario)
     if usuario.es_directivo:
         return _dashboard_directivo(request, usuario)
 
-    return _dashboard_operador(request, usuario)
+    return _dashboard_persona_natural(request, usuario)
 
 
 # ─── Dashboards por rol ───────────────────────────────────────────────────────
@@ -107,12 +107,22 @@ def _dashboard_persona_natural(request, usuario):
     return render(request, 'accounts/dashboard_persona_natural.html', contexto)
 
 
-def _dashboard_operador(request, usuario):
+def _dashboard_especialista(request, usuario):
+    """Dashboard para los 4 especialistas de área."""
     hoy = timezone.now().date()
-    
-    stats = Solicitud.objects.aggregate(
+
+    # Mapa de rol a categoría
+    CATEGORIA_ROL = {
+        'especialista_radiofaro': 'radiofaro',
+        'especialista_movil':     'movil',
+        'especialista_maritimo':  'maritimo',
+        'especialista_internet':  'internet',
+    }
+    categoria = CATEGORIA_ROL.get(usuario.rol, '')
+
+    stats = Solicitud.objects.filter(categoria=categoria).aggregate(
         nuevas=Count('id', filter=Q(estado=Solicitud.ESTADO_ENVIADA)),
-        en_proceso=Count('id', filter=Q(estado=Solicitud.ESTADO_EN_REVISION)),
+        en_revision=Count('id', filter=Q(estado=Solicitud.ESTADO_EN_REVISION)),
         aprobadas_hoy=Count('id', filter=Q(
             estado=Solicitud.ESTADO_APROBADA,
             fecha_resolucion__date=hoy
@@ -124,47 +134,60 @@ def _dashboard_operador(request, usuario):
     )
 
     contexto = {
-        'usuario': usuario,
+        'usuario':     usuario,
+        'categoria':   categoria,
         'nuevas':        stats['nuevas'],
-        'en_proceso':    stats['en_proceso'],
+        'en_revision':   stats['en_revision'],
         'aprobadas_hoy': stats['aprobadas_hoy'],
         'denegadas_hoy': stats['denegadas_hoy'],
         'solicitudes_recientes': Solicitud.objects.filter(
-                                     estado__in=[
-                                         Solicitud.ESTADO_ENVIADA,
-                                         Solicitud.ESTADO_EN_REVISION,
-                                     ]
-                                 ).select_related('solicitante', 'equipo')
-                                  .order_by('-fecha_creacion')[:8],
-    }
-    return render(request, 'accounts/dashboard_operador.html', contexto)
-
-
-def _dashboard_especialista(request, usuario):
-    hoy = timezone.now()
-    
-    stats = Solicitud.objects.filter(equipo_no_listado=True).aggregate(
-        por_evaluar=Count('id', filter=Q(estado=Solicitud.ESTADO_EN_REVISION)),
-        evaluadas_mes=Count('id', filter=Q(
-            estado__in=[Solicitud.ESTADO_APROBADA, Solicitud.ESTADO_DENEGADA],
-            fecha_resolucion__month=hoy.month,
-            fecha_resolucion__year=hoy.year,
-        )),
-        aprobadas_total=Count('id', filter=Q(estado=Solicitud.ESTADO_APROBADA)),
-    )
-
-    contexto = {
-        'usuario': usuario,
-        'por_evaluar':       stats['por_evaluar'],
-        'evaluadas_mes':     stats['evaluadas_mes'],
-        'aprobadas_total':   stats['aprobadas_total'],
-        'pendientes_recientes': Solicitud.objects.filter(
-                                    equipo_no_listado=True,
-                                    estado=Solicitud.ESTADO_EN_REVISION
-                                ).select_related('solicitante').order_by('-fecha_creacion')[:5],
+            categoria=categoria,
+            estado__in=[
+                Solicitud.ESTADO_ENVIADA,
+                Solicitud.ESTADO_EN_REVISION,
+            ]
+        ).select_related('solicitante').order_by('-fecha_creacion')[:8],
     }
     return render(request, 'accounts/dashboard_especialista.html', contexto)
 
+
+def _dashboard_especialista_superior(request, usuario):
+    """Dashboard para el especialista superior."""
+    hoy = timezone.now().date()
+
+    stats = Solicitud.objects.filter(
+        equipo_no_listado=True
+    ).aggregate(
+        por_evaluar=Count('id', filter=Q(
+            estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR
+        )),
+        evaluadas_hoy=Count('id', filter=Q(
+            estado__in=[
+                Solicitud.ESTADO_PENDIENTE_APROBACION,
+                Solicitud.ESTADO_DENEGADA,
+            ],
+            fecha_resolucion__date=hoy
+        )),
+        total_evaluadas=Count('id', filter=Q(
+            estado__in=[
+                Solicitud.ESTADO_PENDIENTE_APROBACION,
+                Solicitud.ESTADO_APROBADA,
+                Solicitud.ESTADO_DENEGADA,
+            ]
+        )),
+    )
+
+    contexto = {
+        'usuario':         usuario,
+        'por_evaluar':     stats['por_evaluar'],
+        'evaluadas_hoy':   stats['evaluadas_hoy'],
+        'total_evaluadas': stats['total_evaluadas'],
+        'pendientes_recientes': Solicitud.objects.filter(
+            equipo_no_listado=True,
+            estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR
+        ).select_related('solicitante').order_by('fecha_creacion')[:8],
+    }
+    return render(request, 'accounts/dashboard_especialista_superior.html', contexto)
 
 def _dashboard_aduana(request, usuario):
 
@@ -262,7 +285,8 @@ def _dashboard_directivo(request, usuario):
         'pendientes_firma':  pendientes,
         'aprobadas':         aprobadas,
         'denegadas':         denegadas,
-        'licencias_vigentes': Licencia.objects.filter(estado=Licencia.ESTADO_VIGENTE).count(),
+        'licencias_vigentes':  Licencia.objects.filter(estado=Licencia.ESTADO_VIGENTE).count(),
+        'facturas_pendientes': Factura.objects.filter(estado=Factura.ESTADO_PENDIENTE).count(),
         'por_flujo':         {'f43': flujo_stats['f43'], 'rats': flujo_stats['rats']},
         'solicitudes_recientes': Solicitud.objects.select_related(
                                      'solicitante', 'equipo'
@@ -283,7 +307,7 @@ def _dashboard_directivo(request, usuario):
 @never_cache
 @login_required
 def lista_usuarios(request):
-    if not (request.user.es_directivo or request.user.es_operador):
+    if not request.user.es_directivo:
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 

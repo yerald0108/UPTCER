@@ -1,0 +1,90 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Facturas{% endblock %}
+
+{% block nav_facturas %}activo{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <div>
+    <h1 class="pagina-titulo">Facturas</h1>
+    <p class="pagina-subtitulo">Gestión de facturas generadas por solicitudes aprobadas</p>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="card" style="margin-bottom:var(--espacio-4);">
+  <form method="get" style="display:flex;gap:var(--espacio-3);flex-wrap:wrap;align-items:flex-end;">
+    <div class="campo-grupo" style="flex:1;min-width:200px;">
+      <label class="campo-label">Buscar</label>
+      <input type="text" name="q" value="{{ busqueda }}" placeholder="Número, solicitante..." class="campo-input">
+    </div>
+    <div class="campo-grupo" style="min-width:160px;">
+      <label class="campo-label">Estado</label>
+      <select name="estado" class="campo-input">
+        <option value="">Todos</option>
+        {% for valor, etiqueta in ESTADOS %}
+          <option value="{{ valor }}" {% if estado_actual == valor %}selected{% endif %}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primario">Filtrar</button>
+    <a href="{% url 'licencias:lista_facturas' %}" class="btn btn-ghost">Limpiar</a>
+  </form>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+  {% if facturas %}
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Solicitud</th>
+            <th>Solicitante</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Fecha emisión</th>
+            <th>Fecha pago</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for factura in facturas %}
+          <tr>
+            <td><span class="badge badge-info">{{ factura.numero }}</span></td>
+            <td>
+              <a href="{% url 'solicitudes:detalle' pk=factura.solicitud.pk %}">
+                {{ factura.solicitud.numero }}
+              </a>
+            </td>
+            <td>{{ factura.solicitud.solicitante.get_nombre_completo }}</td>
+            <td>{{ factura.total }} CUP</td>
+            <td><span class="badge {{ factura.clase_badge }}">{{ factura.get_estado_display }}</span></td>
+            <td>{{ factura.fecha_emision|date:"d/m/Y" }}</td>
+            <td>
+              {% if factura.fecha_pago %}
+                {{ factura.fecha_pago|date:"d/m/Y" }}
+              {% else %}
+                <span style="color:var(--color-texto-muted);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'licencias:detalle_factura' numero=factura.numero %}" class="btn btn-sm btn-ghost">
+                Ver
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="estado-vacio">
+      <i data-lucide="receipt" style="width:48px;height:48px;color:var(--color-texto-muted);"></i>
+      <p>No hay facturas que mostrar.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

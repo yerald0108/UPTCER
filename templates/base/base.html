@@ -64,69 +64,35 @@
         </a>
       {% endif %}
 
-      {% if user.es_operador %}
-        <div class="sidebar-seccion-titulo">Operaciones</div>
-        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_op_inicio %}{% endblock %}" data-tooltip="Inicio">
-          <i data-lucide="layout-dashboard" class="icono"></i>
-          <span class="sidebar-enlace-texto">Inicio</span>
-        </a>
-
-        <!-- Solicitudes con dropdown -->
-        <button type="button"
-          class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}"
-          data-tooltip="Solicitudes"
-          onclick="toggleDropdownSolicitudes()"
-          id="btn-dropdown-solicitudes"
-          style="width:100%;background:none;border:none;cursor:pointer;text-align:left;">
-          <i data-lucide="inbox" class="icono"></i>
-          <span class="sidebar-enlace-texto">Solicitudes</span>
-          <i data-lucide="chevron-down" class="sidebar-enlace-flecha"></i>
-        </button>
-
-        <div class="sidebar-dropdown" id="dropdown-solicitudes">
-          <a href="{% url 'solicitudes:lista' %}"
-            class="sidebar-dropdown-item {% block nav_sol_todas %}{% endblock %}"
-            data-tooltip="Todas las solicitudes">
-            <span class="sidebar-dropdown-punto"></span>
-            <span class="sidebar-enlace-texto">Todas</span>
-          </a>
-          <a href="{% url 'solicitudes:lista' %}?supervision=revisadas"
-            class="sidebar-dropdown-item {% block nav_sol_revisadas %}{% endblock %}"
-            data-tooltip="Revisadas por dirección">
-            <span class="sidebar-dropdown-punto" style="background-color:#22C55E;"></span>
-            <span class="sidebar-enlace-texto">Revisadas por Dirección</span>
-          </a>
-          <a href="{% url 'solicitudes:lista' %}?supervision=pendientes"
-            class="sidebar-dropdown-item {% block nav_sol_pendientes %}{% endblock %}"
-            data-tooltip="Pendientes de supervisión">
-            <span class="sidebar-dropdown-punto" style="background-color:#F57F17;"></span>
-            <span class="sidebar-enlace-texto">Pendientes de Supervisión</span>
-          </a>
-        </div>
-
-        <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">
-          <i data-lucide="cpu" class="icono"></i>
-          <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
-        </a>
-        <a href="{% url 'licencias:lista' %}" class="sidebar-enlace {% block nav_licencias %}{% endblock %}" data-tooltip="Licencias">
-          <i data-lucide="file-badge" class="icono"></i>
-          <span class="sidebar-enlace-texto">Licencias</span>
-        </a>
-      {% endif %}
-
-      {% if user.es_especialista %}
-        <div class="sidebar-seccion-titulo">Evaluación Técnica</div>
+      {% if user.es_especialista_base %}
+        <div class="sidebar-seccion-titulo">Mi Especialidad</div>
         <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_esp_inicio %}{% endblock %}" data-tooltip="Inicio">
           <i data-lucide="layout-dashboard" class="icono"></i>
           <span class="sidebar-enlace-texto">Inicio</span>
         </a>
-        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Evaluaciones">
-          <i data-lucide="clipboard-check" class="icono"></i>
-          <span class="sidebar-enlace-texto">Evaluaciones</span>
+        <a href="{% url 'solicitudes:lista' %}" class="sidebar-enlace {% block nav_solicitudes %}{% endblock %}" data-tooltip="Solicitudes">
+          <i data-lucide="inbox" class="icono"></i>
+          <span class="sidebar-enlace-texto">Solicitudes</span>
         </a>
-        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_equipos_no_listados %}{% endblock %}" data-tooltip="Equipos No Listados">
-          <i data-lucide="alert-circle" class="icono"></i>
-          <span class="sidebar-enlace-texto">Equipos No Listados</span>
+        <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos %}{% endblock %}" data-tooltip="Catálogo de Equipos">
+          <i data-lucide="cpu" class="icono"></i>
+          <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
+        </a>
+      {% endif %}
+
+      {% if user.es_especialista_superior %}
+        <div class="sidebar-seccion-titulo">Evaluación Superior</div>
+        <a href="{% url 'accounts:dashboard' %}" class="sidebar-enlace {% block nav_sup_inicio %}{% endblock %}" data-tooltip="Inicio">
+          <i data-lucide="layout-dashboard" class="icono"></i>
+          <span class="sidebar-enlace-texto">Inicio</span>
+        </a>
+        <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="sidebar-enlace {% block nav_evaluaciones %}{% endblock %}" data-tooltip="Cola de Evaluaciones">
+          <i data-lucide="clipboard-check" class="icono"></i>
+          <span class="sidebar-enlace-texto">Cola de Evaluaciones</span>
+        </a>
+        <a href="{% url 'equipos:lista' %}" class="sidebar-enlace {% block nav_equipos_sup %}{% endblock %}" data-tooltip="Catálogo de Equipos">
+          <i data-lucide="cpu" class="icono"></i>
+          <span class="sidebar-enlace-texto">Catálogo de Equipos</span>
         </a>
       {% endif %}
 
@@ -155,6 +121,14 @@
         <a href="{% url 'solicitudes:lista' %}" class="sidebar-enlace {% block nav_reportes %}{% endblock %}" data-tooltip="Solicitudes y Reportes">
           <i data-lucide="bar-chart-2" class="icono"></i>
           <span class="sidebar-enlace-texto">Solicitudes y Reportes</span>
+        </a>
+        <a href="{% url 'licencias:lista_facturas' %}" class="sidebar-enlace {% block nav_facturas %}{% endblock %}" data-tooltip="Facturas">
+          <i data-lucide="receipt" class="icono"></i>
+          <span class="sidebar-enlace-texto">Facturas</span>
+        </a>
+        <a href="{% url 'licencias:lista' %}" class="sidebar-enlace {% block nav_licencias %}{% endblock %}" data-tooltip="Licencias">
+          <i data-lucide="file-badge" class="icono"></i>
+          <span class="sidebar-enlace-texto">Licencias</span>
         </a>
         <a href="{% url 'accounts:lista_usuarios' %}" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">
           <i data-lucide="users" class="icono"></i>

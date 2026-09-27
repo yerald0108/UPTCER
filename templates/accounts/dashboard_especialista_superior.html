@@ -1,7 +1,8 @@
 {% extends 'base/base.html' %}
 
-{% block titulo %}Dashboard — {{ usuario.get_rol_display }}{% endblock %}
-{% block nav_esp_inicio %}activo{% endblock %}
+{% block titulo %}Dashboard — Especialista Superior{% endblock %}
+
+{% block nav_sup_inicio %}activo{% endblock %}
 
 {% block breadcrumb %}
   <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -14,28 +15,19 @@
 <div class="pagina-cabecera">
   <div>
     <h1 class="pagina-titulo">Bienvenido, {{ usuario.get_nombre_completo }}</h1>
-    <p class="pagina-subtitulo">{{ usuario.get_rol_display }} — Solicitudes de categoría <strong>{{ categoria|title }}</strong></p>
+    <p class="pagina-subtitulo">Especialista Superior — Evaluación de equipos no listados</p>
   </div>
 </div>
 
 <!-- Estadísticas -->
-<div class="grid-4 mb-8">
+<div class="grid-3 mb-8">
   <div class="stat-card">
     <div class="stat-card-icono warning">
-      <i data-lucide="inbox" style="width:24px;height:24px;"></i>
-    </div>
-    <div>
-      <div class="stat-card-valor">{{ nuevas }}</div>
-      <div class="stat-card-etiqueta">Nuevas solicitudes</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-card-icono primario">
       <i data-lucide="clock" style="width:24px;height:24px;"></i>
     </div>
     <div>
-      <div class="stat-card-valor">{{ en_revision }}</div>
-      <div class="stat-card-etiqueta">En revisión</div>
+      <div class="stat-card-valor">{{ por_evaluar }}</div>
+      <div class="stat-card-etiqueta">Por evaluar</div>
     </div>
   </div>
   <div class="stat-card">
@@ -43,73 +35,73 @@
       <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
     </div>
     <div>
-      <div class="stat-card-valor">{{ aprobadas_hoy }}</div>
-      <div class="stat-card-etiqueta">Aprobadas hoy</div>
+      <div class="stat-card-valor">{{ evaluadas_hoy }}</div>
+      <div class="stat-card-etiqueta">Evaluadas hoy</div>
     </div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-icono danger">
-      <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
+    <div class="stat-card-icono primario">
+      <i data-lucide="clipboard-list" style="width:24px;height:24px;"></i>
     </div>
     <div>
-      <div class="stat-card-valor">{{ denegadas_hoy }}</div>
-      <div class="stat-card-etiqueta">Denegadas hoy</div>
+      <div class="stat-card-valor">{{ total_evaluadas }}</div>
+      <div class="stat-card-etiqueta">Total evaluadas</div>
     </div>
   </div>
 </div>
 
-<!-- Solicitudes recientes -->
+<!-- Pendientes recientes -->
 <div class="tarjeta">
   <div class="tarjeta-cabecera">
     <div style="display:flex;align-items:center;gap:var(--espacio-3);">
       <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
-        <i data-lucide="inbox" style="width:18px;height:18px;"></i>
+        <i data-lucide="clipboard-check" style="width:18px;height:18px;"></i>
       </div>
-      <h2 class="tarjeta-titulo">Solicitudes pendientes de revisión</h2>
+      <h2 class="tarjeta-titulo">Equipos pendientes de evaluación</h2>
     </div>
-    <a href="{% url 'solicitudes:lista' %}" class="btn btn-primario btn-sm">
-      Ver todas
+    <a href="{% url 'solicitudes:cola_evaluaciones' %}" class="btn btn-primario btn-sm">
+      Ver cola completa
     </a>
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
-    {% if solicitudes_recientes %}
+    {% if pendientes_recientes %}
       <div class="tabla-contenedor" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
               <th>Número</th>
               <th>Solicitante</th>
-              <th>Estado</th>
+              <th>Equipo no listado</th>
+              <th>Categoría</th>
               <th>Fecha</th>
-              <th>Días en cola</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {% for solicitud in solicitudes_recientes %}
+            {% for solicitud in pendientes_recientes %}
             <tr>
               <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
                 {{ solicitud.numero }}
               </td>
               <td>{{ solicitud.solicitante.get_nombre_completo }}</td>
               <td>
-                <span class="badge {{ solicitud.clase_badge }}">
-                  {{ solicitud.get_estado_display }}
-                </span>
+                <div style="font-weight:var(--peso-medio);">
+                  {{ solicitud.equipo_marca_manual }} {{ solicitud.equipo_modelo_manual }}
+                </div>
+                <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
+                  Equipo no registrado en catálogo
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-info">{{ solicitud.get_categoria_display }}</span>
               </td>
               <td style="color:var(--color-texto-muted);">
                 {{ solicitud.fecha_creacion|date:"d/m/Y" }}
               </td>
               <td>
-                {% if solicitud.dias_en_cola is not None %}
-                  <span class="badge {% if solicitud.dias_en_cola > 5 %}badge-denegado{% elif solicitud.dias_en_cola > 2 %}badge-pendiente{% else %}badge-aprobado{% endif %}">
-                    {{ solicitud.dias_en_cola }} día{{ solicitud.dias_en_cola|pluralize }}
-                  </span>
-                {% else %}—{% endif %}
-              </td>
-              <td>
-                <a href="{% url 'solicitudes:detalle' pk=solicitud.pk %}" class="btn btn-sm btn-ghost">
-                  Ver
+                <a href="{% url 'solicitudes:evaluar' pk=solicitud.pk %}" class="btn btn-primario btn-sm">
+                  <i data-lucide="clipboard-check" style="width:14px;height:14px;"></i>
+                  Evaluar
                 </a>
               </td>
             </tr>
@@ -120,7 +112,7 @@
     {% else %}
       <div style="padding:var(--espacio-12);text-align:center;color:var(--color-texto-muted);">
         <i data-lucide="check-circle" style="width:40px;height:40px;margin-bottom:var(--espacio-4);opacity:0.4;display:block;margin-left:auto;margin-right:auto;"></i>
-        <p style="font-size:var(--texto-sm);">No hay solicitudes pendientes de revisión.</p>
+        <p style="font-size:var(--texto-sm);">No hay equipos pendientes de evaluación.</p>
       </div>
     {% endif %}
   </div>

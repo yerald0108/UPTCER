@@ -102,13 +102,16 @@
 
         <div class="tracker-linea {% if solicitud.estado != 'enviada' %}completada{% endif %}"></div>
 
-        <div class="tracker-paso {% if solicitud.estado == 'enviada' %}pendiente{% elif solicitud.estado == 'en_revision' %}activo{% else %}completado{% endif %}">
+        <div class="tracker-paso {% if solicitud.estado == 'enviada' %}pendiente{% elif solicitud.estado in 'en_revision,en_revision_superior' %}activo{% else %}completado{% endif %}">
           <div class="tracker-paso-icono">
             <i data-lucide="search-check" style="width:22px;height:22px;"></i>
           </div>
           <div class="tracker-paso-titulo">En revisión</div>
           <div class="tracker-paso-fecha">
-            {% if solicitud.estado == 'enviada' %}En espera{% else %}Operador asignado{% endif %}
+            {% if solicitud.estado == 'enviada' %}En espera
+            {% elif solicitud.estado == 'en_revision' %}Especialista revisando
+            {% elif solicitud.estado == 'en_revision_superior' %}Evaluación técnica
+            {% else %}Revisión completada{% endif %}
           </div>
         </div>
 
@@ -136,20 +139,35 @@
       {% if solicitud.estado == 'enviada' %}
         <div class="alerta alerta-info">
           <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
-          Su solicitud fue recibida correctamente y está en espera de revisión por un operador del Ministerio de Comunicaciones. Le notificaremos cualquier actualización.
+          Su solicitud fue recibida correctamente y está siendo revisada por el especialista del Ministerio de Comunicaciones. Le notificaremos cualquier actualización.
         </div>
       {% elif solicitud.estado == 'en_revision' %}
         <div class="alerta alerta-info">
           <i data-lucide="clock" style="width:18px;height:18px;flex-shrink:0;"></i>
-          Un operador está revisando su solicitud. Si su equipo requiere evaluación técnica especializada, un especialista del Ministerio la evaluará antes de la resolución final.
+          Un especialista está revisando su solicitud. Le notificaremos cuando haya una resolución.
+        </div>
+      {% elif solicitud.estado == 'en_revision_superior' %}
+        <div class="alerta alerta-info">
+          <i data-lucide="cpu" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Su equipo requiere evaluación técnica especializada. Un especialista superior del Ministerio lo está evaluando.
+        </div>
+      {% elif solicitud.estado == 'pendiente_aprobacion' %}
+        <div class="alerta alerta-info">
+          <i data-lucide="hourglass" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Su solicitud fue revisada y está pendiente de aprobación final por la dirección del Ministerio.
+        </div>
+      {% elif solicitud.estado == 'pendiente_pago' %}
+        <div class="alerta alerta-warning">
+          <i data-lucide="receipt" style="width:18px;height:18px;flex-shrink:0;"></i>
+          Su solicitud fue aprobada. Tiene una factura pendiente de pago. Una vez registrado el pago se generará su licencia.
         </div>
       {% elif solicitud.estado == 'aprobada' %}
         <div class="alerta alerta-success">
           <i data-lucide="check-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
           <div>
-            Su solicitud fue aprobada.
+            Su solicitud fue aprobada y el pago registrado.
             {% if solicitud.licencia %}
-              Ya puede consultar su licencia de importación
+              Ya puede consultar su licencia de importación:
               <a href="{% url 'licencias:detalle' solicitud.licencia.numero %}" style="font-weight:600;color:#1B5E20;">{{ solicitud.licencia.numero }}</a>.
             {% endif %}
           </div>
@@ -157,16 +175,17 @@
       {% elif solicitud.estado == 'denegada' %}
         <div class="alerta alerta-error">
           <i data-lucide="x-circle" style="width:18px;height:18px;flex-shrink:0;"></i>
-          Su solicitud fue denegada. Puede revisar las observaciones del operador en el documento a continuación.
+          Su solicitud fue denegada. Puede revisar las observaciones del especialista en el documento a continuación.
         </div>
       {% elif solicitud.estado == 'cancelada' %}
         <div class="alerta alerta-warning">
           <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
           Esta solicitud fue cancelada.
+          {% endif %}
         </div>
       {% endif %}
-    </div>
-  {% endif %}
+
+  <!-- ── HOJA A4 – Solo lectura ──────────────────────────────────────────────────────────────── -->
 
   <!-- ── HOJA A4 — Solo lectura ────────────────────────────────────────────── -->
   <div class="f43-hoja">
@@ -178,6 +197,13 @@
       </div>
       <div class="f43-encabezado-codigo">F.43</div>
     </div>
+
+    {% if solicitud.categoria %}
+    <div style="margin-top:4mm;padding:5px 8px;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:4px;display:flex;align-items:center;gap:8px;">
+      <i data-lucide="tag" style="width:14px;height:14px;color:#4338CA;"></i>
+      <span style="font-size:9.5pt;color:#4338CA;font-weight:600;">Categoría de solicitud: {{ solicitud.get_categoria_display }}</span>
+    </div>
+    {% endif %}
 
     <table class="f43-tabla">
       <thead><tr><th colspan="4">Datos de la Persona Solicitante</th></tr></thead>
@@ -192,13 +218,80 @@
     <table class="f43-tabla">
       <thead><tr><th colspan="4">Datos referentes a la importación</th></tr></thead>
       <tbody>
-        <tr><td class="f43-campo-label">1. Provincia</td><td colspan="3">{{ datos_f43.provincia|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">2. Modo de Importación</td><td colspan="3">{{ datos_f43.modo_importacion|default:"—"|capfirst }}</td></tr>
-        <tr><td class="f43-campo-label">3. No. de vuelo</td><td>{{ datos_f43.numero_vuelo|default:"—" }}</td><td class="f43-campo-label">4. Fecha de Arribo</td><td>{{ datos_f43.fecha_arribo|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">5. País de procedencia</td><td>{{ datos_f43.pais_procedencia|default:"—" }}</td><td class="f43-campo-label">6. Aduana de acceso</td><td>{{ datos_f43.aduana_acceso|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">7. Lugar de acceso</td><td>{{ datos_f43.lugar_acceso|default:"—" }}</td><td class="f43-campo-label">8. No. del RAD</td><td>{{ datos_f43.numero_rad|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">9. Objetivo</td><td colspan="3">{{ datos_f43.objetivo_importacion|default:"—"|capfirst }}{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}</td></tr>
-        <tr><td class="f43-campo-label">10. Período</td><td colspan="3">{{ datos_f43.periodo_importacion|default:"—"|capfirst }}{% if datos_f43.tiempo_solicitado %} — {{ datos_f43.tiempo_solicitado }} meses{% endif %}</td></tr>
+        <tr>
+          <td class="f43-campo-label">1. Provincia</td>
+          <td colspan="3">
+            {% with p=datos_f43.provincia %}
+              {% if p == 'pinar_del_rio' %}Pinar del Río
+              {% elif p == 'artemisa' %}Artemisa
+              {% elif p == 'la_habana' %}La Habana
+              {% elif p == 'mayabeque' %}Mayabeque
+              {% elif p == 'matanzas' %}Matanzas
+              {% elif p == 'cienfuegos' %}Cienfuegos
+              {% elif p == 'villa_clara' %}Villa Clara
+              {% elif p == 'sancti_spiritus' %}Sancti Spíritus
+              {% elif p == 'ciego_de_avila' %}Ciego de Ávila
+              {% elif p == 'camaguey' %}Camagüey
+              {% elif p == 'las_tunas' %}Las Tunas
+              {% elif p == 'granma' %}Granma
+              {% elif p == 'holguin' %}Holguín
+              {% elif p == 'santiago_de_cuba' %}Santiago de Cuba
+              {% elif p == 'guantanamo' %}Guantánamo
+              {% elif p == 'isla_de_la_juventud' %}Isla de la Juventud
+              {% else %}{{ p|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">2. Modo de Importación</td>
+          <td colspan="3">
+            {% with m=datos_f43.modo_importacion %}
+              {% if m == 'equipaje' %}Equipaje acompañante
+              {% elif m == 'rad' %}Documento de Retención Aduanal (RAD)
+              {% elif m == 'carga' %}Carga acompañante
+              {% else %}{{ m|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">3. No. de vuelo</td>
+          <td>{{ datos_f43.numero_vuelo|default:"—" }}</td>
+          <td class="f43-campo-label">4. Fecha de Arribo</td>
+          <td>{{ datos_f43.fecha_arribo|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">5. País de procedencia</td>
+          <td>{{ datos_f43.pais_procedencia|default:"—" }}</td>
+          <td class="f43-campo-label">6. Aduana de acceso</td>
+          <td>{{ datos_f43.aduana_acceso|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">7. Lugar de acceso</td>
+          <td>{{ datos_f43.lugar_acceso|default:"—" }}</td>
+          <td class="f43-campo-label">8. No. del RAD</td>
+          <td>{{ datos_f43.numero_rad|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">9. Objetivo</td>
+          <td colspan="3">
+            {% with o=datos_f43.objetivo_importacion %}
+              {% if o == 'empleo_directo' %}Empleo directo
+              {% elif o == 'muestra_expositiva' %}Muestra expositiva
+              {% elif o == 'otros' %}Otros{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}
+              {% else %}{{ o|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
+        <tr>
+          <td class="f43-campo-label">10. Período</td>
+          <td colspan="3">
+            {% with per=datos_f43.periodo_importacion %}
+              {% if per == 'definitiva' %}Definitiva
+              {% elif per == 'temporal' %}Temporal{% if datos_f43.tiempo_solicitado %} — {{ datos_f43.tiempo_solicitado }} meses{% endif %}
+              {% else %}{{ per|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
       </tbody>
     </table>
 
@@ -218,7 +311,7 @@
 
     <table class="f43-tabla">
       <tbody>
-        <tr><td class="f43-campo-label" style="width:20%;">Fecha de Solicitud</td><td style="width:30%;">{{ datos_f43.fecha_solicitud|default:solicitud.fecha_creacion|date:"d/m/Y" }}</td><td class="f43-campo-label" style="width:20%;">FIRMA</td><td style="width:30%;">{{ datos_f43.firma_ci|default:"—" }}</td></tr>
+        <tr><td class="f43-campo-label" style="width:20%;">Fecha de Solicitud</td><td style="width:30%;">{% if datos_f43.fecha_solicitud %}{{ datos_f43.fecha_solicitud }}{% else %}{{ solicitud.fecha_creacion|date:"d/m/Y" }}{% endif %}</td><td class="f43-campo-label" style="width:20%;">FIRMA</td><td style="width:30%;">{{ datos_f43.firma_ci|default:"—" }}</td></tr>
       </tbody>
     </table>
 
@@ -358,8 +451,8 @@
             </div>
           </div>
           <div class="campo-grupo">
-            <label class="campo-etiqueta" for="observacion">{% if puede_evaluar %}Criterio técnico{% else %}Observaciones{% endif %}</label>
-            <textarea name="observacion" id="observacion" class="campo-textarea" rows="3" placeholder="{% if puede_evaluar %}Escriba el criterio técnico sobre el equipo{% else %}Escriba las observaciones sobre esta solicitud{% endif %}"></textarea>
+            <label class="campo-etiqueta" for="observacion">{% if puede_eval_sup %}Criterio técnico superior{% elif puede_evaluar %}Observaciones del especialista{% else %}Observaciones{% endif %}</label>
+            <textarea name="observacion" id="observacion" class="campo-textarea" rows="3" placeholder="{% if puede_eval_sup %}Escriba el criterio técnico sobre el equipo no listado{% elif puede_evaluar %}Escriba sus observaciones sobre esta solicitud{% else %}Escriba las observaciones sobre esta solicitud{% endif %}"></textarea>
           </div>
           <div style="display:flex;justify-content:flex-end;gap:var(--espacio-3);">
             <button type="button" class="btn btn-primario" id="btn-guardar-estado" onclick="confirmarCambioEstado()"><i data-lucide="save" style="width:16px;height:16px;"></i> Guardar cambio de estado</button>
@@ -397,7 +490,7 @@
     if (esDenegacion) {
       confirmarAccion({ titulo: 'Denegar solicitud', mensaje: 'Esta acción notificará al solicitante que su solicitud ha sido denegada.', labelConfirmar: 'Sí, denegar solicitud', tipo: 'peligro', icono: 'x-circle', onConfirmar: ejecutar });
     } else if (esAprobacion) {
-      confirmarAccion({ titulo: 'Aprobar solicitud', mensaje: 'Se aprobará la solicitud y se generará automáticamente la licencia de importación.', labelConfirmar: 'Sí, aprobar y generar licencia', tipo: 'info', icono: 'check-circle', onConfirmar: ejecutar });
+      confirmarAccion({ titulo: 'Aprobar solicitud', mensaje: 'Se aprobará la solicitud y se generará automáticamente una factura de pago.', labelConfirmar: 'Sí, aprobar', tipo: 'info', icono: 'check-circle', onConfirmar: ejecutar });
     } else { ejecutar(); }
   }
 

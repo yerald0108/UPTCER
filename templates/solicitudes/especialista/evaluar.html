@@ -70,11 +70,38 @@
           </div>
           <div style="display:flex;justify-content:space-between;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Provincia</span>
-            <span style="font-size:var(--texto-sm);">{{ datos_f43.provincia|default:"—"|capfirst }}</span>
+            <span style="font-size:var(--texto-sm);">
+              {% with p=datos_f43.provincia %}
+                {% if p == 'pinar_del_rio' %}Pinar del Río
+                {% elif p == 'artemisa' %}Artemisa
+                {% elif p == 'la_habana' %}La Habana
+                {% elif p == 'mayabeque' %}Mayabeque
+                {% elif p == 'matanzas' %}Matanzas
+                {% elif p == 'cienfuegos' %}Cienfuegos
+                {% elif p == 'villa_clara' %}Villa Clara
+                {% elif p == 'sancti_spiritus' %}Sancti Spíritus
+                {% elif p == 'ciego_de_avila' %}Ciego de Ávila
+                {% elif p == 'camaguey' %}Camagüey
+                {% elif p == 'las_tunas' %}Las Tunas
+                {% elif p == 'granma' %}Granma
+                {% elif p == 'holguin' %}Holguín
+                {% elif p == 'santiago_de_cuba' %}Santiago de Cuba
+                {% elif p == 'guantanamo' %}Guantánamo
+                {% elif p == 'isla_de_la_juventud' %}Isla de la Juventud
+                {% else %}{{ p|default:"—" }}{% endif %}
+              {% endwith %}
+            </span>
           </div>
           <div style="display:flex;justify-content:space-between;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Objetivo</span>
-            <span style="font-size:var(--texto-sm);">{{ datos_f43.objetivo_importacion|default:"—"|capfirst }}</span>
+            <span style="font-size:var(--texto-sm);">
+              {% with o=datos_f43.objetivo_importacion %}
+                {% if o == 'empleo_directo' %}Empleo directo
+                {% elif o == 'muestra_expositiva' %}Muestra expositiva
+                {% elif o == 'otros' %}Otros{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}
+                {% else %}{{ o|default:"—" }}{% endif %}
+              {% endwith %}
+            </span>
           </div>
           <div style="display:flex;justify-content:space-between;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Período</span>

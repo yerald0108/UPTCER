@@ -181,6 +181,55 @@ function buscarEnCatalogo(input) {
   }
 
   if (q.length < 2) {
+    // Si el campo está vacío y es por foco, mostrar todos los equipos
+    if (q.length === 0) {
+      clearTimeout(busquedaTimeout);
+      if (abortController) abortController.abort();
+      abortController = new AbortController();
+      mostrarEstadoCargando(input, dropdown);
+      fetch(`/equipos/buscar/?q=`, { signal: abortController.signal })
+        .then(r => r.json())
+        .then(data => {
+          quitarEstadoCargando(input);
+          if (data.equipos.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+          }
+          dropdown.innerHTML = data.equipos.map(e => `
+            <div class="f43-dropdown-item"
+              onclick="seleccionarEquipo(this)"
+              data-id="${e.id}"
+              data-nombre="${e.nombre}"
+              data-marca="${e.marca}"
+              data-modelo="${e.modelo}"
+              data-banda="${e.banda}"
+              data-restringido="${e.restringido}"
+              data-libre="${e.libre}">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div style="font-weight:600;font-size:10pt;">${e.marca} ${e.modelo}</div>
+                  <div style="font-size:9pt;color:#666;margin-top:1px;">${e.nombre}</div>
+                </div>
+                <div>
+                  ${e.restringido
+                    ? '<span style="font-size:8pt;background:#FFEBEE;color:#B71C1C;padding:2px 6px;border-radius:4px;border:1px solid #EF9A9A;">Restringida</span>'
+                    : e.libre
+                      ? '<span style="font-size:8pt;background:#E8F5E9;color:#1B5E20;padding:2px 6px;border-radius:4px;border:1px solid #A5D6A7;">Banda libre</span>'
+                      : '<span style="font-size:8pt;background:#E3F2FD;color:#0D47A1;padding:2px 6px;border-radius:4px;border:1px solid #90CAF9;">No aplica</span>'
+                  }
+                </div>
+              </div>
+            </div>
+          `).join('');
+          dropdown.style.display = 'block';
+        })
+        .catch(err => {
+          if (err.name === 'AbortError') return;
+          quitarEstadoCargando(input);
+          dropdown.style.display = 'none';
+        });
+      return;
+    }
     dropdown.style.display = 'none';
     quitarEstadoCargando(input);
     return;
@@ -421,6 +470,25 @@ function quitarArchivo() {
   document.getElementById('upload-area').style.display             = 'flex';
   document.getElementById('archivo-seleccionado').style.display    = 'none';
 }
+
+// ─── Cerrar dropdowns al hacer click fuera o cambiar foco ────────────────────
+document.addEventListener('click', function(e) {
+  document.querySelectorAll('.f43-dropdown').forEach(dropdown => {
+    const contenedor = dropdown.closest('td');
+    if (contenedor && !contenedor.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+});
+
+document.addEventListener('focusin', function(e) {
+  document.querySelectorAll('.f43-dropdown').forEach(dropdown => {
+    const input = dropdown.previousElementSibling;
+    if (input && input !== e.target) {
+      dropdown.style.display = 'none';
+    }
+  });
+});
 
 // ─── Enviar formulario ────────────────────────────────────────────────────────
 function enviarFormulario() {

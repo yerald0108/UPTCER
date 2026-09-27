@@ -179,15 +179,19 @@ def lista_categorias(request):
 @login_required
 def buscar_equipos_ajax(request):
     q = request.GET.get('q', '').strip()
-    if len(q) < 2:
-        return JsonResponse({'equipos': []})
 
-    equipos = Equipo.objects.filter(
-        Q(nombre__icontains=q) |
-        Q(marca__icontains=q)  |
-        Q(modelo__icontains=q),
-        activo=True
-    )[:10]
+    if len(q) == 0:
+        # Sin búsqueda: devolver todos los equipos activos
+        equipos = Equipo.objects.filter(activo=True).order_by('marca', 'modelo')[:20]
+    elif len(q) < 2:
+        return JsonResponse({'equipos': []})
+    else:
+        equipos = Equipo.objects.filter(
+            Q(nombre__icontains=q) |
+            Q(marca__icontains=q)  |
+            Q(modelo__icontains=q),
+            activo=True
+        )[:10]
 
     data = [{
         'id':          e.pk,

@@ -6,7 +6,7 @@ from apps.core.utils import generar_numero_secuencial
 
 class Solicitud(models.Model):
 
-    # ─── Tipos de flujo ───────────────────────────────────────────────────────
+    # ─── Tipos de flujo ───────────────────────────────────────────────────────────
     FLUJO_F43  = 'f43'
     FLUJO_RATS = 'rats'
 
@@ -15,26 +15,46 @@ class Solicitud(models.Model):
         (FLUJO_RATS, 'RATS — Equipo retenido en aduana'),
     ]
 
+    # ─── Categorías de especialidad ───────────────────────────────────────────────
+    CATEGORIA_RADIOFARO = 'radiofaro'
+    CATEGORIA_MOVIL     = 'movil'
+    CATEGORIA_MARITIMO  = 'maritimo'
+    CATEGORIA_INTERNET  = 'internet'
+
+    CATEGORIAS = [
+        (CATEGORIA_RADIOFARO, 'Radiofaro'),
+        (CATEGORIA_MOVIL,     'Móvil'),
+        (CATEGORIA_MARITIMO,  'Marítimo'),
+        (CATEGORIA_INTERNET,  'Internet'),
+    ]
+
     # ─── Estados ──────────────────────────────────────────────────────────────
-    ESTADO_BORRADOR    = 'borrador'
-    ESTADO_ENVIADA     = 'enviada'
-    ESTADO_EN_REVISION = 'en_revision'
-    ESTADO_APROBADA    = 'aprobada'
-    ESTADO_DENEGADA    = 'denegada'
-    ESTADO_CANCELADA   = 'cancelada'
+    ESTADO_BORRADOR             = 'borrador'
+    ESTADO_ENVIADA              = 'enviada'
+    ESTADO_EN_REVISION          = 'en_revision'
+    ESTADO_EN_REVISION_SUPERIOR = 'en_revision_superior'
+    ESTADO_PENDIENTE_APROBACION = 'pendiente_aprobacion'
+    ESTADO_PENDIENTE_PAGO       = 'pendiente_pago'
+    ESTADO_APROBADA             = 'aprobada'
+    ESTADO_DENEGADA             = 'denegada'
+    ESTADO_CANCELADA            = 'cancelada'
 
     ESTADOS = [
-        (ESTADO_BORRADOR,    'Borrador'),
-        (ESTADO_ENVIADA,     'Enviada'),
-        (ESTADO_EN_REVISION, 'En revisión'),
-        (ESTADO_APROBADA,    'Aprobada'),
-        (ESTADO_DENEGADA,    'Denegada'),
-        (ESTADO_CANCELADA,   'Cancelada'),
+        (ESTADO_BORRADOR,             'Borrador'),
+        (ESTADO_ENVIADA,              'Enviada'),
+        (ESTADO_EN_REVISION,          'En revisión'),
+        (ESTADO_EN_REVISION_SUPERIOR, 'En revisión superior'),
+        (ESTADO_PENDIENTE_APROBACION, 'Pendiente de aprobación'),
+        (ESTADO_PENDIENTE_PAGO,       'Pendiente de pago'),
+        (ESTADO_APROBADA,             'Aprobada'),
+        (ESTADO_DENEGADA,             'Denegada'),
+        (ESTADO_CANCELADA,            'Cancelada'),
     ]
 
     # ─── Campos principales ───────────────────────────────────────────────────
     numero          = models.CharField('Número de solicitud', max_length=20, unique=True, editable=False)
     flujo           = models.CharField('Tipo de flujo', max_length=10, choices=FLUJOS)
+    categoria       = models.CharField('Categoría', max_length=20, choices=CATEGORIAS, blank=True)
     estado          = models.CharField('Estado', max_length=20, choices=ESTADOS, default=ESTADO_BORRADOR)
 
     # Solicitante
@@ -132,7 +152,13 @@ class Solicitud(models.Model):
     # ─── Helpers de estado ────────────────────────────────────────────────────
     @property
     def esta_pendiente(self):
-        return self.estado in [self.ESTADO_ENVIADA, self.ESTADO_EN_REVISION]
+        return self.estado in [
+            self.ESTADO_ENVIADA,
+            self.ESTADO_EN_REVISION,
+            self.ESTADO_EN_REVISION_SUPERIOR,
+            self.ESTADO_PENDIENTE_APROBACION,
+            self.ESTADO_PENDIENTE_PAGO,
+        ]
 
     @property
     def esta_resuelta(self):
@@ -152,12 +178,15 @@ class Solicitud(models.Model):
     @property
     def clase_badge(self):
         mapa = {
-            self.ESTADO_BORRADOR:    'badge-info',
-            self.ESTADO_ENVIADA:     'badge-pendiente',
-            self.ESTADO_EN_REVISION: 'badge-revision',
-            self.ESTADO_APROBADA:    'badge-aprobado',
-            self.ESTADO_DENEGADA:    'badge-denegado',
-            self.ESTADO_CANCELADA:   'badge-denegado',
+            self.ESTADO_BORRADOR:             'badge-info',
+            self.ESTADO_ENVIADA:              'badge-pendiente',
+            self.ESTADO_EN_REVISION:          'badge-revision',
+            self.ESTADO_EN_REVISION_SUPERIOR: 'badge-revision',
+            self.ESTADO_PENDIENTE_APROBACION: 'badge-pendiente',
+            self.ESTADO_PENDIENTE_PAGO:       'badge-pendiente',
+            self.ESTADO_APROBADA:             'badge-aprobado',
+            self.ESTADO_DENEGADA:             'badge-denegado',
+            self.ESTADO_CANCELADA:            'badge-denegado',
         }
         return mapa.get(self.estado, 'badge-info')
 

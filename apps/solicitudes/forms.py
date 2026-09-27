@@ -52,7 +52,7 @@ class FormularioF43(forms.ModelForm):
         ('guantanamo',       'Guantánamo'),
         ('isla_de_la_juventud', 'Isla de la Juventud'),
     ]
-
+    
     # Datos del solicitante
     nombre_apellidos    = forms.CharField(
                             label='Nombre y apellidos del solicitante',

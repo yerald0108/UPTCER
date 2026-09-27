@@ -63,11 +63,14 @@ def notificar(
         # Selección automática del template según el rol
         if template is None:
 
-            if destinatario.rol == Usuario.ROL_OPERADOR:
-                template = "notificaciones/emails/operador.html"
-
-            elif destinatario.rol == Usuario.ROL_ESPECIALISTA:
+            if destinatario.es_especialista_superior:
                 template = "notificaciones/emails/especialista.html"
+
+            elif destinatario.es_especialista_base:
+                template = "notificaciones/emails/especialista.html"
+
+            elif destinatario.es_directivo:
+                template = "notificaciones/emails/administrador.html"
 
             else:
                 template = "notificaciones/emails/usuario.html"
@@ -84,27 +87,84 @@ def notificar(
     return notificacion
 
 
-# ==============================================================================
-# OPERADORES
-# ==============================================================================
+# Mapa de categoría de solicitud → rol de especialista
+CATEGORIA_A_ROL = {
+    'radiofaro': Usuario.ROL_ESPECIALISTA_RADIOFARO,
+    'movil':     Usuario.ROL_ESPECIALISTA_MOVIL,
+    'maritimo':  Usuario.ROL_ESPECIALISTA_MARITIMO,
+    'internet':  Usuario.ROL_ESPECIALISTA_INTERNET,
+}
 
-def notificar_operadores(
+
+def notificar_especialistas_por_categoria(
+    categoria,
     tipo,
     titulo,
     mensaje,
     solicitud=None,
     enviar_email=True,
 ):
+    """Notifica a los especialistas del rol correspondiente a la categoría."""
+    rol = CATEGORIA_A_ROL.get(categoria)
+    if not rol:
+        return
 
-    operadores = Usuario.objects.filter(
-        rol=Usuario.ROL_OPERADOR,
+    especialistas = Usuario.objects.filter(
+        rol=rol,
         is_active=True,
     )
 
-    for operador in operadores:
-
+    for especialista in especialistas:
         notificar(
-            destinatario=operador,
+            destinatario=especialista,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            solicitud=solicitud,
+            enviar_email=enviar_email,
+        )
+
+
+def notificar_especialistas_superiores(
+    tipo,
+    titulo,
+    mensaje,
+    solicitud=None,
+    enviar_email=True,
+):
+    """Notifica a todos los especialistas superiores."""
+    superiores = Usuario.objects.filter(
+        rol=Usuario.ROL_ESPECIALISTA_SUPERIOR,
+        is_active=True,
+    )
+
+    for superior in superiores:
+        notificar(
+            destinatario=superior,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+            solicitud=solicitud,
+            enviar_email=enviar_email,
+        )
+
+
+def notificar_directivos(
+    tipo,
+    titulo,
+    mensaje,
+    solicitud=None,
+    enviar_email=True,
+):
+    """Notifica a todos los directivos."""
+    directivos = Usuario.objects.filter(
+        rol=Usuario.ROL_DIRECTIVO,
+        is_active=True,
+    )
+
+    for directivo in directivos:
+        notificar(
+            destinatario=directivo,
             tipo=tipo,
             titulo=titulo,
             mensaje=mensaje,
@@ -147,17 +207,19 @@ def notificar_especialistas(
 # ==============================================================================
 
 def notificar_solicitud_nueva(solicitud):
-
+    """Notifica al especialista del área correspondiente a la categoría."""
     titulo = f"Nueva solicitud {solicitud.numero}"
 
     mensaje = (
         f"El solicitante "
         f"{solicitud.solicitante.get_nombre_completo()} "
         f"ha registrado una nueva solicitud "
-        f"({solicitud.get_flujo_display()})."
+        f"({solicitud.get_flujo_display()}) "
+        f"de categoría {solicitud.get_categoria_display()}."
     )
 
-    notificar_operadores(
+    notificar_especialistas_por_categoria(
+        categoria=solicitud.categoria,
         tipo=Notificacion.TIPO_SOLICITUD_NUEVA,
         titulo=titulo,
         mensaje=mensaje,
@@ -169,26 +231,38 @@ def notificar_solicitud_nueva(solicitud):
 # DERIVACIÓN A ESPECIALISTA
 # ==============================================================================
 
-def notificar_derivacion_especialista(solicitud):
-
-    marca = solicitud.equipo_marca_manual or ""
-    modelo = solicitud.equipo_modelo_manual or ""
-
-    descripcion = f"{marca} {modelo}".strip()
-
-    if not descripcion:
-        descripcion = "Equipo no identificado"
-
-    titulo = f"Equipo no listado - {solicitud.numero}"
+def notificar_derivacion_superior(solicitud):
+    """Notifica al especialista superior cuando el equipo no está listado."""
+    titulo = f"Equipo no listado — {solicitud.numero}"
 
     mensaje = (
         f"La solicitud {solicitud.numero} "
-        f"requiere evaluación técnica.\n\n"
-        f"Equipo: {descripcion}"
+        f"requiere evaluación de equipo no listado.\n\n"
+        f"Categoría: {solicitud.get_categoria_display()}\n"
+        f"Solicitante: {solicitud.solicitante.get_nombre_completo()}"
     )
 
-    notificar_especialistas(
+    notificar_especialistas_superiores(
         tipo=Notificacion.TIPO_DERIVADA_ESPECIALISTA,
+        titulo=titulo,
+        mensaje=mensaje,
+        solicitud=solicitud,
+    )
+
+
+def notificar_pendiente_aprobacion(solicitud):
+    """Notifica al directivo que una solicitud está lista para aprobación."""
+    titulo = f"Solicitud lista para aprobación — {solicitud.numero}"
+
+    mensaje = (
+        f"La solicitud {solicitud.numero} "
+        f"ha sido revisada y está pendiente de aprobación.\n\n"
+        f"Categoría: {solicitud.get_categoria_display()}\n"
+        f"Solicitante: {solicitud.solicitante.get_nombre_completo()}"
+    )
+
+    notificar_directivos(
+        tipo=Notificacion.TIPO_CAMBIO_ESTADO,
         titulo=titulo,
         mensaje=mensaje,
         solicitud=solicitud,
@@ -245,20 +319,20 @@ def notificar_cambio_estado(
 # ==============================================================================
 
 def notificar_criterio_tecnico(solicitud):
-
+    """Notifica al directivo que el especialista superior emitió criterio técnico."""
     titulo = (
-        f"Criterio técnico emitido - "
+        f"Criterio técnico emitido — "
         f"{solicitud.numero}"
     )
 
     mensaje = (
-        f"El especialista técnico ha emitido "
+        f"El especialista superior ha emitido "
         f"su criterio para la solicitud "
         f"{solicitud.numero}.\n\n"
         f"Ya puede continuar con la resolución."
     )
 
-    notificar_operadores(
+    notificar_directivos(
         tipo=Notificacion.TIPO_CRITERIO_TECNICO,
         titulo=titulo,
         mensaje=mensaje,

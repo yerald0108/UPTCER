@@ -1,54 +1,49 @@
-# UPTCER — Documentación Técnica del Sistema
-## Sistema de Gestión de Permisos para la Importación de Equipos de Telecomunicaciones
-### Ministerio de Comunicaciones — República de Cuba
+# UPTCER — Sistema de Gestión de Permisos de Importación de Equipos de Telecomunicaciones
+
+**Ministerio de Comunicaciones — República de Cuba**
+
+Sistema web institucional que digitaliza el proceso de solicitud, revisión, evaluación y aprobación de permisos de importación de equipos de telecomunicaciones por personas naturales.
 
 ---
 
 ## Índice
 
-1. [Descripción general del sistema](#1-descripción-general-del-sistema)
+1. [Descripción general](#1-descripción-general)
 2. [Stack tecnológico](#2-stack-tecnológico)
 3. [Arquitectura del proyecto](#3-arquitectura-del-proyecto)
-4. [Estructura de archivos](#4-estructura-de-archivos)
-5. [Modelos de datos](#5-modelos-de-datos)
-6. [Roles y permisos](#6-roles-y-permisos)
-7. [Flujos de trabajo](#7-flujos-de-trabajo)
+4. [Roles del sistema](#4-roles-del-sistema)
+5. [Flujo principal](#5-flujo-principal)
+6. [Estados de una solicitud](#6-estados-de-una-solicitud)
+7. [Modelos de datos](#7-modelos-de-datos)
 8. [Apps del sistema](#8-apps-del-sistema)
 9. [Sistema de estilos y diseño](#9-sistema-de-estilos-y-diseño)
-10. [Sistema de notificaciones](#10-sistema-de-notificaciones)
-11. [Sistema de licencias](#11-sistema-de-licencias)
-12. [Catálogo de equipos](#12-catálogo-de-equipos)
-13. [Gestión de usuarios](#13-gestión-de-usuarios)
-14. [Configuración del proyecto](#14-configuración-del-proyecto)
-15. [Convenciones y buenas prácticas](#15-convenciones-y-buenas-prácticas)
-16. [Sistema de tests automatizados](#16-sistema-de-tests-automatizados)
+10. [Instalación y configuración](#10-instalación-y-configuración)
+11. [Usuarios de prueba](#11-usuarios-de-prueba)
+12. [Convenciones y buenas prácticas](#12-convenciones-y-buenas-prácticas)
+13. [Tests automatizados](#13-tests-automatizados)
 
 ---
 
-## 1. Descripción general del sistema
+## 1. Descripción general
 
-UPTCER es un sistema web institucional desarrollado para el **Ministerio de Comunicaciones de Cuba** que gestiona el proceso de solicitud, revisión, evaluación y aprobación de **permisos de importación de equipos de telecomunicaciones** por personas naturales.
-
-### Problema que resuelve
-
-Anteriormente el proceso era manual en papel. UPTCER digitaliza completamente el ciclo de vida de una solicitud, desde que la persona natural la crea hasta que se emite la licencia oficial de importación.
+UPTCER digitaliza completamente el ciclo de vida de una solicitud de importación de equipos de telecomunicaciones, desde que la persona natural crea el formulario F43 hasta que se genera la licencia oficial de importación tras el pago de la factura correspondiente.
 
 ### Qué hace el sistema
 
-- Permite a personas naturales llenar y enviar el formulario oficial **F43** en formato digital
-- El formulario se visualiza como una hoja A4 fiel al documento físico oficial
-- Los operadores del Ministerio reciben, revisan y gestionan las solicitudes
-- Si el equipo no está en el catálogo, la solicitud se deriva automáticamente al **Especialista Técnico**
-- El especialista evalúa el equipo, emite su criterio técnico y puede agregarlo al catálogo
-- Cuando se aprueba una solicitud, se genera automáticamente una **licencia oficial** imprimible
+- Permite a personas naturales llenar y enviar el **formulario oficial F43** en formato digital, visualizado como hoja A4 fiel al documento físico
+- La categoría del equipo se asigna **automáticamente** según el equipo seleccionado del catálogo, enrutando la solicitud al especialista del área correspondiente
+- Si el equipo no está en el catálogo, la solicitud va directamente al **Especialista Superior** para evaluación técnica
+- El directivo aprueba la solicitud y el sistema genera automáticamente una **factura**
+- Al registrar el pago de la factura se genera la **licencia oficial** imprimible
 - Todo queda registrado en un historial de cambios con fecha, usuario y observaciones
+- Sistema de notificaciones internas y por correo en cada transición del flujo
 
 ---
 
 ## 2. Stack tecnológico
 
 | Componente | Tecnología |
-|------------|------------|
+|---|---|
 | Backend | Django 6.x (Python) |
 | Base de datos | SQLite (desarrollo) / PostgreSQL (producción) |
 | Frontend | HTML5 + CSS3 + JavaScript vanilla |
@@ -58,929 +53,402 @@ Anteriormente el proceso era manual en papel. UPTCER digitaliza completamente el
 | Gestión de configuración | python-decouple (.env) |
 | Cálculo de fechas | python-dateutil |
 
-No se usa ningún framework de JavaScript (React, Vue, Angular). Todo el frontend es HTML, CSS y JS vanilla, lo que simplifica el despliegue y el mantenimiento.
+No se usa ningún framework de JavaScript. Todo el frontend es HTML, CSS y JS vanilla.
 
 ---
 
 ## 3. Arquitectura del proyecto
 
-El proyecto sigue la arquitectura estándar de Django con apps separadas por dominio de negocio. Todas las apps viven dentro de la carpeta `apps/` para mantener el código organizado.
-
 ```
-config/          → Configuración global del proyecto (settings, urls, wsgi)
-apps/            → Todas las aplicaciones del sistema
-  accounts/      → Usuarios, autenticación, roles, perfil
-  solicitudes/   → Solicitudes F43, historial, evaluaciones
-  equipos/       → Catálogo de equipos y categorías
-  notificaciones/ → Sistema de notificaciones internas
-  licencias/     → Generación y gestión de licencias
-templates/       → Todos los templates HTML del sistema
-static/          → CSS, JS, imágenes estáticas
+config/          → Configuración global (settings, urls, wsgi)
+apps/
+  accounts/      → Usuarios, autenticación, roles, perfil, dashboards
+  solicitudes/   → Solicitudes F43, historial, evaluaciones, cambio de estado
+  equipos/       → Catálogo de equipos y categorías, búsqueda AJAX
+  notificaciones/ → Sistema de notificaciones internas y por correo
+  licencias/     → Facturas y licencias de importación
+templates/       → Todos los templates HTML
+static/          → CSS, JS, fuentes
 media/           → Archivos subidos por usuarios (documentos adjuntos)
 ```
 
-### Principio de separación de responsabilidades
-
-Cada app tiene responsabilidad única:
-
-- `accounts` sabe de usuarios y autenticación, no de solicitudes
-- `solicitudes` sabe del ciclo de vida de una solicitud, importa de `equipos` y `licencias`
-- `equipos` sabe del catálogo, no sabe quién hace solicitudes
-- `notificaciones` recibe eventos de otras apps y notifica usuarios
-- `licencias` se genera automáticamente cuando una solicitud es aprobada
-
 ---
 
-## 4. Estructura de archivos
+## 4. Roles del sistema
 
-A continuación se documenta cada archivo del sistema, su ubicación y su propósito.
+El sistema tiene **8 roles** definidos en el modelo `Usuario`:
 
-### 4.1 Raíz del proyecto
+| Rol | Username de prueba | Descripción |
+|---|---|---|
+| `persona_natural` | persona1, persona2, persona3 | Crea y sigue sus solicitudes F43 |
+| `especialista_radiofaro` | esp_radiofaro | Revisa solicitudes de categoría Radiofaro |
+| `especialista_movil` | esp_movil | Revisa solicitudes de categoría Móvil |
+| `especialista_maritimo` | esp_maritimo | Revisa solicitudes de categoría Marítimo |
+| `especialista_internet` | esp_internet | Revisa solicitudes de categoría Internet |
+| `especialista_superior` | esp_superior | Evalúa equipos no listados en el catálogo |
+| `aduana` | aduana | Gestiona solicitudes RATS (equipos retenidos) |
+| `directivo` | directivo | Aprobación final, gestión de usuarios, reportes |
 
-```
-uptcer/
-├── .env                    ← Variables de entorno (SECRET_KEY, DEBUG, etc.) — NUNCA subir a git
-├── manage.py               ← Comando principal de Django
-├── db.sqlite3              ← Base de datos SQLite (solo desarrollo)
-└── requirements.txt        ← Dependencias Python del proyecto
-```
+### Propiedades helper del modelo Usuario
 
-### 4.2 Configuración (`config/`)
-
-```
-config/
-├── __init__.py
-├── settings.py             ← Configuración principal: apps instaladas, BD, static, auth, timezone
-├── urls.py                 ← URLs raíz del proyecto — registra las URLs de cada app
-├── wsgi.py                 ← Punto de entrada WSGI para producción
-└── asgi.py                 ← Punto de entrada ASGI (opcional, para async)
-```
-
-**`config/settings.py`** — Los puntos más importantes:
-- `AUTH_USER_MODEL = 'accounts.Usuario'` → modelo de usuario personalizado
-- `LOGIN_URL = 'accounts:login'` → redirige a login cuando no está autenticado
-- `LOGIN_REDIRECT_URL = 'accounts:dashboard'` → redirige al dashboard tras login
-- `LANGUAGE_CODE = 'es-cu'` y `TIME_ZONE = 'America/Havana'` → localización cubana
-- `SESSION_COOKIE_AGE = 28800` → sesión expira en 8 horas
-- `AUTH_PASSWORD_VALIDATORS = []` → validadores de contraseña desactivados en desarrollo
-
-**`config/urls.py`** — Registra todas las apps:
 ```python
-path('',            include('apps.accounts.urls'))       # login, dashboard, usuarios, perfil
-path('solicitudes/', include('apps.solicitudes.urls'))   # F43, lista, detalle, evaluaciones
-path('equipos/',    include('apps.equipos.urls'))        # catálogo, búsqueda AJAX
-path('licencias/',  include('apps.licencias.urls'))      # lista y detalle de licencias
-path('notificaciones/', include('apps.notificaciones.urls'))
+usuario.es_persona_natural        # True si es persona natural
+usuario.es_especialista_base      # True para los 4 especialistas de área
+usuario.es_especialista_superior  # True para el especialista superior
+usuario.es_especialista           # True para cualquier tipo de especialista
+usuario.es_aduana                 # True si es aduana
+usuario.es_directivo              # True si es directivo
 ```
-
-### 4.3 App `accounts`
-
-Gestiona todo lo relacionado con usuarios: autenticación, roles, perfil, y gestión de usuarios por el directivo.
-
-```
-apps/accounts/
-├── __init__.py
-├── apps.py                 ← Configuración de la app (name = 'apps.accounts')
-├── models.py               ← Modelo Usuario personalizado con 5 roles
-├── forms.py                ← Formularios: crear usuario, editar perfil, cambiar contraseña
-├── views.py                ← Todas las vistas de la app
-├── urls.py                 ← URLs de la app con namespace 'accounts'
-├── admin.py                ← Registro del modelo Usuario en el admin de Django
-└── migrations/             ← Migraciones de base de datos
-```
-
-**`models.py`** — El modelo `Usuario` extiende `AbstractBaseUser` y define:
-- 5 roles: `persona_natural`, `operador`, `especialista`, `aduana`, `directivo`
-- Campos: `username`, `email`, `nombre`, `apellidos`, `rol`, `telefono`, `activo`
-- Propiedades helper: `es_persona_natural`, `es_operador`, `es_especialista`, `es_aduana`, `es_directivo`
-- Método `get_nombre_completo()` → retorna nombre + apellidos
-
-**`views.py`** — Contiene las siguientes vistas:
-
-| Vista | URL | Descripción |
-|-------|-----|-------------|
-| `vista_login` | `/` | Login con autenticación segura |
-| `vista_logout` | `/logout/` | Cierre de sesión (solo POST) |
-| `vista_dashboard` | `/dashboard/` | Redirige al dashboard correcto según el rol |
-| `_dashboard_persona_natural` | — | Dashboard interno para persona natural |
-| `_dashboard_operador` | — | Dashboard interno para operador |
-| `_dashboard_especialista` | — | Dashboard interno para especialista |
-| `_dashboard_aduana` | — | Dashboard interno para aduana |
-| `_dashboard_directivo` | — | Dashboard directivo con gráficas Chart.js |
-| `lista_usuarios` | `/usuarios/` | Lista de todos los usuarios (directivo/operador) |
-| `nuevo_usuario` | `/usuarios/nuevo/` | Crear usuario nuevo (solo directivo) |
-| `detalle_usuario` | `/usuarios/<pk>/` | Ver perfil y estadísticas de un usuario |
-| `editar_usuario` | `/usuarios/<pk>/editar/` | Editar datos de un usuario |
-| `cambiar_password_usuario` | `/usuarios/<pk>/password/` | Cambiar contraseña de un usuario |
-| `togglear_usuario` | `/usuarios/<pk>/toggle/` | Activar/desactivar un usuario |
-| `perfil` | `/perfil/` | Ver y editar el propio perfil |
-| `cambiar_mi_password` | `/perfil/password/` | Cambiar la propia contraseña |
-
-### 4.4 App `solicitudes`
-
-El núcleo del sistema. Gestiona todo el ciclo de vida de una solicitud.
-
-```
-apps/solicitudes/
-├── __init__.py
-├── apps.py
-├── models.py               ← Modelos Solicitud e HistorialSolicitud
-├── forms.py                ← FormularioF43 con validaciones
-├── views.py                ← Todas las vistas de solicitudes y evaluaciones
-├── urls.py                 ← URLs con namespace 'solicitudes'
-├── admin.py                ← Registro en admin de Django
-├── templatetags/           ← Template tags personalizados
-│   ├── __init__.py
-│   └── json_extras.py      ← Filtro parse_json para templates
-└── migrations/
-```
-
-**`models.py`** — Dos modelos principales:
-
-`Solicitud`:
-- Campos de flujo: `FLUJO_F43` y `FLUJO_RATS`
-- Estados: `borrador`, `enviada`, `en_revision`, `aprobada`, `denegada`, `cancelada`
-- Datos del formulario F43 se guardan serializados como JSON en `equipo_descripcion`
-- `numero` se genera automáticamente: `F43-2025-0001` o `RAT-2025-0001`
-- `equipo_no_listado` = True cuando el equipo no está en el catálogo
-- `clase_badge` → propiedad que retorna la clase CSS del badge de estado
-
-`HistorialSolicitud`:
-- Registra cada cambio de estado con: estado anterior, estado nuevo, usuario responsable, observación y fecha
-- Se crea automáticamente en cada cambio de estado
-
-**`forms.py`** — `FormularioF43` define todos los campos del formulario oficial:
-- Datos del solicitante (nombre, pasaporte, país, dirección, correo, teléfono)
-- Datos de importación (provincia, modo, vuelo, arribo, aduana, RAD, objetivo, período)
-- Validaciones cruzadas (RAD obligatorio si modo=RAD, tiempo obligatorio si período=temporal)
-
-**`views.py`** — Vistas principales:
-
-| Vista | URL | Descripción |
-|-------|-----|-------------|
-| `nueva_solicitud_f43` | `/solicitudes/nueva/f43/` | Formulario F43 como hoja A4 |
-| `mis_solicitudes` | `/solicitudes/mis/` | Lista de solicitudes del usuario actual |
-| `lista_solicitudes` | `/solicitudes/lista/` | Lista para operador/directivo con filtros |
-| `detalle_solicitud` | `/solicitudes/<pk>/` | Detalle con hoja F43 + historial + panel de gestión |
-| `cambiar_estado` | `/solicitudes/<pk>/estado/` | Cambia estado + registra historial + notifica |
-| `cola_evaluaciones` | `/solicitudes/evaluaciones/` | Cola del especialista con pendientes y completadas |
-| `evaluar_solicitud` | `/solicitudes/<pk>/evaluar/` | Vista especializada del especialista para emitir criterio |
-
-**`templatetags/json_extras.py`** — Define el filtro `parse_json` que permite parsear el JSON del F43 directamente en los templates:
-```django
-{% with d=solicitud.equipo_descripcion|parse_json %}
-  {{ d.nombre_apellidos }}
-{% endwith %}
-```
-
-### 4.5 App `equipos`
-
-Gestiona el catálogo de equipos de telecomunicaciones registrados en el sistema.
-
-```
-apps/equipos/
-├── __init__.py
-├── apps.py
-├── models.py               ← Modelos CategoriaEquipo y Equipo
-├── forms.py                ← FormularioEquipo y FormularioCategoria
-├── views.py                ← Vistas del catálogo + endpoint AJAX de búsqueda
-├── urls.py                 ← URLs con namespace 'equipos'
-├── admin.py
-└── migrations/
-```
-
-**`models.py`** — Dos modelos:
-
-`CategoriaEquipo`: agrupa los equipos (ej: Teléfonos móviles, Routers, Tablets)
-
-`Equipo`:
-- `banda_frecuencia`: `libre` (2.4/5.7 GHz), `restringida`, `no_aplica`
-- `requiere_permiso`: booleano que indica si necesita autorización
-- Propiedades: `es_banda_libre`, `es_restringido`
-- Restricción única: no pueden existir dos equipos con misma marca+modelo
-
-**`views.py`** — Incluye `buscar_equipos_ajax` que es el endpoint JSON que usa el formulario F43 para buscar equipos mientras el solicitante escribe. Devuelve hasta 10 resultados con id, nombre, marca, modelo, banda y si está restringido.
-
-### 4.6 App `notificaciones`
-
-Sistema de notificaciones internas entre usuarios del sistema.
-
-```
-apps/notificaciones/
-├── __init__.py
-├── apps.py
-├── models.py               ← Modelo Notificacion
-├── servicios.py            ← Funciones helper para crear notificaciones
-├── views.py                ← Lista, marcar leída, contador AJAX
-├── urls.py
-├── admin.py
-└── migrations/
-```
-
-**`models.py`** — Modelo `Notificacion`:
-- Tipos: `solicitud_nueva`, `derivada_especialista`, `cambio_estado`, `criterio_tecnico`, `general`
-- `leida` / `fecha_lectura` para rastrear lectura
-- `clase_icono` → propiedad que retorna el nombre del icono Lucide según el tipo
-- `marcar_leida()` → método que marca la notificación y registra la fecha
-
-**`servicios.py`** — Funciones de alto nivel que se llaman desde otras apps:
-
-| Función | Cuándo se llama |
-|---------|----------------|
-| `notificar_solicitud_nueva(solicitud)` | Cuando persona natural envía F43 → notifica a operadores |
-| `notificar_derivacion_especialista(solicitud)` | Cuando operador pone en revisión un equipo no listado → notifica a especialistas |
-| `notificar_cambio_estado(solicitud, estado_anterior, usuario)` | En cada cambio de estado → notifica al solicitante |
-| `notificar_criterio_tecnico(solicitud)` | Cuando especialista emite criterio → notifica a operadores |
-
-### 4.7 App `licencias`
-
-Genera y gestiona las licencias oficiales de importación.
-
-```
-apps/licencias/
-├── __init__.py
-├── apps.py
-├── models.py               ← Modelo Licencia
-├── servicios.py            ← Función generar_licencia()
-├── views.py                ← Lista, detalle, revocar
-├── urls.py
-├── admin.py
-└── migrations/
-```
-
-**`models.py`** — Modelo `Licencia`:
-- `numero` se genera automáticamente: `LIC-2025-00001`
-- `OneToOneField` con `Solicitud` — una solicitud tiene máximo una licencia
-- Estados: `vigente`, `vencida`, `revocada`
-- `fecha_vencimiento` → solo para importaciones temporales
-- `verificar_vencimiento()` → verifica si una licencia temporal venció y actualiza el estado
-- `es_temporal` → True si tiene fecha de vencimiento
-- `es_vigente` → True si está vigente y no ha vencido
-
-**`servicios.py`** — `generar_licencia(solicitud, emitida_por)`:
-- Se llama automáticamente cuando una solicitud cambia a estado `aprobada`
-- Calcula la fecha de vencimiento a partir del período de la solicitud (usa `python-dateutil`)
-- Si ya existe una licencia para la solicitud, la retorna sin duplicar
 
 ---
 
-## 5. Modelos de datos
+## 5. Flujo principal
 
-### Diagrama de relaciones
+### Paso 1 — Persona Natural crea la solicitud F43
+
+- Llena el formulario F43 digital (hoja A4 fiel al documento físico oficial)
+- En la sección de equipos puede **buscar en el catálogo** mientras escribe
+- Si selecciona un equipo del catálogo → la categoría se asigna automáticamente
+- Si el equipo no está en el catálogo → va directamente al Especialista Superior
+- Al enviar: estado **ENVIADA** → notificación al especialista del área correspondiente
+
+### Paso 2 — Especialista de área revisa su solicitud
+
+Cada especialista ve **solo** las solicitudes de su categoría en estados `enviada` o `en_revision`.
+
+- **Equipo correcto** → aprueba o deniega → si aprueba: estado **PENDIENTE_APROBACION** → notifica al directivo
+- **Equipo no listado** → escala al superior → estado **EN_REVISION_SUPERIOR** → notifica al especialista superior
+
+### Paso 3 — Especialista Superior evalúa equipos no listados
+
+Solo ve solicitudes en estado `en_revision_superior`. Puede agregar el equipo al catálogo.
+
+- Si aprueba → estado **PENDIENTE_APROBACION** → notifica al directivo
+- Si deniega → estado **DENEGADA** → notifica al solicitante
+
+### Paso 4 — Directivo aprueba
+
+- Revisa las solicitudes en **PENDIENTE_APROBACION**
+- Si aprueba → estado **APROBADA** → sistema genera **Factura** automáticamente
+- Si deniega → estado **DENEGADA**
+
+### Paso 5 — Factura y pago
+
+- El directivo ve la factura en el menú **Facturas** (estado: pendiente de pago)
+- Al registrar el pago → factura pasa a **PAGADA**
+- El módulo de cálculo de montos se integrará en una fase posterior
+
+### Paso 6 — Licencia generada automáticamente
+
+- Al pagarse la factura → el sistema genera la **Licencia** con número único `LIC-YYYY-NNNNN`
+- La licencia puede ser definitiva o temporal (con fecha de vencimiento)
+- El solicitante puede verla e imprimirla desde su dashboard
+
+### Transversal
+
+- **Historial** completo de cada cambio de estado: quién, cuándo, con qué observación
+- **Notificaciones** internas y por correo en cada transición
+- **Directivo** puede supervisar cualquier solicitud en cualquier momento
+
+---
+
+## 6. Estados de una solicitud
 
 ```
-Usuario (accounts.Usuario)
-  │
-  ├─── Solicitud.solicitante (FK)
-  ├─── Solicitud.operador_asignado (FK)
-  ├─── HistorialSolicitud.usuario (FK)
-  ├─── Notificacion.destinatario (FK)
-  └─── Licencia.emitida_por (FK)
-
-Solicitud (solicitudes.Solicitud)
-  │
-  ├─── HistorialSolicitud.solicitud (FK, related_name='historial')
-  ├─── Notificacion.solicitud (FK)
-  ├─── Licencia.solicitud (OneToOne)
-  └─── Equipo.solicitudes (FK, opcional)
-
-Equipo (equipos.Equipo)
-  └─── CategoriaEquipo.equipos (FK)
+BORRADOR
+    ↓
+ENVIADA ──────────────────────────────────────────────────────────┐
+    ↓ (equipo en catálogo)         ↓ (equipo no listado)         │
+EN_REVISION               EN_REVISION_SUPERIOR                   │
+    ↓                              ↓                              │
+PENDIENTE_APROBACION ←────────────┘                              │
+    ↓                                                             │
+APROBADA → Factura generada → Factura pagada → Licencia          │
+    │                                                             │
+DENEGADA ←────────────────────────────────────────────────────────┘
+    │
+CANCELADA
 ```
 
-### Datos F43 serializados
+---
 
-Los datos del formulario F43 se guardan como JSON en el campo `Solicitud.equipo_descripcion`. Esto permite almacenar toda la información del formulario sin crear decenas de columnas. El JSON tiene esta estructura:
+## 7. Modelos de datos
+
+### Solicitud
+
+- `flujo`: `f43` o `rats`
+- `categoria`: `radiofaro`, `movil`, `maritimo`, `internet` — asignada automáticamente
+- `estado`: ver sección 6
+- `equipo_descripcion`: JSON con todos los datos del formulario F43
+- `equipo_no_listado`: True cuando el equipo no está en el catálogo
+- `numero`: generado automáticamente `F43-YYYY-NNNN`
+
+### Datos F43 serializados (JSON)
 
 ```json
 {
-  "nombre_apellidos": "Juan Pérez Rodríguez",
+  "nombre_apellidos": "Juan Pérez Morales",
   "numero_pasaporte": "A12345678",
-  "pais_residencia": "Cuba",
-  "direccion_residencia": "Calle 23 #456, La Habana",
-  "correo_electronico": "juan@ejemplo.cu",
-  "telefono": "+53 5 123 4567",
   "provincia": "la_habana",
   "modo_importacion": "equipaje",
-  "numero_vuelo": "CU123",
-  "fecha_arribo": "2025-07-15",
-  "pais_procedencia": "México",
-  "aduana_acceso": "Aeropuerto",
-  "lugar_acceso": "Aeropuerto José Martí",
-  "numero_rad": "",
   "objetivo_importacion": "empleo_directo",
-  "objetivo_otros_detalle": "",
   "periodo_importacion": "definitiva",
-  "tiempo_solicitado": "",
-  "firma_ci": "12345678901",
-  "fecha_solicitud": "2025-06-20",
   "equipos": [
     {
-      "descripcion": "Teléfono inteligente",
+      "descripcion": "Teléfono inteligente de gama alta",
       "marca": "Samsung",
       "modelo": "Galaxy S24",
       "cantidad": 1,
-      "equipoId": "15",
+      "equipoId": "93",
       "listado": true
     }
   ]
 }
 ```
 
-Los datos de evaluación técnica del especialista se guardan como JSON en `Solicitud.observaciones_tecnicas`:
+### Factura
 
-```json
-{
-  "banda_detectada": "libre",
-  "cumple_normativa": true,
-  "criterio": "El equipo opera en banda libre de 2.4 GHz...",
-  "evaluador": "Carlos García López"
-}
-```
+- `numero`: generado automáticamente `FAC-YYYY-NNNNN`
+- `estado`: `pendiente`, `pagada`, `anulada`
+- `total`, `subtotal`, `impuesto`: calculados por el módulo de cálculo (pendiente)
+- `fecha_pago` y `registrado_pago_por`: se llenan al registrar el pago
 
----
+### Licencia
 
-## 6. Roles y permisos
+- `numero`: generado automáticamente `LIC-YYYY-NNNNN`
+- `estado`: `vigente`, `vencida`, `revocada`
+- `fecha_vencimiento`: solo para importaciones temporales
+- Se genera automáticamente al pagar la factura
 
-El sistema tiene 5 roles definidos en el modelo `Usuario`:
+### Historial de Solicitud
 
-### Persona Natural (`persona_natural`)
-- Puede crear solicitudes F43
-- Ve solo sus propias solicitudes
-- Ve el estado de sus solicitudes en tiempo real
-- Accede a sus licencias generadas
-- Puede editar su propio perfil
-
-### Operador (`operador`)
-- Ve todas las solicitudes del sistema
-- Puede cambiar el estado de cualquier solicitud
-- Gestiona el catálogo de equipos (agregar, editar, desactivar)
-- Puede revocar licencias
-- Ve la lista de usuarios (solo lectura)
-
-### Especialista Técnico (`especialista`)
-- Accede a la cola de evaluaciones de equipos no listados
-- Emite criterios técnicos con banda de frecuencia detectada
-- Puede agregar equipos al catálogo directamente desde la evaluación
-- Puede aprobar o denegar solicitudes con equipo no listado
-
-### Aduana (`aduana`)
-- Registra equipos retenidos (flujo RATS — pendiente de implementación completa)
-- Verifica permisos existentes
-
-### Directivo (`directivo`)
-- Acceso completo al sistema
-- Gestión de usuarios: crear, editar, activar/desactivar, cambiar contraseña
-- Dashboard ejecutivo con gráficas de Chart.js
-- Ve reportes y estadísticas globales
-
-### Control de acceso en vistas
-
-Cada vista usa `@login_required` y verifica el rol explícitamente:
-
-```python
-@never_cache
-@login_required
-def nueva_solicitud_f43(request):
-    if not request.user.es_persona_natural:
-        messages.error(request, 'No tiene permisos para acceder a esta sección.')
-        return redirect('accounts:dashboard')
-```
-
-No se usa el sistema de grupos ni permisos de Django — el control se hace directamente con las propiedades del modelo `Usuario`.
-
----
-
-## 7. Flujos de trabajo
-
-### 7.1 Flujo F43 — Equipo listado en catálogo
-
-```
-Persona Natural
-    │
-    ▼
-Llena formulario F43 (hoja A4 digital)
-Busca equipo en catálogo mientras escribe
-    │
-    ▼
-Envía solicitud → Estado: ENVIADA
-    │
-    ▼ (notificación automática a operadores)
-Operador revisa la solicitud
-    │
-    ├── Aprueba → Estado: APROBADA
-    │               └── Se genera LICENCIA automáticamente
-    │               └── Se notifica al solicitante
-    │
-    └── Deniega → Estado: DENEGADA
-                    └── Se notifica al solicitante
-```
-
-### 7.2 Flujo F43 — Equipo NO listado en catálogo
-
-```
-Persona Natural
-    │
-    ▼
-Llena F43 con equipo no registrado
-(el sistema lo marca como "no listado")
-    │
-    ▼
-Envía solicitud → Estado: ENVIADA
-equipo_no_listado = True
-    │
-    ▼
-Operador revisa → Cambia a: EN_REVISIÓN
-    │
-    ▼ (notificación automática a especialistas)
-Especialista evalúa en cola de evaluaciones
-    │
-    ├── Emite criterio + Aprueba → Estado: APROBADA
-    │   │                           └── Licencia generada
-    │   └── (opcionalmente agrega el equipo al catálogo)
-    │
-    └── Emite criterio + Deniega → Estado: DENEGADA
-```
-
-### 7.3 Flujo de estados de una solicitud
-
-```
-BORRADOR → ENVIADA → EN_REVISIÓN → APROBADA
-                                 → DENEGADA
-                   → CANCELADA
-```
-
-Las transiciones se registran en `HistorialSolicitud` con usuario responsable, fecha y observación.
-
-### 7.4 Flujo de generación de licencia
-
-```
-Solicitud aprobada
-    │
-    ▼
-generar_licencia(solicitud, usuario_que_aprobó)
-    │
-    ├── Parsea datos F43 del JSON
-    ├── Si periodo = "temporal": calcula fecha_vencimiento = hoy + N meses
-    └── Crea Licencia con número único LIC-YYYY-NNNNN
-    │
-    ▼
-Licencia disponible para imprimir como hoja A4 oficial
-```
+Registra cada cambio de estado con: estado anterior, estado nuevo, usuario responsable, observación y fecha.
 
 ---
 
 ## 8. Apps del sistema
 
-### Templates — estructura completa
+### `apps/accounts`
 
-```
-templates/
-├── base/
-│   ├── base.html                    ← Template padre de todas las vistas autenticadas
-│   │                                  Contiene: sidebar, navbar, mensajes, scripts
-│   └── base_auth.html               ← Template padre del login (sin sidebar)
-│
-├── accounts/
-│   ├── login.html                   ← Pantalla de login con dos paneles
-│   ├── perfil.html                  ← Perfil del usuario autenticado
-│   ├── cambiar_password.html        ← Formulario de cambio de contraseña propia
-│   ├── dashboard_persona_natural.html
-│   ├── dashboard_operador.html
-│   ├── dashboard_especialista.html
-│   ├── dashboard_aduana.html
-│   ├── dashboard_directivo.html     ← Con gráficas Chart.js
-│   └── usuarios/
-│       ├── lista.html               ← Lista de usuarios con filtros
-│       ├── detalle.html             ← Perfil de un usuario + estadísticas
-│       ├── form_usuario.html        ← Crear y editar usuario (mismo template)
-│       └── cambiar_password.html    ← Cambiar contraseña de otro usuario
-│
-├── solicitudes/
-│   ├── f43.html                     ← Formulario F43 como hoja A4
-│   ├── mis_solicitudes.html         ← Lista de solicitudes del solicitante
-│   ├── lista.html                   ← Lista para operador/directivo con filtros
-│   ├── detalle.html                 ← Hoja F43 solo lectura + historial + panel gestión
-│   └── especialista/
-│       ├── cola.html                ← Cola de evaluaciones pendientes y completadas
-│       └── evaluar.html             ← Vista de evaluación técnica del especialista
-│
-├── equipos/
-│   ├── lista.html                   ← Catálogo con búsqueda y filtros
-│   ├── detalle.html                 ← Ficha del equipo
-│   ├── form_equipo.html             ← Crear y editar equipo
-│   └── categorias.html             ← Gestión de categorías
-│
-├── licencias/
-│   ├── lista.html                   ← Lista de licencias con filtros
-│   └── detalle.html                 ← Documento oficial imprimible de la licencia
-│
-└── notificaciones/
-    └── lista.html                   ← Centro de notificaciones del usuario
+Usuarios, autenticación, roles y dashboards por rol.
+
+**Vistas principales:**
+
+| Vista | URL | Descripción |
+|---|---|---|
+| `vista_login` | `/` | Login institucional |
+| `vista_dashboard` | `/acceso/dashboard/` | Redirige al dashboard correcto según el rol |
+| `lista_usuarios` | `/acceso/usuarios/` | Gestión de usuarios (solo directivo) |
+| `perfil` | `/acceso/perfil/` | Perfil del usuario autenticado |
+
+### `apps/solicitudes`
+
+Núcleo del sistema. Gestiona el ciclo de vida completo de una solicitud.
+
+**Función clave — asignación automática de categoría:**
+
+```python
+def _resolver_categoria_y_estado(equipos):
+    """
+    Analiza los equipos declarados en el F43 y determina:
+    - Categoría según el primer equipo listado del catálogo
+    - Estado inicial (enviada o en_revision_superior)
+    - Si hay equipos no listados
+    """
 ```
 
-### Static — estructura completa
+**Mapa de categorías:**
 
-```
-static/
-├── css/
-│   ├── global.css          ← Sistema de diseño completo: variables, layout, componentes
-│   ├── login.css           ← Estilos específicos de la pantalla de login
-│   ├── toast.css           ← Sistema de notificaciones toast animadas
-│   ├── f43.css             ← Estilos de la hoja A4 del formulario F43
-│   └── licencia.css        ← Estilos del documento oficial de licencia
-└── js/
-    ├── toast.js            ← Sistema de toasts: mostrar, cerrar, contador de progreso
-    └── f43.js              ← Lógica del formulario F43: búsqueda, filas dinámicas, envío
-```
-
-### Service Worker y actualización de recursos estáticos
-
-El sistema usa un *Service Worker* (`templates/sw.js`) para guardar los recursos de `static/` y permitir una carga rápida. Su estrategia es **cache first**: si el navegador ya tiene una copia de un CSS o JavaScript en caché, la entrega antes de consultar el servidor.
-
-Esto es importante cuando se corrige la interfaz. Por ejemplo, un ajuste al dropdown del sidebar puede estar correctamente implementado en `static/css/global.css`, pero el navegador puede seguir aplicando la versión anterior del archivo. El resultado aparenta ser que el bug continúa, incluso después de recargar la página.
-
-#### Regla obligatoria al cambiar CSS o JavaScript estático
-
-Cada vez que se modifique un archivo dentro de `static/`, se debe incrementar la versión de la caché en `templates/sw.js`. Para una modificación posterior a la versión actual, el cambio sería de `v6` a `v7`:
-
-```javascript
-// templates/sw.js
-const CACHE_NAME = 'uptcer-v7';
+```python
+CATEGORIA_EQUIPO_MAP = {
+    'Teléfonos móviles':       'movil',
+    'Routers y access points': 'internet',
+    'Tablets y computadoras':  'internet',
+    'Equipos de radio':        'radiofaro',
+    'Cámaras y vigilancia':    'internet',
+    'Wearables y accesorios':  'movil',
+    'Equipos satelitales':     'maritimo',
+    'Modems y equipos de red': 'internet',
+}
 ```
 
-Cuando el cambio afecte `global.css`, actualizar también el parámetro de versión de su enlace en `templates/base/base.html`:
+**Vistas principales:**
 
-```html
-<link rel="stylesheet" href="{% static 'css/global.css' %}?v=7">
+| Vista | URL | Descripción |
+|---|---|---|
+| `nueva_solicitud_f43` | `/solicitudes/nueva/f43/` | Formulario F43 como hoja A4 |
+| `mis_solicitudes` | `/solicitudes/mis/` | Lista de solicitudes del solicitante |
+| `lista_solicitudes` | `/solicitudes/lista/` | Lista filtrada por rol del usuario |
+| `detalle_solicitud` | `/solicitudes/<pk>/` | Detalle + historial + panel de gestión |
+| `cambiar_estado` | `/solicitudes/<pk>/estado/` | Cambia estado + historial + notificaciones |
+| `cola_evaluaciones` | `/solicitudes/evaluaciones/` | Cola del especialista superior |
+| `evaluar_solicitud` | `/solicitudes/<pk>/evaluar/` | Evaluación técnica de equipo no listado |
+
+### `apps/equipos`
+
+Catálogo de equipos con búsqueda AJAX para el formulario F43.
+
+El endpoint `/equipos/buscar/?q=` devuelve equipos en tiempo real mientras el solicitante escribe. Con `q` vacío devuelve todos los equipos activos para mostrar al hacer foco en el campo.
+
+### `apps/notificaciones`
+
+**Funciones de notificación:**
+
+| Función | Cuándo se llama |
+|---|---|
+| `notificar_solicitud_nueva(solicitud)` | Al enviar F43 → notifica al especialista del área |
+| `notificar_derivacion_superior(solicitud)` | Al escalar equipo no listado → notifica al superior |
+| `notificar_pendiente_aprobacion(solicitud)` | Al estar lista para aprobar → notifica al directivo |
+| `notificar_criterio_tecnico(solicitud)` | Al emitir criterio el superior → notifica al directivo |
+| `notificar_cambio_estado(solicitud, estado_anterior, usuario)` | En cada cambio → notifica al solicitante |
+
+### `apps/licencias`
+
+Gestiona facturas y licencias.
+
+**Servicios:**
+
+```python
+generar_factura(solicitud, emitida_por)  # Al aprobarse la solicitud
+registrar_pago(factura, usuario)          # Al registrar el pago → genera la licencia
+generar_licencia(solicitud, emitida_por) # Al pagarse la factura
 ```
 
-El parámetro evita que un Service Worker antiguo reutilice el CSS previo mientras detecta y activa la nueva versión de caché.
+**URLs:**
 
-#### Lista de comprobación para el equipo
-
-1. Modificar el archivo estático necesario en `static/css/` o `static/js/`.
-2. Elegir la siguiente versión consecutiva de caché: `v6` → `v7` → `v8`.
-3. Actualizar `CACHE_NAME` en `templates/sw.js` con esa versión.
-4. Si se modificó `static/css/global.css`, cambiar el mismo número en `?v=` dentro de `templates/base/base.html`.
-5. Si se agregó un recurso nuevo que debe funcionar sin conexión, incluir su ruta en el arreglo `ESTATICOS` de `templates/sw.js`.
-6. Probar una navegación normal y una recarga fuerte (`Ctrl + F5`) antes de entregar el cambio.
-
-No reutilizar una versión anterior de `CACHE_NAME`. Al cambiarla, el evento `activate` del Service Worker elimina las cachés viejas y permite que el navegador reciba los estilos y scripts corregidos.
+```
+/licencias/                         → lista de licencias
+/licencias/<numero>/                → detalle de licencia (imprimible)
+/licencias/<numero>/revocar/        → revocar licencia (solo directivo)
+/licencias/facturas/                → lista de facturas
+/licencias/facturas/<numero>/       → detalle de factura
+/licencias/facturas/<numero>/pagar/ → registrar pago (solo directivo)
+```
 
 ---
 
 ## 9. Sistema de estilos y diseño
 
-Todo el sistema visual se define en `static/css/global.css` mediante **variables CSS (Design Tokens)**. Esto significa que cambiar un color o espaciado en `:root` afecta todo el sistema automáticamente.
-
-### Variables principales
+Todo el sistema visual se define en `static/css/global.css` mediante variables CSS:
 
 ```css
 :root {
-  /* Paleta institucional */
-  --color-primario:        #1A3A5C;   /* Azul institucional */
-  --color-secundario:      #2E7D32;   /* Verde aprobado */
-  --color-acento:          #C62828;   /* Rojo denegado */
-  --color-advertencia:     #F57F17;   /* Naranja pendiente */
-
-  /* Sidebar */
-  --sidebar-ancho:          260px;    /* Ancho expandido */
-  --sidebar-ancho-colapsado: 68px;   /* Ancho colapsado (solo iconos) */
-
-  /* Tipografía — mínimo 16px en toda la interfaz */
-  --texto-base: 1rem;   /* 16px */
-  --texto-sm:   0.875rem; /* 14px */
+  --color-primario:    #1A3A5C;   /* Azul institucional */
+  --color-secundario:  #2E7D32;   /* Verde aprobado */
+  --color-acento:      #C62828;   /* Rojo denegado */
+  --color-advertencia: #F57F17;   /* Naranja pendiente */
 }
 ```
 
-### Layout principal
-
-El layout usa CSS Flexbox:
-
-```
-┌─────────────────────────────────────────┐
-│  .layout-wrapper (flex)                 │
-│  ┌──────────┬──────────────────────────┐│
-│  │ .layout  │ .layout-main             ││
-│  │ -sidebar │ ┌──────────────────────┐ ││
-│  │ (fixed)  │ │ .layout-navbar       │ ││
-│  │          │ └──────────────────────┘ ││
-│  │          │ ┌──────────────────────┐ ││
-│  │          │ │ .layout-contenido    │ ││
-│  │          │ │ (max-width: 1280px,  │ ││
-│  │          │ │  centrado)           │ ││
-│  │          │ └──────────────────────┘ ││
-│  └──────────┴──────────────────────────┘│
-└─────────────────────────────────────────┘
-```
-
-### Sidebar colapsable
-
-El sidebar tiene dos estados guardados en `localStorage`:
-- **Expandido**: muestra icono + texto
-- **Colapsado** (`clase 'colapsado'`): muestra solo iconos, con tooltips al hacer hover
-
-El botón flotante `.btn-colapsar-sidebar` se posiciona con `position: fixed` fuera del sidebar para que siempre sea visible.
-
-### Componentes CSS disponibles
+**Componentes CSS disponibles:**
 
 | Clase | Uso |
-|-------|-----|
-| `.tarjeta` | Contenedor con borde, sombra y borde redondeado |
+|---|---|
+| `.tarjeta` | Contenedor con borde y sombra |
 | `.stat-card` | Tarjeta de estadística con icono y valor |
 | `.btn-primario` | Botón azul institucional |
-| `.btn-secundario` | Botón con borde azul |
-| `.btn-peligro` | Botón rojo |
-| `.badge-aprobado` | Badge verde |
-| `.badge-denegado` | Badge rojo |
-| `.badge-pendiente` | Badge naranja |
-| `.badge-revision` | Badge azul claro |
-| `.campo-input` | Input de formulario estilizado |
-| `.campo-select` | Select estilizado |
-| `.campo-textarea` | Textarea estilizado |
+| `.badge-aprobado/denegado/pendiente/revision` | Badges de estado |
 | `.tabla` | Tabla con estilos institucionales |
 | `.alerta-success/error/warning/info` | Alertas de color |
 | `.grid-2/3/4` | Grillas CSS de 2, 3 o 4 columnas |
+| `.campo-input/select/textarea` | Inputs de formulario estilizados |
+
+**Iconos:** Lucide Icons (SVG). Se inicializan con `lucide.createIcons()`. Para elementos añadidos dinámicamente: `lucide.createIcons({ nodes: [elemento] })`.
 
 ---
 
-## 10. Sistema de notificaciones
-
-### Toast notifications (`static/js/toast.js`)
-
-Las notificaciones toast aparecen en la esquina superior derecha con animación de entrada y barra de progreso.
-
-**Cómo usar en JavaScript:**
-```javascript
-mostrarToast({
-  tipo: 'success',    // success, error, warning, info
-  titulo: 'Título',  // opcional
-  mensaje: 'Texto del mensaje',
-  duracion: 4000,    // ms, opcional (default: 4000)
-});
-```
-
-**Cómo Django envía mensajes que se convierten en toasts:**
-
-En `base.html`, los mensajes de Django se convierten en elementos HTML ocultos:
-```html
-<div id="django-messages" style="display:none;">
-  <span data-toast data-tipo="success" data-mensaje="Operación exitosa"></span>
-</div>
-```
-
-El archivo `toast.js` lee estos elementos en `DOMContentLoaded` y los convierte en toasts animados.
-
-### Notificaciones internas
-
-El modelo `Notificacion` almacena notificaciones en la BD. El contador en el navbar se actualiza cada 60 segundos mediante un fetch al endpoint `/notificaciones/contador/`.
-
----
-
-## 11. Sistema de licencias
-
-### Generación automática
-
-Cuando una solicitud pasa a estado `APROBADA`, sea por el operador o el especialista, se llama automáticamente a:
-
-```python
-from apps.licencias.servicios import generar_licencia
-generar_licencia(solicitud, usuario)
-```
-
-Esta función:
-1. Verifica que no exista ya una licencia para esta solicitud
-2. Parsea el JSON del F43 para extraer el período de importación
-3. Si es temporal, calcula `fecha_vencimiento = hoy + N meses` (usando `relativedelta`)
-4. Crea la licencia con número único `LIC-YYYY-NNNNN`
-
-### Documento imprimible
-
-La licencia en `templates/licencias/detalle.html` usa los mismos estilos de hoja A4 que el F43 (`static/css/f43.css` y `static/css/licencia.css`). Al imprimir (`window.print()`), se ocultan el sidebar, navbar y botones de acción, dejando solo el documento oficial.
-
-### Verificación de vencimiento
-
-El método `licencia.verificar_vencimiento()` se llama cada vez que se abre una licencia. Si la fecha de vencimiento ya pasó y el estado es `vigente`, lo cambia automáticamente a `vencida`.
-
----
-
-## 12. Catálogo de equipos
-
-### Búsqueda AJAX en F43
-
-El formulario F43 tiene un campo de búsqueda en cada fila de la tabla de equipos. Mientras el usuario escribe (con debounce de 300ms), se hace un fetch al endpoint:
-
-```
-GET /equipos/buscar/?q=samsung
-```
-
-Que retorna JSON con hasta 10 equipos que coincidan con nombre, marca o modelo.
-
-Si el equipo se encuentra, se autocompleta la fila con marca, modelo y se muestra un badge de estado (banda libre / restringida).
-
-Si no se encuentra, se muestra "No encontrado en catálogo" y la fila queda marcada con `data-listado="false"`, lo que hace que al guardar se marque `equipo_no_listado = True` en la solicitud.
-
-### Flujo de agregación al catálogo desde evaluación
-
-Cuando el especialista evalúa un equipo no listado y lo aprueba, puede marcar "Agregar al catálogo". El formulario de evaluación incluye campos adicionales (nombre, categoría, banda). Si el checkbox está marcado y la acción es "aprobar", la vista `evaluar_solicitud` crea el equipo en el catálogo automáticamente.
-
----
-
-## 13. Gestión de usuarios
-
-Solo el directivo puede crear y gestionar usuarios. El flujo es:
-
-1. Directivo accede a `/usuarios/nuevo/`
-2. Llena el formulario con nombre, apellidos, username, email, rol y contraseña
-3. El usuario puede hacer login inmediatamente
-4. El directivo puede cambiar la contraseña, editar datos o desactivar la cuenta en cualquier momento
-
-Los validadores de contraseña están desactivados en desarrollo (`AUTH_PASSWORD_VALIDATORS = []`) para facilitar la creación de usuarios de prueba.
-
-**IMPORTANTE para producción:** activar los validadores de contraseña en `settings.py`:
-```python
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-```
-
----
-
-## 14. Configuración del proyecto
-
-Esta sección guía a cualquier desarrollador desde cero hasta tener el sistema corriendo localmente con datos de prueba.
+## 10. Instalación y configuración
 
 ### Requisitos previos
 
 - Python 3.10 o superior
 - Git instalado
-- Conexión a internet para clonar el repositorio e instalar dependencias
 
----
-
-### Paso 1 — Clonar el repositorio
+### Pasos
 
 ```bash
+# 1. Clonar el repositorio
 git clone https://github.com/yerald0108/UPTCER.git
 cd UPTCER
-```
 
----
-
-### Paso 2 — Crear el entorno virtual
-
-```bash
-# Windows (PowerShell)
+# 2. Crear y activar entorno virtual
 python -m venv venv
 
-# Linux / Mac
-python3 -m venv venv
-```
-
----
-
-### Paso 3 — Activar el entorno virtual
-
-```bash
 # Windows (PowerShell)
 venv\Scripts\Activate.ps1
 
 # Linux / Mac
 source venv/bin/activate
+
+# 3. Instalar dependencias
+pip install -r requirements.txt
+
+# 4. Crear archivo .env en la raíz del proyecto
+# Contenido:
+# SECRET_KEY=clave-secreta-de-desarrollo-cambiar-en-produccion
+# DEBUG=True
+# ALLOWED_HOSTS=127.0.0.1,localhost
+
+# 5. Aplicar migraciones
+python manage.py migrate
+
+# 6. Poblar base de datos con datos de prueba
+python manage.py poblar_datos
+
+# 7. Arrancar el servidor
+python manage.py runserver
 ```
 
-Una vez activado, el prompt del terminal mostrará `(venv)` al inicio. Todos los comandos siguientes deben ejecutarse con el entorno activado.
+El sistema estará disponible en `http://127.0.0.1:8000`.
 
----
-
-### Paso 4 — Instalar las dependencias
+Para limpiar todos los datos y empezar desde cero:
 
 ```bash
-pip install -r requirements.txt
+python manage.py poblar_datos --limpiar
 ```
 
-Las dependencias del proyecto son:
+### Dependencias
 
 | Paquete | Versión | Para qué se usa |
-|---------|---------|-----------------|
+|---|---|---|
 | Django | 6.0.6 | Framework principal |
 | pillow | 12.2.0 | Procesamiento de imágenes |
-| python-decouple | 3.8 | Leer variables de entorno desde `.env` |
+| python-decouple | 3.8 | Variables de entorno desde `.env` |
 | python-dateutil | 2.9.0 | Calcular fechas de vencimiento de licencias |
 | sqlparse | 0.5.5 | Dependencia interna de Django |
 | tzdata | 2026.2 | Zonas horarias (America/Havana) |
 
 ---
 
-### Paso 5 — Crear el archivo `.env`
+## 11. Usuarios de prueba
 
-En la raíz del proyecto, crear un archivo llamado `.env` con el siguiente contenido:
-
-```env
-SECRET_KEY=clave-secreta-de-desarrollo-cambiar-en-produccion
-DEBUG=True
-ALLOWED_HOSTS=127.0.0.1,localhost
-```
-
-**Este archivo nunca debe subirse a git.** Ya está incluido en `.gitignore`.
-
----
-
-### Paso 6 — Aplicar las migraciones
-
-Crea la base de datos SQLite y todas las tablas del sistema:
-
-```bash
-python manage.py migrate
-```
-
-Si el comando termina sin errores, se habrá creado el archivo `db.sqlite3` en la raíz del proyecto.
-
----
-
-### Paso 7 — Poblar la base de datos con datos de prueba
-
-El proyecto incluye un comando que crea usuarios de todos los roles, un catálogo de equipos y solicitudes de ejemplo:
-
-```bash
-python manage.py poblar_datos
-```
-
-Este comando crea los siguientes usuarios listos para usar:
+El comando `poblar_datos` crea los siguientes usuarios:
 
 | Usuario | Contraseña | Rol |
-|---------|------------|-----|
-| `yerald` | `admin1234` | Directivo |
-| `directivo` | `admin1234` | Directivo |
-| `operador1` | `admin1234` | Operador |
-| `operador2` | `admin1234` | Operador |
-| `especialista` | `admin1234` | Especialista |
-| `aduana` | `admin1234` | Aduana |
-| `persona1` | `admin1234` | Persona natural |
-| `persona2` | `admin1234` | Persona natural |
-| `persona3` | `admin1234` | Persona natural |
+|---|---|---|
+| `directivo` | `directivo123` | Directivo |
+| `esp_radiofaro` | `especialista123` | Especialista Radiofaro |
+| `esp_movil` | `especialista123` | Especialista Móvil |
+| `esp_maritimo` | `especialista123` | Especialista Marítimo |
+| `esp_internet` | `especialista123` | Especialista Internet |
+| `esp_superior` | `superior123` | Especialista Superior |
+| `aduana` | `aduana123` | Aduana |
+| `persona1` | `persona123` | Persona Natural |
+| `persona2` | `persona123` | Persona Natural |
+| `persona3` | `persona123` | Persona Natural |
 
-También crea categorías de equipos, equipos en el catálogo y solicitudes F43 de ejemplo con diferentes estados para poder explorar todos los flujos del sistema desde el primer inicio.
-
----
-
-### Paso 8 — Arrancar el servidor de desarrollo
-
-```bash
-python manage.py runserver
-```
-
-El sistema estará disponible en `http://127.0.0.1:8000`.
-
-Iniciar sesión con cualquiera de los usuarios de la tabla anterior según el flujo que se quiera explorar.
+También crea 8 solicitudes de ejemplo con diferentes estados para explorar todos los flujos del sistema desde el primer inicio.
 
 ---
 
-### Resumen de comandos (referencia rápida)
-
-```bash
-git clone https://github.com/yerald0108/UPTCER.git
-cd UPTCER
-python -m venv venv
-venv\Scripts\Activate.ps1       # Windows
-python -m pip install -r requirements.txt
-# Crear .env con SECRET_KEY, DEBUG=True, ALLOWED_HOSTS
-python manage.py migrate
-python manage.py poblar_datos
-python manage.py runserver
-```
-
----
-
-## 15. Convenciones y buenas prácticas
+## 12. Convenciones y buenas prácticas
 
 ### Nombres en español
 
-Todo el código de negocio usa nombres en español para que el equipo cubano pueda entenderlo sin barreras:
-- Modelos: `Usuario`, `Solicitud`, `Licencia`, `Notificacion`
-- Vistas: `vista_login`, `nueva_solicitud_f43`, `cambiar_estado`
-- Templates: `dashboard_operador.html`, `mis_solicitudes.html`
-- CSS: `.sidebar-enlace`, `.campo-input`, `.btn-primario`
-
-### Nunca usar emojis en el código
-
-Todos los iconos son SVG de Lucide Icons. Se inicializan con:
-```javascript
-lucide.createIcons();
-```
-
-Para iconos añadidos dinámicamente (por JavaScript):
-```javascript
-lucide.createIcons({ nodes: [elemento] });
-```
+Todo el código de negocio usa nombres en español: modelos, vistas, templates, clases CSS.
 
 ### `@never_cache` en todas las vistas autenticadas
 
-Previene que el navegador guarde en caché páginas con datos sensibles:
 ```python
 @never_cache
 @login_required
@@ -988,42 +456,13 @@ def vista_dashboard(request):
     ...
 ```
 
-### Imports dentro de funciones cuando es necesario
-
-Para evitar importaciones circulares entre apps, algunos imports se hacen dentro de las funciones:
-```python
-def cambiar_estado(request, pk):
-    ...
-    from apps.licencias.servicios import generar_licencia
-    generar_licencia(solicitud, usuario)
-```
-
-### Datos del F43 como JSON
-
-Los datos del formulario F43 se guardan serializados en un solo campo JSON (`equipo_descripcion`) en lugar de crear decenas de columnas. Esto facilita agregar nuevos campos al formulario sin nuevas migraciones.
-
-Para leer estos datos en una vista:
-```python
-import json
-datos_f43 = json.loads(solicitud.equipo_descripcion or '{}')
-equipos = datos_f43.get('equipos', [])
-```
-
-Para leer en un template se usa el filter personalizado:
-```django
-{% load json_extras %}
-{% with d=solicitud.equipo_descripcion|parse_json %}
-  {{ d.nombre_apellidos }}
-{% endwith %}
-```
-
 ### Historial siempre registrado
 
-Cada cambio de estado SIEMPRE crea un `HistorialSolicitud`. Nunca cambiar el estado de una solicitud sin crear el historial:
+Cada cambio de estado SIEMPRE crea un `HistorialSolicitud`:
+
 ```python
 solicitud.estado = nuevo_estado
 solicitud.save()
-
 HistorialSolicitud.objects.create(
     solicitud       = solicitud,
     estado_anterior = estado_anterior,
@@ -1033,184 +472,63 @@ HistorialSolicitud.objects.create(
 )
 ```
 
-### Formulario F43 como hoja A4
+### Datos del F43 como JSON
 
-El formulario y el detalle de la solicitud se muestran como una hoja de papel A4 (`210mm × 297mm`) con `box-shadow` para dar sensación de documento físico. Al imprimir, los estilos `@media print` ocultan toda la interfaz web y dejan solo el documento limpio.
+Los datos del formulario F43 se guardan serializados en `equipo_descripcion`. Para leerlos en una vista:
 
----
-
-*Documentación generada para el equipo de desarrollo de UPTCER*
-*Ministerio de Comunicaciones — República de Cuba*
-*Sistema desarrollado con Django + Python*
-
----
-
-## 17. Sistema de tests automatizados
-
-UPTCER tiene una suite completa de **149 tests automatizados** que cubren modelos, vistas, servicios y flujos completos de punta a punta. Todos los tests pasan al 100%.
-
-### Resumen de cobertura
-
-| App | Tests | Qué cubre |
-|-----|-------|-----------|
-| `accounts` | 33 | Modelo Usuario, login/logout, dashboards por rol, gestión de usuarios |
-| `solicitudes` | 40 | Modelo Solicitud, historial, control de acceso, cambio de estado, flujos completos, especialista |
-| `equipos` | 29 | Modelo Equipo y Categoría, catálogo, búsqueda AJAX, permisos |
-| `licencias` | 25 | Modelo Licencia, generación automática, vencimiento, revocación, permisos |
-| `notificaciones` | 22 | Modelo Notificación, servicios, vistas, contador AJAX |
-| **Total** | **149** | **Sistema completo** |
-
----
-
-### Cómo ejecutar los tests
-
-#### Ejecutar todos los tests del sistema (recomendado)
-
-```bash
-python manage.py test apps
+```python
+import json
+datos_f43 = json.loads(solicitud.equipo_descripcion or '{}')
+equipos = datos_f43.get('equipos', [])
 ```
 
-#### Ejecutar tests de una app específica
+### Asignación automática de categoría
+
+La función `_resolver_categoria_y_estado()` en `solicitudes/views.py` determina la categoría de una solicitud analizando los equipos declarados en el F43. Si el equipo está en el catálogo, lee su categoría y la mapea al rol del especialista correspondiente. Si no está en el catálogo, marca `equipo_no_listado=True` y asigna estado `en_revision_superior`.
+
+### Flujo factura → licencia
+
+Al aprobar una solicitud se genera la **factura** (no la licencia). La licencia se genera solo al registrar el **pago** de la factura. Esto se maneja en `apps/licencias/servicios.py`:
+
+```python
+# Al aprobar: genera factura
+generar_factura(solicitud, usuario)
+
+# Al pagar: genera licencia
+registrar_pago(factura, usuario)  # Internamente llama a generar_licencia()
+```
+
+---
+
+## 13. Tests automatizados
+
+El sistema tiene una suite de **149 tests automatizados**.
 
 ```bash
-# Solo accounts (login, usuarios, dashboards)
+# Ejecutar todos los tests
+python manage.py test apps
+
+# Con salida detallada
+python manage.py test apps --verbosity=2
+
+# Por app específica
 python manage.py test apps.accounts
-
-# Solo solicitudes (F43, estados, flujos)
 python manage.py test apps.solicitudes
-
-# Solo equipos (catálogo, búsqueda)
 python manage.py test apps.equipos
-
-# Solo licencias (generación, revocación)
 python manage.py test apps.licencias
-
-# Solo notificaciones (servicios, contador)
 python manage.py test apps.notificaciones
 ```
 
-#### Ejecutar con salida detallada (ver cada test individualmente)
-
-```bash
-python manage.py test apps --verbosity=2
-```
-
-#### Ejecutar un test específico
-
-```bash
-# Formato: python manage.py test apps.<app>.tests.<Clase>.<método>
-python manage.py test apps.solicitudes.tests.FlujoF43CompletoTest.test_flujo_completo_f43_aprobacion
-python manage.py test apps.accounts.tests.LoginViewTest.test_login_correcto_redirige_dashboard
-python manage.py test apps.licencias.tests.LicenciaModelTest.test_licencia_temporal_6_meses
-```
-
-#### Ejecutar múltiples apps a la vez
-
-```bash
-python manage.py test apps.licencias apps.notificaciones
-python manage.py test apps.accounts apps.solicitudes
-```
+| App | Tests |
+|---|---|
+| accounts | 33 |
+| solicitudes | 40 |
+| equipos | 29 |
+| licencias | 25 |
+| notificaciones | 22 |
+| **Total** | **149** |
 
 ---
 
-### Estructura de los tests
-
-Cada app tiene su archivo `tests.py` organizado en clases por responsabilidad:
-
-```
-apps/accounts/tests.py
-  ├── UsuarioModelTest          ← Tests del modelo Usuario (roles, propiedades, __str__)
-  ├── LoginViewTest             ← Tests de login/logout
-  ├── DashboardViewTest         ← Tests de redirección al dashboard correcto por rol
-  └── GestionUsuariosTest       ← Tests de crear, editar, activar/desactivar usuarios
-
-apps/solicitudes/tests.py
-  ├── SolicitudModelTest        ← Tests del modelo Solicitud (número, estados, badges)
-  ├── HistorialSolicitudModelTest ← Tests del modelo HistorialSolicitud
-  ├── SolicitudAccesoTest       ← Tests de control de acceso por rol
-  ├── CambioEstadoTest          ← Tests de cambio de estado con historial y licencia
-  ├── FlujoF43CompletoTest      ← Tests de flujo completo de punta a punta
-  └── FlujoEspecialistaTest     ← Tests de cola de evaluaciones del especialista
-
-apps/equipos/tests.py
-  ├── CategoriaEquipoModelTest  ← Tests del modelo CategoriaEquipo
-  ├── EquipoModelTest           ← Tests del modelo Equipo (propiedades, unicidad)
-  ├── EquipoVistaTest           ← Tests de lista, detalle, crear, desactivar, AJAX
-  └── CategoriaVistaTest        ← Tests de gestión de categorías
-
-apps/licencias/tests.py
-  ├── LicenciaModelTest         ← Tests del modelo Licencia (generación, vencimiento)
-  └── LicenciaVistaTest         ← Tests de lista, detalle, revocar, permisos
-
-apps/notificaciones/tests.py
-  ├── NotificacionModelTest     ← Tests del modelo Notificacion (marcar leída, iconos)
-  ├── ServiciosNotificacionTest ← Tests de todos los servicios de notificación
-  └── NotificacionVistaTest     ← Tests de lista, contador AJAX, permisos
-```
-
----
-
-### Bugs encontrados y corregidos durante los tests
-
-Los tests no solo verifican que el sistema funciona — también descubrieron **bugs reales de seguridad** que fueron corregidos:
-
-| Bug | Descripción | Corrección |
-|-----|-------------|------------|
-| **Bug 1** | Una persona natural podía cambiar el estado de una solicitud enviando un POST directo a `/solicitudes/<pk>/estado/` sin pasar por la interfaz | Se agregó verificación de rol al inicio de `cambiar_estado()` en `apps/solicitudes/views.py` |
-| **Bug 2** | Una solicitud ya resuelta (aprobada o denegada) podía cambiar de estado si se enviaba un POST directo a la URL — el formulario no aparecía en el template pero la vista no lo bloqueaba | Se agregó validación `if solicitud.esta_resuelta` al inicio de `cambiar_estado()` |
-| **Bug 3** | `JsonResponse` no estaba importado globalmente en `solicitudes/views.py`, lo que causaba un `UnboundLocalError` al usar AJAX | Se movió el import al inicio del archivo |
-
----
-
-### Buenas prácticas para escribir nuevos tests
-
-Cuando se añada nueva funcionalidad al sistema, seguir estas convenciones:
-
-**1. Usar las factories existentes**
-
-Cada `tests.py` tiene funciones `crear_usuario()` y `crear_solicitud()` al inicio. Reutilizarlas en vez de crear objetos directamente en cada test.
-
-```python
-# Bien
-persona = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-
-# Evitar
-persona = Usuario.objects.create_user(username='persona', email='...', ...)
-```
-
-**2. Un test, una cosa**
-
-Cada método de test verifica exactamente una cosa. El nombre del método debe describir exactamente qué se está verificando.
-
-```python
-# Bien — nombre descriptivo y test enfocado
-def test_operador_puede_cambiar_estado(self):
-    ...
-
-# Evitar — demasiado en un solo test
-def test_operador(self):
-    # verifica login, cambio de estado, y creación de usuario
-    ...
-```
-
-**3. Verificar el lado negativo también**
-
-Por cada permiso que se otorga, verificar que quien no debe tenerlo tampoco lo tiene.
-
-```python
-def test_nuevo_equipo_accesible_para_operador(self):
-    # Lado positivo
-    ...
-
-def test_nuevo_equipo_denegado_para_persona_natural(self):
-    # Lado negativo — igual de importante
-    ...
-```
-
-**4. Ejecutar los tests antes de hacer commit**
-
-```bash
-python manage.py test apps
-```
-
-Si algún test falla, el cambio rompió algo. Corregir antes de continuar.
+*Sistema desarrollado con Django + Python*
+*Ministerio de Comunicaciones — República de Cuba*

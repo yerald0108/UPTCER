@@ -76,7 +76,7 @@
           <i data-lucide="printer" style="width:16px;height:16px;"></i>
           Imprimir / PDF
         </button>
-        {% if user.es_operador or user.es_directivo %}
+        {% if user.es_directivo %}
           {% if licencia.estado == 'vigente' %}
           <button type="button" onclick="abrirModal('modal-revocar')" class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">
             <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
@@ -131,12 +131,54 @@
       <thead><tr><th colspan="4">II. Datos de la Autorización</th></tr></thead>
       <tbody>
         <tr><td class="f43-campo-label" style="width:25%;">Número de solicitud</td><td style="font-family:monospace;">{{ solicitud.numero }}</td><td class="f43-campo-label" style="width:20%;">Tipo de flujo</td><td>{{ solicitud.get_flujo_display }}</td></tr>
-        <tr><td class="f43-campo-label">Provincia</td><td>{{ datos_f43.provincia|default:"—"|capfirst }}</td><td class="f43-campo-label">Modo de importación</td><td>{{ datos_f43.modo_importacion|default:"—"|capfirst }}</td></tr>
+        <tr>
+          <td class="f43-campo-label">Provincia</td>
+          <td>
+            {% with p=datos_f43.provincia %}
+              {% if p == 'pinar_del_rio' %}Pinar del Río
+              {% elif p == 'artemisa' %}Artemisa
+              {% elif p == 'la_habana' %}La Habana
+              {% elif p == 'mayabeque' %}Mayabeque
+              {% elif p == 'matanzas' %}Matanzas
+              {% elif p == 'cienfuegos' %}Cienfuegos
+              {% elif p == 'villa_clara' %}Villa Clara
+              {% elif p == 'sancti_spiritus' %}Sancti Spíritus
+              {% elif p == 'ciego_de_avila' %}Ciego de Ávila
+              {% elif p == 'camaguey' %}Camagüey
+              {% elif p == 'las_tunas' %}Las Tunas
+              {% elif p == 'granma' %}Granma
+              {% elif p == 'holguin' %}Holguín
+              {% elif p == 'santiago_de_cuba' %}Santiago de Cuba
+              {% elif p == 'guantanamo' %}Guantánamo
+              {% elif p == 'isla_de_la_juventud' %}Isla de la Juventud
+              {% else %}{{ p|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+          <td class="f43-campo-label">Modo de importación</td>
+          <td>
+            {% with m=datos_f43.modo_importacion %}
+              {% if m == 'equipaje' %}Equipaje acompañante
+              {% elif m == 'rad' %}Documento de Retención Aduanal (RAD)
+              {% elif m == 'carga' %}Carga acompañante
+              {% else %}{{ m|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
         <tr><td class="f43-campo-label">Fecha de emisión</td><td>{{ licencia.fecha_emision|date:"d/m/Y" }}</td><td class="f43-campo-label">Tipo de importación</td><td>{% if licencia.es_temporal %}Temporal{% else %}Definitiva{% endif %}</td></tr>
         {% if licencia.fecha_vencimiento %}
         <tr><td class="f43-campo-label">Fecha de vencimiento</td><td colspan="3"><span style="{% if not licencia.es_vigente %}color:#C62828;font-weight:bold;{% endif %}">{{ licencia.fecha_vencimiento|date:"d/m/Y" }}{% if not licencia.es_vigente %} — VENCIDA{% endif %}</span></td></tr>
         {% endif %}
-        <tr><td class="f43-campo-label">Objetivo</td><td colspan="3">{{ datos_f43.objetivo_importacion|default:"—"|capfirst }}{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}</td></tr>
+                <tr>
+          <td class="f43-campo-label">Objetivo</td>
+          <td colspan="3">
+            {% with o=datos_f43.objetivo_importacion %}
+              {% if o == 'empleo_directo' %}Empleo directo
+              {% elif o == 'muestra_expositiva' %}Muestra expositiva
+              {% elif o == 'otros' %}Otros{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}
+              {% else %}{{ o|default:"—" }}{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
         <tr><td class="f43-campo-label">Emitida por</td><td colspan="3">{{ licencia.emitida_por.get_nombre_completo }} — {{ licencia.emitida_por.get_rol_display }}</td></tr>
       </tbody>
     </table>

@@ -25,18 +25,24 @@ class UsuarioManager(BaseUserManager):
 class Usuario(AbstractBaseUser, PermissionsMixin):
 
     # ─── Roles del sistema ────────────────────────────────────────────────────
-    ROL_PERSONA_NATURAL  = 'persona_natural'
-    ROL_OPERADOR         = 'operador'
-    ROL_ESPECIALISTA     = 'especialista'
-    ROL_ADUANA           = 'aduana'
-    ROL_DIRECTIVO        = 'directivo'
+    ROL_PERSONA_NATURAL      = 'persona_natural'
+    ROL_ESPECIALISTA_RADIOFARO = 'especialista_radiofaro'
+    ROL_ESPECIALISTA_MOVIL     = 'especialista_movil'
+    ROL_ESPECIALISTA_MARITIMO  = 'especialista_maritimo'
+    ROL_ESPECIALISTA_INTERNET  = 'especialista_internet'
+    ROL_ESPECIALISTA_SUPERIOR  = 'especialista_superior'
+    ROL_ADUANA               = 'aduana'
+    ROL_DIRECTIVO            = 'directivo'
 
     ROLES = [
-        (ROL_PERSONA_NATURAL, 'Persona Natural'),
-        (ROL_OPERADOR,        'Operador'),
-        (ROL_ESPECIALISTA,    'Especialista Técnico'),
-        (ROL_ADUANA,          'Aduana'),
-        (ROL_DIRECTIVO,       'Directivo'),
+        (ROL_PERSONA_NATURAL,        'Persona Natural'),
+        (ROL_ESPECIALISTA_RADIOFARO, 'Especialista Radiofaro'),
+        (ROL_ESPECIALISTA_MOVIL,     'Especialista Móvil'),
+        (ROL_ESPECIALISTA_MARITIMO,  'Especialista Marítimo'),
+        (ROL_ESPECIALISTA_INTERNET,  'Especialista Internet'),
+        (ROL_ESPECIALISTA_SUPERIOR,  'Especialista Superior'),
+        (ROL_ADUANA,                 'Aduana'),
+        (ROL_DIRECTIVO,              'Directivo'),
     ]
 
     # ─── Campos ───────────────────────────────────────────────────────────────
@@ -69,18 +75,40 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def get_nombre_completo(self):
         return f'{self.nombre} {self.apellidos}'
 
-    # ─── Helpers de rol ───────────────────────────────────────────────────────
+    # ─── Helpers de rol ───────────────────────────────────────────────────────────
     @property
     def es_persona_natural(self):
         return self.rol == self.ROL_PERSONA_NATURAL
 
     @property
-    def es_operador(self):
-        return self.rol == self.ROL_OPERADOR
+    def es_especialista_radiofaro(self):
+        return self.rol == self.ROL_ESPECIALISTA_RADIOFARO
 
     @property
-    def es_especialista(self):
-        return self.rol == self.ROL_ESPECIALISTA
+    def es_especialista_movil(self):
+        return self.rol == self.ROL_ESPECIALISTA_MOVIL
+
+    @property
+    def es_especialista_maritimo(self):
+        return self.rol == self.ROL_ESPECIALISTA_MARITIMO
+
+    @property
+    def es_especialista_internet(self):
+        return self.rol == self.ROL_ESPECIALISTA_INTERNET
+
+    @property
+    def es_especialista_superior(self):
+        return self.rol == self.ROL_ESPECIALISTA_SUPERIOR
+
+    @property
+    def es_especialista_base(self):
+        """True solo para los 4 especialistas de área (no el superior)."""
+        return self.rol in [
+            self.ROL_ESPECIALISTA_RADIOFARO,
+            self.ROL_ESPECIALISTA_MOVIL,
+            self.ROL_ESPECIALISTA_MARITIMO,
+            self.ROL_ESPECIALISTA_INTERNET,
+        ]
 
     @property
     def es_aduana(self):
@@ -89,3 +117,8 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     @property
     def es_directivo(self):
         return self.rol == self.ROL_DIRECTIVO
+
+    @property
+    def es_operador(self):
+        """Compatibilidad temporal — siempre False, el rol fue eliminado."""
+        return False

@@ -13,12 +13,70 @@ from .forms import FormularioF43
 from apps.notificaciones.servicios import (
     notificar_solicitud_nueva,
     notificar_cambio_estado,
-    notificar_derivacion_especialista,
+    notificar_derivacion_superior,
     notificar_criterio_tecnico,
+    notificar_pendiente_aprobacion,
 )
-from apps.licencias.servicios import generar_licencia
+from apps.licencias.servicios import generar_factura, generar_licencia
 from apps.equipos.models import Equipo, CategoriaEquipo
 
+# ─── Resolver categoría y estado según equipos declarados ────────────────────
+def _resolver_categoria_y_estado(equipos):
+    """
+    Analiza los equipos declarados en el F43 y determina:
+    - La categoría de especialidad (según el primer equipo listado del catálogo)
+    - El estado inicial de la solicitud
+    - Si hay equipos no listados
+
+    Reglas:
+    - Si todos los equipos son del catálogo → ENVIADA al especialista de área
+    - Si algún equipo NO está en el catálogo → EN_REVISION_SUPERIOR directo
+    - La categoría se obtiene del modelo Equipo en la base de datos
+    """
+    from apps.equipos.models import Equipo
+
+    # Mapa de categoría de equipo → categoría de solicitud
+    # Ajusta este mapa según las categorías reales de tu catálogo
+    CATEGORIA_EQUIPO_MAP = {
+        'Teléfonos móviles':       Solicitud.CATEGORIA_MOVIL,
+        'Routers y access points': Solicitud.CATEGORIA_INTERNET,
+        'Tablets y computadoras':  Solicitud.CATEGORIA_INTERNET,
+        'Equipos de radio':        Solicitud.CATEGORIA_RADIOFARO,
+        'Cámaras y vigilancia':    Solicitud.CATEGORIA_INTERNET,
+        'Wearables y accesorios':  Solicitud.CATEGORIA_MOVIL,
+        'Equipos satelitales':     Solicitud.CATEGORIA_MARITIMO,
+        'Modems y equipos de red': Solicitud.CATEGORIA_INTERNET,
+    }
+
+    hay_no_listado = False
+    categoria      = ''
+
+    for equipo_data in equipos:
+        listado   = equipo_data.get('listado', False)
+        equipo_id = equipo_data.get('equipoId', '')
+
+        if not listado or not equipo_id:
+            # Equipo no listado en catálogo
+            hay_no_listado = True
+        else:
+            # Equipo del catálogo — leer su categoría
+            if not categoria:
+                try:
+                    equipo_obj = Equipo.objects.select_related('categoria').get(pk=equipo_id)
+                    nombre_cat = equipo_obj.categoria.nombre
+                    categoria  = CATEGORIA_EQUIPO_MAP.get(nombre_cat, Solicitud.CATEGORIA_INTERNET)
+                except Equipo.DoesNotExist:
+                    hay_no_listado = True
+
+    # Determinar estado inicial
+    if hay_no_listado:
+        estado = Solicitud.ESTADO_EN_REVISION_SUPERIOR
+    else:
+        estado = Solicitud.ESTADO_ENVIADA
+
+    # Si no se pudo determinar categoría, dejar vacía
+    # (el especialista superior la asignará)
+    return categoria, estado, hay_no_listado
 
 # ─── Nueva solicitud F43 ──────────────────────────────────────────────────────
 @never_cache
@@ -45,10 +103,15 @@ def nueva_solicitud_f43(request):
                     'equipos_iniciales': equipos_json,
                 })
 
+            # Determinar categoría y estado según equipos declarados
+            categoria, estado_inicial, hay_no_listado = _resolver_categoria_y_estado(equipos)
+
             solicitud = Solicitud(
                 flujo       = Solicitud.FLUJO_F43,
-                estado      = Solicitud.ESTADO_ENVIADA,
+                categoria   = categoria,
+                estado      = estado_inicial,
                 solicitante = request.user,
+                equipo_no_listado = hay_no_listado,
                 observaciones_solicitante = form.cleaned_data.get('observaciones_solicitante', ''),
             )
 
@@ -86,17 +149,17 @@ def nueva_solicitud_f43(request):
             HistorialSolicitud.objects.create(
                 solicitud       = solicitud,
                 estado_anterior = '',
-                estado_nuevo    = Solicitud.ESTADO_ENVIADA,
+                estado_nuevo    = estado_inicial,
                 usuario         = request.user,
                 observacion     = 'Solicitud creada y enviada por el solicitante.',
             )
 
-            # Notificar a operadores
+            # Notificar al especialista correspondiente
             notificar_solicitud_nueva(solicitud)
 
             messages.success(
                 request,
-                f'Solicitud {solicitud.numero} enviada correctamente. El operador la revisará en breve.'
+                f'Solicitud {solicitud.numero} enviada correctamente. El especialista la revisará en breve.'
             )
             return redirect('solicitudes:detalle', pk=solicitud.pk)
 
@@ -173,10 +236,10 @@ def detalle_solicitud(request, pk):
         'datos_f43': datos_f43,
         'equipos':   equipos,
         'historial': historial,
-        'puede_gestionar': usuario.es_operador or usuario.es_directivo,
-        'puede_evaluar':   usuario.es_especialista,
+        'puede_gestionar':  usuario.es_directivo,
+        'puede_evaluar':    usuario.es_especialista_base,
+        'puede_eval_sup':   usuario.es_especialista_superior,
         'ESTADOS': Solicitud.ESTADOS,
-        'volver_url': request.GET.get('volver', ''),
     }
 
     return render(request, 'solicitudes/detalle.html', contexto)
@@ -192,7 +255,7 @@ def cambiar_estado(request, pk):
     solicitud = get_object_or_404(Solicitud, pk=pk)
     usuario   = request.user
 
-    if not (usuario.es_operador or usuario.es_directivo or usuario.es_especialista):
+    if not (usuario.es_especialista or usuario.es_directivo):
         messages.error(request, 'No tiene permisos para realizar esta acción.')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': False, 'error': 'Sin permisos.'}, status=403)
@@ -221,13 +284,10 @@ def cambiar_estado(request, pk):
     if estado_nuevo in [Solicitud.ESTADO_APROBADA, Solicitud.ESTADO_DENEGADA]:
         solicitud.fecha_resolucion = timezone.now()
 
-    if not solicitud.operador_asignado and usuario.es_operador:
-        solicitud.operador_asignado = usuario
-
     if observacion:
         if usuario.es_especialista:
             solicitud.observaciones_tecnicas = observacion
-        else:
+        elif usuario.es_directivo:
             solicitud.observaciones_operador = observacion
 
     solicitud.save()
@@ -244,17 +304,21 @@ def cambiar_estado(request, pk):
     # Notificaciones automáticas
     notificar_cambio_estado(solicitud, estado_anterior, usuario)
 
-    # Si se deriva al especialista
-    if estado_nuevo == Solicitud.ESTADO_EN_REVISION and solicitud.equipo_no_listado:
-        notificar_derivacion_especialista(solicitud)
+    # Si se deriva al especialista superior
+    if estado_nuevo == Solicitud.ESTADO_EN_REVISION_SUPERIOR and solicitud.equipo_no_listado:
+        notificar_derivacion_superior(solicitud)
 
-    # Si el especialista emitió criterio técnico
-    if usuario.es_especialista and observacion:
+    # Si el especialista superior emitió criterio técnico
+    if usuario.es_especialista_superior and observacion:
         notificar_criterio_tecnico(solicitud)
 
-    # Generar licencia automáticamente si la solicitud fue aprobada
+    # Notificar al directivo si está pendiente de aprobación
+    if estado_nuevo == Solicitud.ESTADO_PENDIENTE_APROBACION:
+        notificar_pendiente_aprobacion(solicitud)
+
+    # Al aprobar el directivo se genera la factura (la licencia se genera al pagar)
     if estado_nuevo == Solicitud.ESTADO_APROBADA:
-        generar_licencia(solicitud, usuario)
+        generar_factura(solicitud, usuario)
 
     messages.success(
         request,
@@ -281,21 +345,46 @@ def cambiar_estado(request, pk):
     return redirect('solicitudes:detalle', pk=pk)
 
 
-# ─── Lista de solicitudes (operador/directivo) ────────────────────────────────
+# ─── Lista de solicitudes ─────────────────────────────────────────────────────
 @never_cache
 @login_required
 def lista_solicitudes(request):
     usuario = request.user
 
-    if not (usuario.es_operador or usuario.es_directivo or usuario.es_especialista):
+    if not (usuario.es_especialista_base or usuario.es_especialista_superior or usuario.es_directivo):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
     solicitudes_qs = Solicitud.objects.select_related(
-        'solicitante', 'operador_asignado'
+        'solicitante'
     ).order_by('-fecha_creacion')
 
-    # Filtros
+    # Filtro automático por categoría según rol del especialista
+    CATEGORIA_ROL = {
+        'especialista_radiofaro': 'radiofaro',
+        'especialista_movil':     'movil',
+        'especialista_maritimo':  'maritimo',
+        'especialista_internet':  'internet',
+    }
+
+    if usuario.es_especialista_base:
+        # Cada especialista solo ve su categoría en estado enviada o en revisión
+        categoria_usuario = CATEGORIA_ROL.get(usuario.rol, '')
+        solicitudes_qs = solicitudes_qs.filter(
+            categoria=categoria_usuario,
+            estado__in=[
+                Solicitud.ESTADO_ENVIADA,
+                Solicitud.ESTADO_EN_REVISION,
+            ]
+        )
+    elif usuario.es_especialista_superior:
+        # El especialista superior solo ve las escaladas a él
+        solicitudes_qs = solicitudes_qs.filter(
+            estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR
+        )
+    # El directivo ve todas
+
+    # Filtros manuales adicionales
     estado = request.GET.get('estado', '')
     flujo  = request.GET.get('flujo', '')
     q      = request.GET.get('q', '').strip()
@@ -305,7 +394,6 @@ def lista_solicitudes(request):
     if flujo:
         solicitudes_qs = solicitudes_qs.filter(flujo=flujo)
 
-    # Filtro por fechas
     fecha_desde = request.GET.get('fecha_desde', '')
     fecha_hasta = request.GET.get('fecha_hasta', '')
     if fecha_desde:
@@ -320,13 +408,14 @@ def lista_solicitudes(request):
             Q(solicitante__apellidos__icontains=q)
         )
 
-    # Filtro de supervisión directiva
+    # Filtro de supervisión directiva (solo directivo)
     supervision = request.GET.get('supervision', '')
-    if supervision == 'revisadas':
-        solicitudes_qs = solicitudes_qs.filter(revisada_directivo=True)
-    elif supervision == 'pendientes':
-        solicitudes_qs = solicitudes_qs.filter(revisada_directivo=False)
-    
+    if usuario.es_directivo:
+        if supervision == 'revisadas':
+            solicitudes_qs = solicitudes_qs.filter(revisada_directivo=True)
+        elif supervision == 'pendientes':
+            solicitudes_qs = solicitudes_qs.filter(revisada_directivo=False)
+
     paginator = Paginator(solicitudes_qs, 15)
     pagina    = request.GET.get('pagina', 1)
 
@@ -337,9 +426,6 @@ def lista_solicitudes(request):
     except EmptyPage:
         solicitudes = paginator.page(paginator.num_pages)
 
-    # Ya no se necesita el bucle: dias_en_cola es propiedad del modelo
-
-    # Si es una petición AJAX, devolver solo el HTML de la tabla
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render(request, 'solicitudes/tabla_solicitudes.html', {
             'solicitudes':   solicitudes,
@@ -364,18 +450,18 @@ def lista_solicitudes(request):
     })
 
 
-# ─── Cola de evaluaciones del especialista ────────────────────────────────────
+# ─── Cola de evaluaciones del especialista superior ───────────────────────────
 @never_cache
 @login_required
 def cola_evaluaciones(request):
-    if not request.user.es_especialista:
+    if not request.user.es_especialista_superior:
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
-    # Pendientes con paginación
+    # Pendientes: equipos no listados escalados al superior
     pendientes_qs = Solicitud.objects.filter(
         equipo_no_listado=True,
-        estado=Solicitud.ESTADO_EN_REVISION
+        estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR
     ).select_related('solicitante').order_by('fecha_creacion')
 
     paginator_pendientes = Paginator(pendientes_qs, 10)
@@ -388,10 +474,14 @@ def cola_evaluaciones(request):
     except EmptyPage:
         pendientes = paginator_pendientes.page(paginator_pendientes.num_pages)
 
-    # Completadas con paginación
+    # Completadas por el superior
     completadas_qs = Solicitud.objects.filter(
         equipo_no_listado=True,
-        estado__in=[Solicitud.ESTADO_APROBADA, Solicitud.ESTADO_DENEGADA]
+        estado__in=[
+            Solicitud.ESTADO_PENDIENTE_APROBACION,
+            Solicitud.ESTADO_APROBADA,
+            Solicitud.ESTADO_DENEGADA,
+        ]
     ).select_related('solicitante').order_by('-fecha_resolucion')
 
     paginator_completadas = Paginator(completadas_qs, 10)
@@ -405,30 +495,30 @@ def cola_evaluaciones(request):
         completadas = paginator_completadas.page(paginator_completadas.num_pages)
 
     return render(request, 'solicitudes/especialista/cola.html', {
-        'pendientes': pendientes,
-        'completadas': completadas,
-        'total_pendientes': pendientes_qs.count(),
-        'paginator_pendientes': paginator_pendientes,
-        'paginator_completadas': paginator_completadas,
+        'pendientes':             pendientes,
+        'completadas':            completadas,
+        'total_pendientes':       pendientes_qs.count(),
+        'paginator_pendientes':   paginator_pendientes,
+        'paginator_completadas':  paginator_completadas,
     })
 
 # ─── Vista de evaluación técnica ──────────────────────────────────────────────
 @never_cache
 @login_required
 def evaluar_solicitud(request, pk):
-    if not request.user.es_especialista:
+    if not request.user.es_especialista_superior:
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('accounts:dashboard')
 
     solicitud = get_object_or_404(Solicitud, pk=pk)
 
     if not solicitud.equipo_no_listado:
-        messages.error(request, 'Esta solicitud no requiere evaluación técnica.')
+        messages.error(request, 'Esta solicitud no requiere evaluación de equipo no listado.')
         return redirect('solicitudes:detalle', pk=pk)
 
-    # No permitir re-evaluar solicitudes ya resueltas
-    if solicitud.esta_resuelta:
-        messages.error(request, 'Esta solicitud ya fue evaluada y no puede modificarse.')
+    # Solo se puede evaluar si está en revisión superior
+    if solicitud.estado != Solicitud.ESTADO_EN_REVISION_SUPERIOR:
+        messages.error(request, 'Esta solicitud no está en estado de revisión superior.')
         return redirect('solicitudes:detalle', pk=pk)
 
     datos_f43 = {}
@@ -458,7 +548,7 @@ def evaluar_solicitud(request, pk):
 
         estado_anterior = solicitud.estado
         estado_nuevo    = (
-            Solicitud.ESTADO_APROBADA if accion == 'aprobar'
+            Solicitud.ESTADO_PENDIENTE_APROBACION if accion == 'aprobar'
             else Solicitud.ESTADO_DENEGADA
         )
 
@@ -488,10 +578,10 @@ def evaluar_solicitud(request, pk):
         notificar_cambio_estado(solicitud, estado_anterior, request.user)
         notificar_criterio_tecnico(solicitud)
 
-        # Generar licencia si se aprueba
-        if estado_nuevo == Solicitud.ESTADO_APROBADA:
-            generar_licencia(solicitud, request.user)
-
+        # Si el superior aprobó, notificar al directivo para aprobación final
+        if estado_nuevo == Solicitud.ESTADO_PENDIENTE_APROBACION:
+            notificar_pendiente_aprobacion(solicitud)
+            
         # Agregar equipo al catálogo si se solicitó
         if agregar_catalogo and accion == 'aprobar':
             nombre_equipo = request.POST.get('cat_nombre', '').strip()
@@ -518,11 +608,16 @@ def evaluar_solicitud(request, pk):
                 except CategoriaEquipo.DoesNotExist:
                     pass
 
-        accion_texto = 'aprobada' if accion == 'aprobar' else 'denegada'
-        messages.success(
-            request,
-            f'Solicitud {solicitud.numero} {accion_texto} con criterio técnico registrado.'
-        )
+        if accion == 'aprobar':
+            messages.success(
+                request,
+                f'Solicitud {solicitud.numero} evaluada correctamente. Pendiente de aprobación por el directivo.'
+            )
+        else:
+            messages.success(
+                request,
+                f'Solicitud {solicitud.numero} denegada con criterio técnico registrado.'
+            )
         return redirect('solicitudes:cola_evaluaciones')
 
     categorias = CategoriaEquipo.objects.all()
