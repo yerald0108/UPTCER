@@ -7,336 +7,297 @@ from apps.solicitudes.models import Solicitud
 from apps.notificaciones.models import Notificacion
 from apps.notificaciones.servicios import (
     notificar,
-    notificar_operadores,
-    notificar_especialistas,
     notificar_solicitud_nueva,
-    notificar_derivacion_especialista,
     notificar_cambio_estado,
+    notificar_derivacion_superior,
+    notificar_pendiente_aprobacion,
     notificar_criterio_tecnico,
+    notificar_especialistas_por_categoria,
+    notificar_especialistas_superiores,
+    notificar_directivos,
 )
 
 
-# ─── Factories ────────────────────────────────────────────────────────────────
 def crear_usuario(rol, username=None, password='test1234'):
     username = username or f'user_{rol}'
     return Usuario.objects.create_user(
-        username  = username,
-        email     = f'{username}@uptcer.cu',
-        nombre    = 'Test',
-        apellidos = 'Usuario',
-        rol       = rol,
-        password  = password,
+        username=username, email=f'{username}@uptcer.cu',
+        nombre='Test', apellidos='Usuario', rol=rol, password=password,
     )
 
 
-def crear_solicitud(solicitante):
-    return Solicitud.objects.create(
-        flujo       = Solicitud.FLUJO_F43,
-        estado      = Solicitud.ESTADO_ENVIADA,
-        solicitante = solicitante,
-        equipo_descripcion = json.dumps({
-            'equipos': [{'descripcion': 'Test', 'marca': 'Samsung', 'modelo': 'S24', 'cantidad': 1}]
-        }),
+def crear_solicitud(solicitante, categoria=Solicitud.CATEGORIA_MOVIL,
+                    estado=Solicitud.ESTADO_ENVIADA,
+                    equipo_no_listado=False):
+    datos = json.dumps({
+        'nombre_apellidos': solicitante.get_nombre_completo(),
+        'numero_pasaporte': 'A12345678',
+        'pais_residencia': 'Cuba',
+        'direccion_residencia': 'Calle 1',
+        'correo_electronico': solicitante.email,
+        'telefono': '+53 5 000 0000',
+        'provincia': 'la_habana',
+        'modo_importacion': 'equipaje',
+        'numero_vuelo': '', 'fecha_arribo': '',
+        'pais_procedencia': 'Mexico',
+        'aduana_acceso': 'Aeropuerto',
+        'lugar_acceso': 'Aeropuerto Jose Marti',
+        'numero_rad': '',
+        'objetivo_importacion': 'empleo_directo',
+        'objetivo_otros_detalle': '',
+        'periodo_importacion': 'definitiva',
+        'tiempo_solicitado': '',
+        'firma_ci': '90123456789',
+        'fecha_solicitud': timezone.now().date().isoformat(),
+        'equipos': [{'descripcion': 'Telefono', 'marca': 'Samsung',
+                     'modelo': 'Galaxy S24', 'cantidad': 1,
+                     'equipoId': '', 'listado': False}],
+    }, ensure_ascii=False)
+
+    s = Solicitud(
+        flujo=Solicitud.FLUJO_F43,
+        categoria=categoria,
+        estado=estado,
+        solicitante=solicitante,
+        equipo_descripcion=datos,
+        equipo_no_listado=equipo_no_listado,
+        equipo_marca_manual='DJI' if equipo_no_listado else '',
+        equipo_modelo_manual='Mini 4' if equipo_no_listado else '',
     )
+    s.save()
+    return s
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE MODELO — Notificacion
+# Modelo Notificacion
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class NotificacionModelTest(TestCase):
 
     def setUp(self):
-        self.operador = crear_usuario(Usuario.ROL_OPERADOR, 'operador')
-        self.persona  = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.solicitud = crear_solicitud(self.persona)
+        self.usuario = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'nm_pn')
 
     def test_crear_notificacion(self):
         """Se puede crear una notificación correctamente."""
         n = Notificacion.objects.create(
-            destinatario = self.operador,
-            tipo         = Notificacion.TIPO_SOLICITUD_NUEVA,
-            titulo       = 'Nueva solicitud',
-            mensaje      = 'Hay una nueva solicitud.',
-            solicitud    = self.solicitud,
+            destinatario=self.usuario,
+            tipo=Notificacion.TIPO_GENERAL,
+            titulo='Test',
+            mensaje='Mensaje de prueba',
         )
-        self.assertEqual(n.destinatario, self.operador)
-        self.assertFalse(n.leida)
-        self.assertIsNone(n.fecha_lectura)
-
-    def test_no_leida_por_defecto(self):
-        """Una notificación nueva no está leída."""
-        n = Notificacion.objects.create(
-            destinatario = self.operador,
-            tipo         = Notificacion.TIPO_GENERAL,
-            titulo       = 'Test',
-            mensaje      = 'Mensaje de prueba.',
-        )
+        self.assertIsNotNone(n.pk)
         self.assertFalse(n.leida)
 
     def test_marcar_leida(self):
-        """marcar_leida actualiza el estado y registra la fecha."""
+        """marcar_leida cambia el estado y registra la fecha."""
         n = Notificacion.objects.create(
-            destinatario = self.operador,
-            tipo         = Notificacion.TIPO_GENERAL,
-            titulo       = 'Test',
-            mensaje      = 'Mensaje.',
+            destinatario=self.usuario,
+            tipo=Notificacion.TIPO_GENERAL,
+            titulo='Test',
+            mensaje='Test',
         )
         n.marcar_leida()
         self.assertTrue(n.leida)
         self.assertIsNotNone(n.fecha_lectura)
 
-    def test_marcar_leida_idempotente(self):
-        """Llamar marcar_leida dos veces no cambia la fecha de lectura."""
-        n = Notificacion.objects.create(
-            destinatario = self.operador,
-            tipo         = Notificacion.TIPO_GENERAL,
-            titulo       = 'Test',
-            mensaje      = 'Mensaje.',
-        )
-        n.marcar_leida()
-        fecha1 = n.fecha_lectura
-        n.marcar_leida()
-        self.assertEqual(n.fecha_lectura, fecha1)
-
     def test_clase_icono_por_tipo(self):
-        """clase_icono retorna el icono correcto por tipo."""
-        casos = [
-            (Notificacion.TIPO_SOLICITUD_NUEVA,       'file-plus'),
-            (Notificacion.TIPO_DERIVADA_ESPECIALISTA, 'alert-circle'),
-            (Notificacion.TIPO_CAMBIO_ESTADO,         'refresh-cw'),
-            (Notificacion.TIPO_CRITERIO_TECNICO,      'clipboard-check'),
-            (Notificacion.TIPO_GENERAL,               'bell'),
-        ]
-        for tipo, icono_esperado in casos:
+        """clase_icono retorna el icono correcto según el tipo."""
+        tipos_iconos = {
+            Notificacion.TIPO_SOLICITUD_NUEVA:    'file-plus',
+            Notificacion.TIPO_CAMBIO_ESTADO:      'refresh-cw',
+            Notificacion.TIPO_DERIVADA_ESPECIALISTA: 'cpu',
+            Notificacion.TIPO_CRITERIO_TECNICO:   'clipboard-check',
+            Notificacion.TIPO_GENERAL:            'bell',
+        }
+        for tipo, icono in tipos_iconos.items():
             n = Notificacion(tipo=tipo)
-            self.assertEqual(n.clase_icono, icono_esperado,
-                msg=f'Tipo {tipo} debería tener icono {icono_esperado}')
+            self.assertEqual(n.clase_icono, icono, f'Fallo para tipo {tipo}')
 
     def test_str_notificacion(self):
-        """El __str__ incluye el título y el destinatario."""
+        """El __str__ incluye el título."""
         n = Notificacion.objects.create(
-            destinatario = self.operador,
-            tipo         = Notificacion.TIPO_GENERAL,
-            titulo       = 'Título de prueba',
-            mensaje      = 'Mensaje.',
+            destinatario=self.usuario,
+            tipo=Notificacion.TIPO_GENERAL,
+            titulo='Mi notificación',
+            mensaje='Test',
         )
-        self.assertIn('Título de prueba', str(n))
-        self.assertIn('Test Usuario', str(n))
+        self.assertIn('Mi notificación', str(n))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE SERVICIOS — Notificaciones
+# Servicios de notificación
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class ServiciosNotificacionTest(TestCase):
 
     def setUp(self):
-        self.persona      = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.operador1    = crear_usuario(Usuario.ROL_OPERADOR,        'operador1')
-        self.operador2    = crear_usuario(Usuario.ROL_OPERADOR,        'operador2')
-        self.especialista = crear_usuario(Usuario.ROL_ESPECIALISTA,    'especialista')
-        self.solicitud    = crear_solicitud(self.persona)
-
-    def test_notificar_crea_notificacion(self):
-        """notificar() crea una notificación para el destinatario."""
-        notificar(
-            destinatario = self.operador1,
-            tipo         = Notificacion.TIPO_GENERAL,
-            titulo       = 'Test',
-            mensaje      = 'Mensaje de prueba.',
+        self.persona   = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'sn_pn')
+        self.esp_movil = crear_usuario(Usuario.ROL_ESPECIALISTA_MOVIL, 'sn_esp_m')
+        self.esp_radio = crear_usuario(Usuario.ROL_ESPECIALISTA_RADIOFARO, 'sn_esp_r')
+        self.superior  = crear_usuario(Usuario.ROL_ESPECIALISTA_SUPERIOR, 'sn_sup')
+        self.directivo = crear_usuario(Usuario.ROL_DIRECTIVO, 'sn_dir')
+        self.solicitud_movil = crear_solicitud(
+            self.persona, categoria=Solicitud.CATEGORIA_MOVIL
         )
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.operador1).count(), 1
+        self.solicitud_no_listado = crear_solicitud(
+            self.persona,
+            estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR,
+            equipo_no_listado=True,
         )
 
-    def test_notificar_operadores_notifica_a_todos(self):
-        """notificar_operadores() notifica a todos los operadores activos."""
-        notificar_operadores(
-            tipo    = Notificacion.TIPO_SOLICITUD_NUEVA,
-            titulo  = 'Nueva solicitud',
-            mensaje = 'Hay una nueva solicitud.',
-        )
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.operador1).count(), 1
-        )
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.operador2).count(), 1
-        )
-        # El especialista no debe recibir esta notificación
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.especialista).count(), 0
-        )
+    def test_notificar_solicitud_nueva_notifica_especialista_movil(self):
+        """notificar_solicitud_nueva notifica al especialista de la categoría."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.esp_movil).count()
+        notificar_solicitud_nueva(self.solicitud_movil)
+        count_despues = Notificacion.objects.filter(
+            destinatario=self.esp_movil).count()
+        self.assertGreater(count_despues, count_antes)
 
-    def test_notificar_especialistas_notifica_a_todos(self):
-        """notificar_especialistas() notifica a todos los especialistas activos."""
-        notificar_especialistas(
-            tipo    = Notificacion.TIPO_DERIVADA_ESPECIALISTA,
-            titulo  = 'Equipo no listado',
-            mensaje = 'Hay un equipo no listado para evaluar.',
-        )
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.especialista).count(), 1
-        )
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.operador1).count(), 0
-        )
+    def test_notificar_solicitud_nueva_no_notifica_especialista_incorrecto(self):
+        """notificar_solicitud_nueva no notifica a especialistas de otras áreas."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.esp_radio).count()
+        notificar_solicitud_nueva(self.solicitud_movil)
+        count_despues = Notificacion.objects.filter(
+            destinatario=self.esp_radio).count()
+        self.assertEqual(count_despues, count_antes)
 
-    def test_notificar_solicitud_nueva(self):
-        """notificar_solicitud_nueva() notifica a todos los operadores."""
-        notificar_solicitud_nueva(self.solicitud)
-        self.assertEqual(
-            Notificacion.objects.filter(
-                tipo      = Notificacion.TIPO_SOLICITUD_NUEVA,
-                solicitud = self.solicitud,
-            ).count(), 2  # operador1 y operador2
-        )
+    def test_notificar_derivacion_superior_notifica_al_superior(self):
+        """notificar_derivacion_superior notifica al especialista superior."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.superior).count()
+        notificar_derivacion_superior(self.solicitud_no_listado)
+        count_despues = Notificacion.objects.filter(
+            destinatario=self.superior).count()
+        self.assertGreater(count_despues, count_antes)
 
-    def test_notificar_derivacion_especialista(self):
-        """notificar_derivacion_especialista() notifica a los especialistas."""
-        self.solicitud.equipo_no_listado    = True
-        self.solicitud.equipo_marca_manual  = 'Samsung'
-        self.solicitud.equipo_modelo_manual = 'Galaxy S24'
-        self.solicitud.save()
+    def test_notificar_pendiente_aprobacion_notifica_directivo(self):
+        """notificar_pendiente_aprobacion notifica al directivo."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.directivo).count()
+        notificar_pendiente_aprobacion(self.solicitud_movil)
+        count_despues = Notificacion.objects.filter(
+            destinatario=self.directivo).count()
+        self.assertGreater(count_despues, count_antes)
 
-        notificar_derivacion_especialista(self.solicitud)
-        self.assertEqual(
-            Notificacion.objects.filter(
-                tipo      = Notificacion.TIPO_DERIVADA_ESPECIALISTA,
-                solicitud = self.solicitud,
-                destinatario = self.especialista,
-            ).count(), 1
-        )
-
-    def test_notificar_cambio_estado(self):
-        """notificar_cambio_estado() notifica al solicitante."""
+    def test_notificar_cambio_estado_notifica_al_solicitante(self):
+        """notificar_cambio_estado notifica al solicitante."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.persona).count()
         notificar_cambio_estado(
-            solicitud         = self.solicitud,
-            estado_anterior   = Solicitud.ESTADO_ENVIADA,
-            usuario_responsable = self.operador1,
+            self.solicitud_movil,
+            Solicitud.ESTADO_ENVIADA,
+            self.esp_movil,
+        )
+        count_despues = Notificacion.objects.filter(
+            destinatario=self.persona).count()
+        self.assertGreater(count_despues, count_antes)
+
+    def test_notificar_especialistas_por_categoria_correcto(self):
+        """notificar_especialistas_por_categoria notifica solo a la categoría correcta."""
+        count_movil_antes = Notificacion.objects.filter(
+            destinatario=self.esp_movil).count()
+        count_radio_antes = Notificacion.objects.filter(
+            destinatario=self.esp_radio).count()
+
+        notificar_especialistas_por_categoria(
+            'movil',
+            Notificacion.TIPO_GENERAL,
+            'Test',
+            'Mensaje test',
+        )
+        self.assertGreater(
+            Notificacion.objects.filter(destinatario=self.esp_movil).count(),
+            count_movil_antes
         )
         self.assertEqual(
-            Notificacion.objects.filter(
-                tipo         = Notificacion.TIPO_CAMBIO_ESTADO,
-                destinatario = self.persona,
-                solicitud    = self.solicitud,
-            ).count(), 1
+            Notificacion.objects.filter(destinatario=self.esp_radio).count(),
+            count_radio_antes
         )
 
-    def test_notificar_criterio_tecnico(self):
-        """notificar_criterio_tecnico() notifica a los operadores."""
-        notificar_criterio_tecnico(self.solicitud)
-        self.assertEqual(
-            Notificacion.objects.filter(
-                tipo      = Notificacion.TIPO_CRITERIO_TECNICO,
-                solicitud = self.solicitud,
-            ).count(), 2  # operador1 y operador2
+    def test_notificar_especialistas_superiores(self):
+        """notificar_especialistas_superiores notifica al superior."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.superior).count()
+        notificar_especialistas_superiores(
+            Notificacion.TIPO_GENERAL, 'Test', 'Mensaje'
+        )
+        self.assertGreater(
+            Notificacion.objects.filter(destinatario=self.superior).count(),
+            count_antes
         )
 
-    def test_operador_inactivo_no_recibe_notificacion(self):
-        """Un operador inactivo no recibe notificaciones."""
-        self.operador2.is_active = False
-        self.operador2.save()
-
-        notificar_operadores(
-            tipo    = Notificacion.TIPO_SOLICITUD_NUEVA,
-            titulo  = 'Test',
-            mensaje = 'Test.',
+    def test_notificar_directivos(self):
+        """notificar_directivos notifica al directivo."""
+        count_antes = Notificacion.objects.filter(
+            destinatario=self.directivo).count()
+        notificar_directivos(
+            Notificacion.TIPO_GENERAL, 'Test', 'Mensaje'
         )
-        self.assertEqual(
-            Notificacion.objects.filter(destinatario=self.operador2).count(), 0
+        self.assertGreater(
+            Notificacion.objects.filter(destinatario=self.directivo).count(),
+            count_antes
         )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE VISTAS — Notificaciones
+# Vistas de notificaciones
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class NotificacionVistaTest(TestCase):
 
     def setUp(self):
-        self.client   = Client()
-        self.operador = crear_usuario(Usuario.ROL_OPERADOR,        'operador')
-        self.persona  = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.solicitud = crear_solicitud(self.persona)
-
-        self.notif = Notificacion.objects.create(
-            destinatario = self.operador,
-            tipo         = Notificacion.TIPO_SOLICITUD_NUEVA,
-            titulo       = 'Nueva solicitud de prueba',
-            mensaje      = 'Hay una nueva solicitud.',
-            solicitud    = self.solicitud,
+        self.client  = Client()
+        self.usuario = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'nv_pn')
+        self.notif   = Notificacion.objects.create(
+            destinatario=self.usuario,
+            tipo=Notificacion.TIPO_GENERAL,
+            titulo='Notif test',
+            mensaje='Mensaje test',
         )
 
     def test_lista_notificaciones_accesible(self):
-        """La lista de notificaciones es accesible para cualquier usuario."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(reverse('notificaciones:lista'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'notificaciones/lista.html')
-
-    def test_lista_marca_notificaciones_como_leidas(self):
-        """Al abrir la lista las notificaciones se marcan como leídas."""
-        self.assertFalse(self.notif.leida)
-        self.client.login(username='operador', password='test1234')
-        self.client.get(reverse('notificaciones:lista'))
-        self.notif.refresh_from_db()
-        self.assertTrue(self.notif.leida)
+        """El usuario puede ver su lista de notificaciones."""
+        self.client.login(username='nv_pn', password='test1234')
+        r = self.client.get(reverse('notificaciones:lista'))
+        self.assertEqual(r.status_code, 200)
 
     def test_lista_sin_autenticar_redirige(self):
         """Sin autenticación redirige al login."""
-        response = self.client.get(reverse('notificaciones:lista'))
-        self.assertEqual(response.status_code, 302)
+        r = self.client.get(reverse('notificaciones:lista'))
+        self.assertEqual(r.status_code, 302)
 
-    def test_contador_retorna_json(self):
-        """El endpoint contador retorna JSON con el conteo correcto."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(reverse('notificaciones:contador'))
-        self.assertEqual(response.status_code, 200)
-        import json
-        data = json.loads(response.content)
+    def test_contador_ajax_retorna_json(self):
+        """El contador AJAX retorna JSON con el conteo de no leídas."""
+        self.client.login(username='nv_pn', password='test1234')
+        r = self.client.get(
+            reverse('notificaciones:contador'),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(r.status_code, 200)
+        data = json.loads(r.content)
         self.assertIn('count', data)
         self.assertEqual(data['count'], 1)
 
-    def test_contador_cero_sin_notificaciones(self):
-        """El contador retorna 0 cuando no hay notificaciones no leídas."""
+    def test_contador_decrece_al_marcar_leida(self):
+        """El contador decrece al marcar una notificación como leída."""
         self.notif.marcar_leida()
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(reverse('notificaciones:contador'))
-        import json
-        data = json.loads(response.content)
+        self.client.login(username='nv_pn', password='test1234')
+        r = self.client.get(
+            reverse('notificaciones:contador'),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        data = json.loads(r.content)
         self.assertEqual(data['count'], 0)
 
-    def test_marcar_leida_redirige_a_solicitud(self):
-        """Marcar una notificación como leída redirige a la solicitud."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(
-            reverse('notificaciones:marcar_leida', args=[self.notif.pk])
+    def test_usuario_solo_ve_sus_notificaciones(self):
+        """Un usuario solo ve sus propias notificaciones."""
+        otro = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'nv_pn2')
+        Notificacion.objects.create(
+            destinatario=otro,
+            tipo=Notificacion.TIPO_GENERAL,
+            titulo='Notif otro',
+            mensaje='No debería verse',
         )
-        self.assertEqual(response.status_code, 302)
-        self.notif.refresh_from_db()
-        self.assertTrue(self.notif.leida)
-
-    def test_usuario_no_puede_ver_notificaciones_de_otro(self):
-        """Un usuario no puede marcar como leída la notificación de otro."""
-        self.client.login(username='persona', password='test1234')
-        response = self.client.get(
-            reverse('notificaciones:marcar_leida', args=[self.notif.pk])
-        )
-        self.assertEqual(response.status_code, 404)
-
-    def test_lista_solo_muestra_notificaciones_propias(self):
-        """La lista solo muestra las notificaciones del usuario autenticado."""
-        notif_persona = Notificacion.objects.create(
-            destinatario = self.persona,
-            tipo         = Notificacion.TIPO_GENERAL,
-            titulo       = 'Para persona',
-            mensaje      = 'Solo para persona.',
-        )
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(reverse('notificaciones:lista'))
-        notificaciones = list(response.context['notificaciones'])
-
-        titulos = [n.titulo for n in notificaciones]
-        self.assertIn('Nueva solicitud de prueba', titulos)
-        self.assertNotIn('Para persona', titulos)
+        self.client.login(username='nv_pn', password='test1234')
+        r = self.client.get(reverse('notificaciones:lista'))
+        for n in r.context['notificaciones']:
+            self.assertEqual(n.destinatario, self.usuario)

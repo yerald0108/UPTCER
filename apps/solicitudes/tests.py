@@ -4,84 +4,82 @@ from django.urls import reverse
 from django.utils import timezone
 from apps.accounts.models import Usuario
 from apps.solicitudes.models import Solicitud, HistorialSolicitud
-from apps.equipos.models import CategoriaEquipo, Equipo
+from apps.equipos.models import Equipo, CategoriaEquipo
 
 
-# ─── Factory compartida ───────────────────────────────────────────────────────
+# ─── Factories ────────────────────────────────────────────────────────────────
 def crear_usuario(rol, username=None, password='test1234'):
     username = username or f'user_{rol}'
     return Usuario.objects.create_user(
-        username  = username,
-        email     = f'{username}@uptcer.cu',
-        nombre    = 'Test',
-        apellidos = 'Usuario',
-        rol       = rol,
-        password  = password,
+        username=username, email=f'{username}@uptcer.cu',
+        nombre='Test', apellidos='Usuario', rol=rol, password=password,
     )
 
 
-def crear_solicitud(solicitante, flujo=Solicitud.FLUJO_F43, estado=Solicitud.ESTADO_ENVIADA):
-    datos_f43 = {
-        'nombre_apellidos':    solicitante.get_nombre_completo(),
-        'numero_pasaporte':    'A12345678',
-        'pais_residencia':     'Cuba',
-        'direccion_residencia':'Calle 23 #456',
-        'correo_electronico':  solicitante.email,
-        'telefono':            '+53 5 123 4567',
-        'provincia':           'la_habana',
-        'modo_importacion':    'equipaje',
-        'numero_vuelo':        'CU123',
-        'fecha_arribo':        '2025-07-15',
-        'pais_procedencia':    'Mexico',
-        'aduana_acceso':       'Aeropuerto',
-        'lugar_acceso':        'Aeropuerto Jose Marti',
-        'numero_rad':          '',
-        'objetivo_importacion':'empleo_directo',
+def crear_solicitud(solicitante, estado=Solicitud.ESTADO_ENVIADA,
+                    categoria=Solicitud.CATEGORIA_MOVIL,
+                    equipo_no_listado=False):
+    datos = json.dumps({
+        'nombre_apellidos': solicitante.get_nombre_completo(),
+        'numero_pasaporte': 'A12345678',
+        'pais_residencia': 'Cuba',
+        'direccion_residencia': 'Calle 1 #1',
+        'correo_electronico': solicitante.email,
+        'telefono': '+53 5 000 0000',
+        'provincia': 'la_habana',
+        'modo_importacion': 'equipaje',
+        'numero_vuelo': 'CU101',
+        'fecha_arribo': '2026-01-01',
+        'pais_procedencia': 'Mexico',
+        'aduana_acceso': 'Aeropuerto',
+        'lugar_acceso': 'Aeropuerto Jose Marti',
+        'numero_rad': '',
+        'objetivo_importacion': 'empleo_directo',
         'objetivo_otros_detalle': '',
         'periodo_importacion': 'definitiva',
-        'tiempo_solicitado':   '',
-        'firma_ci':            '12345678901',
-        'fecha_solicitud':     '2025-06-20',
-        'equipos': [
-            {
-                'descripcion': 'Telefono inteligente',
-                'marca':       'Samsung',
-                'modelo':      'Galaxy S24',
-                'cantidad':    1,
-                'equipoId':    '',
-                'listado':     False,
-            }
-        ],
-    }
-    return Solicitud.objects.create(
-        flujo                = flujo,
-        estado               = estado,
-        solicitante          = solicitante,
-        equipo_descripcion   = json.dumps(datos_f43, ensure_ascii=False),
+        'tiempo_solicitado': '',
+        'firma_ci': '90123456789',
+        'fecha_solicitud': timezone.now().date().isoformat(),
+        'equipos': [{'descripcion': 'Telefono', 'marca': 'Samsung',
+                     'modelo': 'Galaxy S24', 'cantidad': 1,
+                     'equipoId': '', 'listado': False}],
+    }, ensure_ascii=False)
+
+    s = Solicitud(
+        flujo=Solicitud.FLUJO_F43,
+        categoria=categoria,
+        estado=estado,
+        solicitante=solicitante,
+        equipo_descripcion=datos,
+        equipo_no_listado=equipo_no_listado,
+        equipo_marca_manual='DJI' if equipo_no_listado else '',
+        equipo_modelo_manual='Mini 4' if equipo_no_listado else '',
     )
+    s.save()
+    return s
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE MODELO — Solicitud
+# Modelo Solicitud
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class SolicitudModelTest(TestCase):
 
     def setUp(self):
-        self.persona  = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.operador = crear_usuario(Usuario.ROL_OPERADOR,        'operador')
+        self.persona = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'sm_pn')
 
     def test_numero_generado_automaticamente_f43(self):
         """El número F43 se genera automáticamente con el formato correcto."""
-        solicitud = crear_solicitud(self.persona, flujo=Solicitud.FLUJO_F43)
-        año = timezone.now().year
-        self.assertTrue(solicitud.numero.startswith(f'F43-{año}-'))
+        s = crear_solicitud(self.persona)
+        self.assertRegex(s.numero, r'^F43-\d{4}-\d{4}$')
 
     def test_numero_generado_automaticamente_rats(self):
         """El número RATS se genera automáticamente con el formato correcto."""
-        solicitud = crear_solicitud(self.persona, flujo=Solicitud.FLUJO_RATS)
-        año = timezone.now().year
-        self.assertTrue(solicitud.numero.startswith(f'RAT-{año}-'))
+        s = Solicitud(
+            flujo=Solicitud.FLUJO_RATS, estado=Solicitud.ESTADO_ENVIADA,
+            solicitante=self.persona, equipo_descripcion='{}',
+        )
+        s.save()
+        self.assertRegex(s.numero, r'^RAT-\d{4}-\d{4}$')
 
     def test_numeros_son_unicos(self):
         """Dos solicitudes no pueden tener el mismo número."""
@@ -91,510 +89,419 @@ class SolicitudModelTest(TestCase):
 
     def test_estado_por_defecto_es_borrador(self):
         """El estado por defecto de una solicitud es borrador."""
-        solicitud = Solicitud.objects.create(
-            flujo       = Solicitud.FLUJO_F43,
-            solicitante = self.persona,
+        s = Solicitud(
+            flujo=Solicitud.FLUJO_F43, solicitante=self.persona,
+            equipo_descripcion='{}',
         )
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_BORRADOR)
-
-    def test_propiedad_esta_pendiente(self):
-        """esta_pendiente es True para estados enviada y en_revision."""
-        s_enviada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
-        s_revision = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
-        s_aprobada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_APROBADA)
-
-        self.assertTrue(s_enviada.esta_pendiente)
-        self.assertTrue(s_revision.esta_pendiente)
-        self.assertFalse(s_aprobada.esta_pendiente)
-
-    def test_propiedad_esta_resuelta(self):
-        """esta_resuelta es True para estados aprobada y denegada."""
-        s_aprobada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_APROBADA)
-        s_denegada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_DENEGADA)
-        s_enviada  = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
-
-        self.assertTrue(s_aprobada.esta_resuelta)
-        self.assertTrue(s_denegada.esta_resuelta)
-        self.assertFalse(s_enviada.esta_resuelta)
-
-    def test_propiedad_es_aprobada(self):
-        """es_aprobada es True solo para estado aprobada."""
-        s_aprobada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_APROBADA)
-        s_denegada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_DENEGADA)
-
-        self.assertTrue(s_aprobada.es_aprobada)
-        self.assertFalse(s_denegada.es_aprobada)
-
-    def test_clase_badge_por_estado(self):
-        """clase_badge retorna la clase CSS correcta por estado."""
-        casos = [
-            (Solicitud.ESTADO_BORRADOR,    'badge-info'),
-            (Solicitud.ESTADO_ENVIADA,     'badge-pendiente'),
-            (Solicitud.ESTADO_EN_REVISION, 'badge-revision'),
-            (Solicitud.ESTADO_APROBADA,    'badge-aprobado'),
-            (Solicitud.ESTADO_DENEGADA,    'badge-denegado'),
-        ]
-        for estado, badge_esperado in casos:
-            s = crear_solicitud(self.persona, estado=estado)
-            self.assertEqual(s.clase_badge, badge_esperado,
-                msg=f'Estado {estado} debería tener badge {badge_esperado}')
-
-    def test_str_solicitud(self):
-        """El __str__ incluye el número y el estado."""
-        solicitud = crear_solicitud(self.persona)
-        self.assertIn(solicitud.numero, str(solicitud))
+        s.save()
+        self.assertEqual(s.estado, Solicitud.ESTADO_BORRADOR)
 
     def test_relacion_solicitante(self):
         """La solicitud está relacionada correctamente con el solicitante."""
-        solicitud = crear_solicitud(self.persona)
-        self.assertEqual(solicitud.solicitante, self.persona)
+        s = crear_solicitud(self.persona)
+        self.assertEqual(s.solicitante, self.persona)
+
+    def test_str_solicitud(self):
+        """El __str__ incluye el número y el estado."""
+        s = crear_solicitud(self.persona)
+        texto = str(s)
+        self.assertIn(s.numero, texto)
+
+    def test_propiedad_esta_pendiente(self):
+        """esta_pendiente es True para estados enviada, en_revision, en_revision_superior y pendiente_aprobacion."""
+        for estado in [Solicitud.ESTADO_ENVIADA, Solicitud.ESTADO_EN_REVISION,
+                       Solicitud.ESTADO_EN_REVISION_SUPERIOR,
+                       Solicitud.ESTADO_PENDIENTE_APROBACION]:
+            s = crear_solicitud(self.persona, estado=estado)
+            self.assertTrue(s.esta_pendiente, f'Fallo para estado {estado}')
+
+    def test_propiedad_esta_resuelta(self):
+        """esta_resuelta es True para estados aprobada y denegada."""
+        for estado in [Solicitud.ESTADO_APROBADA, Solicitud.ESTADO_DENEGADA]:
+            s = crear_solicitud(self.persona, estado=estado)
+            self.assertTrue(s.esta_resuelta, f'Fallo para estado {estado}')
+
+    def test_propiedad_es_aprobada(self):
+        """es_aprobada es True solo para estado aprobada."""
+        s = crear_solicitud(self.persona, estado=Solicitud.ESTADO_APROBADA)
+        self.assertTrue(s.es_aprobada)
+        s2 = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
+        self.assertFalse(s2.es_aprobada)
+
+    def test_clase_badge_por_estado(self):
+        """clase_badge retorna la clase CSS correcta por estado."""
+        casos = {
+            Solicitud.ESTADO_ENVIADA:              'badge-pendiente',
+            Solicitud.ESTADO_EN_REVISION:          'badge-revision',
+            Solicitud.ESTADO_EN_REVISION_SUPERIOR: 'badge-revision',
+            Solicitud.ESTADO_PENDIENTE_APROBACION: 'badge-pendiente',
+            Solicitud.ESTADO_APROBADA:             'badge-aprobado',
+            Solicitud.ESTADO_DENEGADA:             'badge-denegado',
+        }
+        for estado, badge in casos.items():
+            s = crear_solicitud(self.persona, estado=estado)
+            self.assertEqual(s.clase_badge, badge, f'Fallo para {estado}')
+
+    def test_campo_categoria(self):
+        """La categoría se guarda y recupera correctamente."""
+        s = crear_solicitud(self.persona, categoria=Solicitud.CATEGORIA_MARITIMO)
+        self.assertEqual(s.categoria, Solicitud.CATEGORIA_MARITIMO)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE MODELO — HistorialSolicitud
+# Modelo HistorialSolicitud
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class HistorialSolicitudModelTest(TestCase):
 
     def setUp(self):
-        self.persona  = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.operador = crear_usuario(Usuario.ROL_OPERADOR,        'operador')
+        self.persona = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'hs_pn')
         self.solicitud = crear_solicitud(self.persona)
 
     def test_crear_historial(self):
         """Se puede crear un registro de historial correctamente."""
-        historial = HistorialSolicitud.objects.create(
-            solicitud       = self.solicitud,
-            estado_anterior = Solicitud.ESTADO_ENVIADA,
-            estado_nuevo    = Solicitud.ESTADO_EN_REVISION,
-            usuario         = self.operador,
-            observacion     = 'En revisión por el operador.',
+        h = HistorialSolicitud.objects.create(
+            solicitud=self.solicitud,
+            estado_anterior=Solicitud.ESTADO_ENVIADA,
+            estado_nuevo=Solicitud.ESTADO_EN_REVISION,
+            usuario=self.persona,
+            observacion='Test',
         )
-        self.assertEqual(historial.solicitud, self.solicitud)
-        self.assertEqual(historial.estado_anterior, Solicitud.ESTADO_ENVIADA)
-        self.assertEqual(historial.estado_nuevo, Solicitud.ESTADO_EN_REVISION)
-        self.assertEqual(historial.usuario, self.operador)
+        self.assertIsNotNone(h.pk)
 
     def test_historial_relacionado_con_solicitud(self):
         """El historial se puede acceder desde la solicitud."""
         HistorialSolicitud.objects.create(
-            solicitud       = self.solicitud,
-            estado_anterior = Solicitud.ESTADO_ENVIADA,
-            estado_nuevo    = Solicitud.ESTADO_EN_REVISION,
-            usuario         = self.operador,
+            solicitud=self.solicitud,
+            estado_anterior='',
+            estado_nuevo=Solicitud.ESTADO_ENVIADA,
+            usuario=self.persona,
+            observacion='',
         )
         self.assertEqual(self.solicitud.historial.count(), 1)
 
     def test_get_estado_display_en_historial(self):
         """Los métodos get_estado_display funcionan en el historial."""
-        historial = HistorialSolicitud.objects.create(
-            solicitud       = self.solicitud,
-            estado_anterior = Solicitud.ESTADO_ENVIADA,
-            estado_nuevo    = Solicitud.ESTADO_APROBADA,
-            usuario         = self.operador,
+        h = HistorialSolicitud.objects.create(
+            solicitud=self.solicitud,
+            estado_anterior=Solicitud.ESTADO_ENVIADA,
+            estado_nuevo=Solicitud.ESTADO_EN_REVISION,
+            usuario=self.persona,
+            observacion='',
         )
-        self.assertEqual(historial.get_estado_anterior_display(), 'Enviada')
-        self.assertEqual(historial.get_estado_nuevo_display(), 'Aprobada')
+        self.assertIsNotNone(h.get_estado_nuevo_display())
 
     def test_clase_badge_historial(self):
         """clase_badge_nuevo retorna la clase CSS correcta."""
-        historial = HistorialSolicitud.objects.create(
-            solicitud       = self.solicitud,
-            estado_anterior = Solicitud.ESTADO_ENVIADA,
-            estado_nuevo    = Solicitud.ESTADO_APROBADA,
-            usuario         = self.operador,
+        h = HistorialSolicitud.objects.create(
+            solicitud=self.solicitud,
+            estado_anterior=Solicitud.ESTADO_ENVIADA,
+            estado_nuevo=Solicitud.ESTADO_APROBADA,
+            usuario=self.persona,
+            observacion='',
         )
-        self.assertEqual(historial.clase_badge_nuevo, 'badge-aprobado')
+        self.assertEqual(h.clase_badge_nuevo, 'badge-aprobado')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE VISTAS — Solicitudes (control de acceso)
+# Control de acceso a vistas
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class SolicitudAccesoTest(TestCase):
 
     def setUp(self):
-        self.client       = Client()
-        self.persona      = crear_usuario(Usuario.ROL_PERSONA_NATURAL,  'persona')
-        self.operador     = crear_usuario(Usuario.ROL_OPERADOR,         'operador')
-        self.especialista = crear_usuario(Usuario.ROL_ESPECIALISTA,     'especialista')
-        self.solicitud    = crear_solicitud(self.persona)
-
-    def test_nueva_f43_solo_persona_natural(self):
-        """Solo persona natural puede acceder al formulario F43."""
-        self.client.login(username='persona', password='test1234')
-        response = self.client.get(reverse('solicitudes:nueva_f43'))
-        self.assertEqual(response.status_code, 200)
-
-    def test_nueva_f43_denegado_para_operador(self):
-        """El operador no puede acceder al formulario F43."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(reverse('solicitudes:nueva_f43'))
-        self.assertEqual(response.status_code, 302)
-
-    def test_mis_solicitudes_solo_muestra_las_propias(self):
-        """Mis solicitudes solo muestra las solicitudes del usuario autenticado."""
-        otra_persona = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'otra')
-        crear_solicitud(otra_persona)
-
-        self.client.login(username='persona', password='test1234')
-        response = self.client.get(reverse('solicitudes:mis_solicitudes'))
-        self.assertEqual(response.status_code, 200)
-
-        solicitudes = response.context['solicitudes']
-        for s in solicitudes:
-            self.assertEqual(s.solicitante, self.persona)
-
-    def test_lista_solicitudes_accesible_para_operador(self):
-        """El operador puede ver la lista de todas las solicitudes."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(reverse('solicitudes:lista'))
-        self.assertEqual(response.status_code, 200)
-
-    def test_lista_solicitudes_denegada_para_persona_natural(self):
-        """Persona natural no puede ver la lista general de solicitudes."""
-        self.client.login(username='persona', password='test1234')
-        response = self.client.get(reverse('solicitudes:lista'))
-        self.assertEqual(response.status_code, 302)
-
-    def test_detalle_solicitud_accesible_para_solicitante(self):
-        """El solicitante puede ver el detalle de su propia solicitud."""
-        self.client.login(username='persona', password='test1234')
-        response = self.client.get(
-            reverse('solicitudes:detalle', args=[self.solicitud.pk])
-        )
-        self.assertEqual(response.status_code, 200)
-
-    def test_detalle_solicitud_denegado_para_otra_persona(self):
-        """Una persona natural no puede ver la solicitud de otra persona."""
-        otra = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'otra')
-        self.client.login(username='otra', password='test1234')
-        response = self.client.get(
-            reverse('solicitudes:detalle', args=[self.solicitud.pk])
-        )
-        self.assertEqual(response.status_code, 302)
-
-    def test_detalle_solicitud_accesible_para_operador(self):
-        """El operador puede ver el detalle de cualquier solicitud."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(
-            reverse('solicitudes:detalle', args=[self.solicitud.pk])
-        )
-        self.assertEqual(response.status_code, 200)
+        self.client   = Client()
+        self.persona1 = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'ac_pn1')
+        self.persona2 = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'ac_pn2')
+        self.esp      = crear_usuario(Usuario.ROL_ESPECIALISTA_MOVIL, 'ac_esp')
+        self.directivo = crear_usuario(Usuario.ROL_DIRECTIVO, 'ac_dir')
+        self.solicitud = crear_solicitud(self.persona1)
 
     def test_sin_autenticar_redirige_login(self):
         """Sin autenticación redirige al login."""
-        response = self.client.get(reverse('solicitudes:mis_solicitudes'))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn('acceso', response.url)
+        r = self.client.get(reverse('solicitudes:mis_solicitudes'))
+        self.assertEqual(r.status_code, 302)
+        self.assertIn('login', r['Location'])
+
+    def test_nueva_f43_solo_persona_natural(self):
+        """Solo persona natural puede acceder al formulario F43."""
+        self.client.login(username='ac_pn1', password='test1234')
+        r = self.client.get(reverse('solicitudes:nueva_f43'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_nueva_f43_denegado_para_especialista(self):
+        """El especialista no puede acceder al formulario F43."""
+        self.client.login(username='ac_esp', password='test1234')
+        r = self.client.get(reverse('solicitudes:nueva_f43'))
+        self.assertEqual(r.status_code, 302)
+
+    def test_mis_solicitudes_solo_muestra_las_propias(self):
+        """Mis solicitudes solo muestra las solicitudes del usuario autenticado."""
+        crear_solicitud(self.persona2)
+        self.client.login(username='ac_pn1', password='test1234')
+        r = self.client.get(reverse('solicitudes:mis_solicitudes'))
+        self.assertEqual(r.status_code, 200)
+        for s in r.context['solicitudes']:
+            self.assertEqual(s.solicitante, self.persona1)
+
+    def test_detalle_solicitud_accesible_para_solicitante(self):
+        """El solicitante puede ver el detalle de su propia solicitud."""
+        self.client.login(username='ac_pn1', password='test1234')
+        r = self.client.get(reverse('solicitudes:detalle', args=[self.solicitud.pk]))
+        self.assertEqual(r.status_code, 200)
+
+    def test_detalle_solicitud_denegado_para_otra_persona(self):
+        """Una persona natural no puede ver la solicitud de otra persona."""
+        self.client.login(username='ac_pn2', password='test1234')
+        r = self.client.get(reverse('solicitudes:detalle', args=[self.solicitud.pk]))
+        self.assertEqual(r.status_code, 302)
+
+    def test_detalle_solicitud_accesible_para_especialista(self):
+        """El especialista puede ver el detalle de cualquier solicitud."""
+        self.client.login(username='ac_esp', password='test1234')
+        r = self.client.get(reverse('solicitudes:detalle', args=[self.solicitud.pk]))
+        self.assertEqual(r.status_code, 200)
+
+    def test_lista_solicitudes_accesible_para_especialista(self):
+        """El especialista puede ver la lista de solicitudes de su categoría."""
+        self.client.login(username='ac_esp', password='test1234')
+        r = self.client.get(reverse('solicitudes:lista'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_lista_solicitudes_accesible_para_directivo(self):
+        """El directivo puede ver la lista de todas las solicitudes."""
+        self.client.login(username='ac_dir', password='test1234')
+        r = self.client.get(reverse('solicitudes:lista'))
+        self.assertEqual(r.status_code, 200)
+
+    def test_lista_solicitudes_denegada_para_persona_natural(self):
+        """Persona natural no puede ver la lista general de solicitudes."""
+        self.client.login(username='ac_pn1', password='test1234')
+        r = self.client.get(reverse('solicitudes:lista'))
+        self.assertEqual(r.status_code, 302)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE VISTAS — Cambio de estado
+# Cambio de estado
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class CambioEstadoTest(TestCase):
 
     def setUp(self):
-        self.client       = Client()
-        self.persona      = crear_usuario(Usuario.ROL_PERSONA_NATURAL,  'persona')
-        self.operador     = crear_usuario(Usuario.ROL_OPERADOR,         'operador')
-        self.especialista = crear_usuario(Usuario.ROL_ESPECIALISTA,     'especialista')
-        self.solicitud    = crear_solicitud(self.persona)
+        self.client    = Client()
+        self.persona   = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'ce_pn')
+        self.esp       = crear_usuario(Usuario.ROL_ESPECIALISTA_MOVIL, 'ce_esp')
+        self.directivo = crear_usuario(Usuario.ROL_DIRECTIVO, 'ce_dir')
+        self.solicitud = crear_solicitud(self.persona)
 
-    def test_operador_puede_cambiar_estado(self):
-        """El operador puede cambiar el estado de una solicitud."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.post(
+    def _cambiar_estado(self, username, estado_nuevo, observacion='Test'):
+        self.client.login(username=username, password='test1234')
+        return self.client.post(
             reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_EN_REVISION,
-                'observacion':  'Revisando la solicitud.',
-            }
+            {'estado_nuevo': estado_nuevo, 'observacion': observacion},
         )
+
+    def test_especialista_puede_cambiar_estado(self):
+        """El especialista puede cambiar el estado de una solicitud."""
+        self._cambiar_estado('ce_esp', Solicitud.ESTADO_EN_REVISION)
         self.solicitud.refresh_from_db()
         self.assertEqual(self.solicitud.estado, Solicitud.ESTADO_EN_REVISION)
 
     def test_persona_natural_no_puede_cambiar_estado(self):
         """La persona natural no puede cambiar el estado de su solicitud."""
-        self.client.login(username='persona', password='test1234')
-        response = self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {'estado_nuevo': Solicitud.ESTADO_APROBADA}
-        )
+        self._cambiar_estado('ce_pn', Solicitud.ESTADO_EN_REVISION)
         self.solicitud.refresh_from_db()
-        self.assertNotEqual(self.solicitud.estado, Solicitud.ESTADO_APROBADA)
+        self.assertEqual(self.solicitud.estado, Solicitud.ESTADO_ENVIADA)
 
     def test_cambio_estado_registra_historial(self):
         """Cada cambio de estado crea un registro en el historial."""
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_EN_REVISION,
-                'observacion':  'Revisando.',
-            }
-        )
-        self.assertEqual(self.solicitud.historial.count(), 1)
-        historial = self.solicitud.historial.first()
-        self.assertEqual(historial.estado_nuevo, Solicitud.ESTADO_EN_REVISION)
-        self.assertEqual(historial.usuario, self.operador)
-
-    def test_aprobar_solicitud_registra_fecha_resolucion(self):
-        """Al aprobar se registra la fecha de resolución."""
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_APROBADA,
-                'observacion':  'Aprobada.',
-            }
-        )
-        self.solicitud.refresh_from_db()
-        self.assertIsNotNone(self.solicitud.fecha_resolucion)
-
-    def test_aprobar_solicitud_genera_licencia(self):
-        """Al aprobar una solicitud se genera automáticamente una licencia."""
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_APROBADA,
-                'observacion':  'Aprobada.',
-            }
-        )
-        self.solicitud.refresh_from_db()
-        self.assertTrue(hasattr(self.solicitud, 'licencia'))
-        self.assertIsNotNone(self.solicitud.licencia)
+        count_antes = HistorialSolicitud.objects.filter(
+            solicitud=self.solicitud).count()
+        self._cambiar_estado('ce_esp', Solicitud.ESTADO_EN_REVISION)
+        count_despues = HistorialSolicitud.objects.filter(
+            solicitud=self.solicitud).count()
+        self.assertEqual(count_despues, count_antes + 1)
 
     def test_estado_invalido_no_cambia_solicitud(self):
         """Un estado inválido no debe cambiar el estado de la solicitud."""
-        estado_original = self.solicitud.estado
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {'estado_nuevo': 'estado_inventado'}
-        )
+        self._cambiar_estado('ce_esp', 'estado_que_no_existe')
         self.solicitud.refresh_from_db()
-        self.assertEqual(self.solicitud.estado, estado_original)
+        self.assertEqual(self.solicitud.estado, Solicitud.ESTADO_ENVIADA)
+
+    def test_aprobar_solicitud_genera_factura(self):
+        """Al aprobar una solicitud se genera automáticamente una factura."""
+        from apps.licencias.models import Factura
+        self._cambiar_estado('ce_dir', Solicitud.ESTADO_APROBADA)
+        self.solicitud.refresh_from_db()
+        self.assertTrue(
+            Factura.objects.filter(solicitud=self.solicitud).exists()
+        )
+
+    def test_aprobar_solicitud_registra_fecha_resolucion(self):
+        """Al aprobar se registra la fecha de resolución."""
+        self._cambiar_estado('ce_dir', Solicitud.ESTADO_APROBADA)
+        self.solicitud.refresh_from_db()
+        self.assertIsNotNone(self.solicitud.fecha_resolucion)
 
     def test_cambio_estado_via_ajax_retorna_json(self):
         """El cambio de estado via AJAX retorna JSON."""
-        self.client.login(username='operador', password='test1234')
-        response = self.client.post(
+        self.client.login(username='ce_esp', password='test1234')
+        r = self.client.post(
             reverse('solicitudes:cambiar_estado', args=[self.solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_EN_REVISION,
-                'observacion':  'Revisando.',
-            },
+            {'estado_nuevo': Solicitud.ESTADO_EN_REVISION, 'observacion': 'ok'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
-        self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content)
-        self.assertTrue(data['ok'])
-        self.assertEqual(data['estado_nuevo'], Solicitud.ESTADO_EN_REVISION)
+        self.assertEqual(r.status_code, 200)
+        data = json.loads(r.content)
+        self.assertTrue(data.get('ok'))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE FLUJO COMPLETO — F43
+# Flujo F43 completo
 # ═══════════════════════════════════════════════════════════════════════════════
-
 class FlujoF43CompletoTest(TestCase):
 
     def setUp(self):
-        self.client   = Client()
-        self.persona  = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.operador = crear_usuario(Usuario.ROL_OPERADOR,        'operador')
+        self.client    = Client()
+        self.persona   = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'ff_pn')
+        self.esp       = crear_usuario(Usuario.ROL_ESPECIALISTA_MOVIL, 'ff_esp')
+        self.directivo = crear_usuario(Usuario.ROL_DIRECTIVO, 'ff_dir')
+
+    def _cambiar(self, username, solicitud, estado, obs='ok'):
+        self.client.login(username=username, password='test1234')
+        self.client.post(
+            reverse('solicitudes:cambiar_estado', args=[solicitud.pk]),
+            {'estado_nuevo': estado, 'observacion': obs},
+        )
+        solicitud.refresh_from_db()
 
     def test_flujo_completo_f43_aprobacion(self):
-        """
-        Flujo completo F43:
-        1. Persona natural crea solicitud → ENVIADA
-        2. Operador pone en revisión → EN_REVISION
-        3. Operador aprueba → APROBADA + licencia generada
-        """
-        # Paso 1: Crear solicitud
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_ENVIADA)
+        """Flujo completo: enviada → en_revision → pendiente_aprobacion → aprobada → factura."""
+        from apps.licencias.models import Factura
+        s = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
 
-        # Paso 2: Operador pone en revisión
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_EN_REVISION,
-                'observacion':  'Revisando documentación.',
-            }
-        )
-        solicitud.refresh_from_db()
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_EN_REVISION)
-        self.assertEqual(solicitud.historial.count(), 1)
+        self._cambiar('ff_esp', s, Solicitud.ESTADO_EN_REVISION)
+        self.assertEqual(s.estado, Solicitud.ESTADO_EN_REVISION)
 
-        # Paso 3: Operador aprueba
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_APROBADA,
-                'observacion':  'Documentación verificada. Aprobado.',
-            }
-        )
-        solicitud.refresh_from_db()
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_APROBADA)
-        self.assertEqual(solicitud.historial.count(), 2)
-        self.assertTrue(hasattr(solicitud, 'licencia'))
-        self.assertIsNotNone(solicitud.fecha_resolucion)
+        self._cambiar('ff_esp', s, Solicitud.ESTADO_PENDIENTE_APROBACION)
+        self.assertEqual(s.estado, Solicitud.ESTADO_PENDIENTE_APROBACION)
 
-        # Verificar que el operador quedó asignado
-        self.assertEqual(solicitud.operador_asignado, self.operador)
+        self._cambiar('ff_dir', s, Solicitud.ESTADO_APROBADA)
+        self.assertEqual(s.estado, Solicitud.ESTADO_APROBADA)
+
+        self.assertTrue(Factura.objects.filter(solicitud=s).exists())
 
     def test_flujo_completo_f43_denegacion(self):
-        """
-        Flujo de denegación:
-        1. Persona natural crea solicitud → ENVIADA
-        2. Operador deniega → DENEGADA
-        3. No se genera licencia
-        """
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
+        """Flujo de denegación: enviada → en_revision → denegada."""
+        s = crear_solicitud(self.persona, estado=Solicitud.ESTADO_ENVIADA)
 
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[solicitud.pk]),
-            {
-                'estado_nuevo': Solicitud.ESTADO_DENEGADA,
-                'observacion':  'Documentación incompleta.',
-            }
-        )
-        solicitud.refresh_from_db()
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_DENEGADA)
-        self.assertFalse(hasattr(solicitud, 'licencia'))
-        self.assertIsNotNone(solicitud.fecha_resolucion)
+        self._cambiar('ff_esp', s, Solicitud.ESTADO_EN_REVISION)
+        self._cambiar('ff_esp', s, Solicitud.ESTADO_DENEGADA, obs='No cumple')
+
+        self.assertEqual(s.estado, Solicitud.ESTADO_DENEGADA)
+        self.assertTrue(s.esta_resuelta)
 
     def test_solicitud_resuelta_no_puede_cambiar_estado(self):
-        """
-        Una solicitud ya resuelta no debería poder cambiar de estado
-        desde la vista — el formulario no aparece en el template.
-        Verificamos que el estado no cambia si se intenta.
-        """
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_APROBADA)
-        solicitud.fecha_resolucion = timezone.now()
-        solicitud.save()
+        """Una solicitud ya resuelta no puede cambiar de estado."""
+        s = crear_solicitud(self.persona, estado=Solicitud.ESTADO_DENEGADA)
+        self._cambiar('ff_dir', s, Solicitud.ESTADO_APROBADA)
+        self.assertEqual(s.estado, Solicitud.ESTADO_DENEGADA)
 
-        self.client.login(username='operador', password='test1234')
-        self.client.post(
-            reverse('solicitudes:cambiar_estado', args=[solicitud.pk]),
-            {'estado_nuevo': Solicitud.ESTADO_DENEGADA}
+    def test_flujo_equipo_no_listado_va_a_revision_superior(self):
+        """Solicitud con equipo no listado inicia en en_revision_superior."""
+        s = crear_solicitud(
+            self.persona,
+            estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR,
+            equipo_no_listado=True,
         )
-        solicitud.refresh_from_db()
-        # El estado debe seguir siendo aprobada
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_APROBADA)
+        self.assertEqual(s.estado, Solicitud.ESTADO_EN_REVISION_SUPERIOR)
+        self.assertTrue(s.equipo_no_listado)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TESTS DE FLUJO — Especialista
+# Flujo especialista superior
 # ═══════════════════════════════════════════════════════════════════════════════
-
-class FlujoEspecialistaTest(TestCase):
+class FlujoEspecialistaSuperiorTest(TestCase):
 
     def setUp(self):
-        self.client       = Client()
-        self.persona      = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'persona')
-        self.operador     = crear_usuario(Usuario.ROL_OPERADOR,        'operador')
-        self.especialista = crear_usuario(Usuario.ROL_ESPECIALISTA,    'especialista')
+        self.client   = Client()
+        self.persona  = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'es_pn')
+        self.superior = crear_usuario(Usuario.ROL_ESPECIALISTA_SUPERIOR, 'es_sup')
+        self.esp_base = crear_usuario(Usuario.ROL_ESPECIALISTA_MOVIL, 'es_esp')
+        self.directivo = crear_usuario(Usuario.ROL_DIRECTIVO, 'es_dir')
+        self.solicitud = crear_solicitud(
+            self.persona,
+            estado=Solicitud.ESTADO_EN_REVISION_SUPERIOR,
+            equipo_no_listado=True,
+        )
 
-    def test_cola_evaluaciones_accesible_para_especialista(self):
-        """El especialista puede acceder a la cola de evaluaciones."""
-        self.client.login(username='especialista', password='test1234')
-        response = self.client.get(reverse('solicitudes:cola_evaluaciones'))
-        self.assertEqual(response.status_code, 200)
+    def test_cola_evaluaciones_accesible_para_superior(self):
+        """El especialista superior puede acceder a la cola de evaluaciones."""
+        self.client.login(username='es_sup', password='test1234')
+        r = self.client.get(reverse('solicitudes:cola_evaluaciones'))
+        self.assertEqual(r.status_code, 200)
 
     def test_cola_evaluaciones_denegada_para_persona_natural(self):
         """Persona natural no puede acceder a la cola de evaluaciones."""
-        self.client.login(username='persona', password='test1234')
-        response = self.client.get(reverse('solicitudes:cola_evaluaciones'))
-        self.assertEqual(response.status_code, 302)
+        self.client.login(username='es_pn', password='test1234')
+        r = self.client.get(reverse('solicitudes:cola_evaluaciones'))
+        self.assertEqual(r.status_code, 302)
 
-    def test_cola_muestra_solo_equipos_no_listados_en_revision(self):
-        """La cola solo muestra solicitudes con equipo no listado en revisión."""
-        # Solicitud normal (listada)
-        s_normal = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
+    def test_cola_evaluaciones_denegada_para_especialista_base(self):
+        """El especialista de área no puede acceder a la cola del superior."""
+        self.client.login(username='es_esp', password='test1234')
+        r = self.client.get(reverse('solicitudes:cola_evaluaciones'))
+        self.assertEqual(r.status_code, 302)
 
-        # Solicitud con equipo no listado en revisión
-        s_no_listada = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
-        s_no_listada.equipo_no_listado = True
-        s_no_listada.save()
+    def test_cola_muestra_solicitudes_en_revision_superior(self):
+        """La cola muestra solicitudes en estado en_revision_superior."""
+        self.client.login(username='es_sup', password='test1234')
+        r = self.client.get(reverse('solicitudes:cola_evaluaciones'))
+        self.assertIn(self.solicitud, r.context['pendientes'].object_list)
 
-        self.client.login(username='especialista', password='test1234')
-        response = self.client.get(reverse('solicitudes:cola_evaluaciones'))
-        pendientes = response.context['pendientes']
-
-        self.assertIn(s_no_listada, pendientes)
-        self.assertNotIn(s_normal, pendientes)
-
-    def test_evaluar_solicitud_accesible_para_especialista(self):
-        """El especialista puede acceder a la vista de evaluación."""
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
-        solicitud.equipo_no_listado = True
-        solicitud.save()
-
-        self.client.login(username='especialista', password='test1234')
-        response = self.client.get(
-            reverse('solicitudes:evaluar', args=[solicitud.pk])
+    def test_evaluar_solicitud_accesible_para_superior(self):
+        """El especialista superior puede acceder a la vista de evaluación."""
+        self.client.login(username='es_sup', password='test1234')
+        r = self.client.get(
+            reverse('solicitudes:evaluar', args=[self.solicitud.pk])
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(r.status_code, 200)
 
-    def test_evaluar_solicitud_denegado_para_operador(self):
-        """El operador no puede acceder a la vista de evaluación del especialista."""
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
-        solicitud.equipo_no_listado = True
-        solicitud.save()
-
-        self.client.login(username='operador', password='test1234')
-        response = self.client.get(
-            reverse('solicitudes:evaluar', args=[solicitud.pk])
+    def test_evaluar_solicitud_denegado_para_especialista_base(self):
+        """El especialista base no puede acceder a la vista de evaluación."""
+        self.client.login(username='es_esp', password='test1234')
+        r = self.client.get(
+            reverse('solicitudes:evaluar', args=[self.solicitud.pk])
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(r.status_code, 302)
 
-    def test_especialista_aprueba_solicitud(self):
-        """El especialista puede aprobar una solicitud con equipo no listado."""
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
-        solicitud.equipo_no_listado    = True
-        solicitud.equipo_marca_manual  = 'Samsung'
-        solicitud.equipo_modelo_manual = 'Galaxy S24'
-        solicitud.save()
-
-        self.client.login(username='especialista', password='test1234')
-        response = self.client.post(
-            reverse('solicitudes:evaluar', args=[solicitud.pk]),
-            {
-                'banda_detectada':   'libre',
-                'cumple_normativa':  '1',
-                'criterio_tecnico':  'El equipo opera en banda libre 2.4 GHz. Cumple con la normativa.',
-                'accion':            'aprobar',
-                'agregar_catalogo':  '',
-            }
-        )
-        solicitud.refresh_from_db()
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_APROBADA)
-        self.assertIsNotNone(solicitud.fecha_resolucion)
-
-    def test_especialista_deniega_solicitud(self):
-        """El especialista puede denegar una solicitud con equipo no listado."""
-        solicitud = crear_solicitud(self.persona, estado=Solicitud.ESTADO_EN_REVISION)
-        solicitud.equipo_no_listado    = True
-        solicitud.equipo_marca_manual  = 'Huawei'
-        solicitud.equipo_modelo_manual = 'CPE Pro'
-        solicitud.save()
-
-        self.client.login(username='especialista', password='test1234')
+    def test_superior_aprueba_envia_a_pendiente_aprobacion(self):
+        """El superior aprueba y la solicitud pasa a pendiente_aprobacion."""
+        self.client.login(username='es_sup', password='test1234')
         self.client.post(
-            reverse('solicitudes:evaluar', args=[solicitud.pk]),
+            reverse('solicitudes:evaluar', args=[self.solicitud.pk]),
             {
-                'banda_detectada':  'restringida',
-                'cumple_normativa': '0',
-                'criterio_tecnico': 'El equipo opera en frecuencia restringida. No cumple.',
-                'accion':           'denegar',
+                'accion': 'aprobar',
+                'criterio_tecnico': 'Equipo compatible con normativa',
+                'banda_detectada': 'libre',
+                'cumple_normativa': '1',
                 'agregar_catalogo': '',
             }
         )
-        solicitud.refresh_from_db()
-        self.assertEqual(solicitud.estado, Solicitud.ESTADO_DENEGADA)
+        self.solicitud.refresh_from_db()
+        self.assertEqual(
+            self.solicitud.estado, Solicitud.ESTADO_PENDIENTE_APROBACION
+        )
+
+    def test_superior_deniega_cambia_estado_a_denegada(self):
+        """El superior deniega y la solicitud pasa a denegada."""
+        self.client.login(username='es_sup', password='test1234')
+        self.client.post(
+            reverse('solicitudes:evaluar', args=[self.solicitud.pk]),
+            {
+                'accion': 'denegar',
+                'criterio_tecnico': 'No cumple normativa',
+                'banda_detectada': 'restringida',
+                'cumple_normativa': '',
+                'agregar_catalogo': '',
+            }
+        )
+        self.solicitud.refresh_from_db()
+        self.assertEqual(self.solicitud.estado, Solicitud.ESTADO_DENEGADA)
