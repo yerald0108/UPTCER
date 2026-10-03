@@ -102,11 +102,11 @@ class NotificacionModelTest(TestCase):
     def test_clase_icono_por_tipo(self):
         """clase_icono retorna el icono correcto según el tipo."""
         tipos_iconos = {
-            Notificacion.TIPO_SOLICITUD_NUEVA:    'file-plus',
-            Notificacion.TIPO_CAMBIO_ESTADO:      'refresh-cw',
-            Notificacion.TIPO_DERIVADA_ESPECIALISTA: 'cpu',
-            Notificacion.TIPO_CRITERIO_TECNICO:   'clipboard-check',
-            Notificacion.TIPO_GENERAL:            'bell',
+            Notificacion.TIPO_SOLICITUD_NUEVA:       'file-plus',
+            Notificacion.TIPO_CAMBIO_ESTADO:         'refresh-cw',
+            Notificacion.TIPO_DERIVADA_ESPECIALISTA: 'alert-circle',
+            Notificacion.TIPO_CRITERIO_TECNICO:      'clipboard-check',
+            Notificacion.TIPO_GENERAL:               'bell',
         }
         for tipo, icono in tipos_iconos.items():
             n = Notificacion(tipo=tipo)

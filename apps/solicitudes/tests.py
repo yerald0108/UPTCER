@@ -219,7 +219,7 @@ class SolicitudAccesoTest(TestCase):
         """Sin autenticación redirige al login."""
         r = self.client.get(reverse('solicitudes:mis_solicitudes'))
         self.assertEqual(r.status_code, 302)
-        self.assertIn('login', r['Location'])
+        self.assertIn('acceso', r['Location'])
 
     def test_nueva_f43_solo_persona_natural(self):
         """Solo persona natural puede acceder al formulario F43."""

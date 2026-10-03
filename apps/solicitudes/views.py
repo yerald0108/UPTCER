@@ -255,7 +255,7 @@ def cambiar_estado(request, pk):
     solicitud = get_object_or_404(Solicitud, pk=pk)
     usuario   = request.user
 
-    if not (usuario.es_especialista or usuario.es_directivo):
+    if not (usuario.es_especialista_base or usuario.es_especialista_superior or usuario.es_directivo):
         messages.error(request, 'No tiene permisos para realizar esta acción.')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'ok': False, 'error': 'Sin permisos.'}, status=403)
@@ -285,7 +285,7 @@ def cambiar_estado(request, pk):
         solicitud.fecha_resolucion = timezone.now()
 
     if observacion:
-        if usuario.es_especialista:
+        if usuario.es_especialista_base or usuario.es_especialista_superior:
             solicitud.observaciones_tecnicas = observacion
         elif usuario.es_directivo:
             solicitud.observaciones_operador = observacion

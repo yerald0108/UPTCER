@@ -237,7 +237,7 @@ class LicenciaVistaTest(TestCase):
         """Sin autenticación redirige al login."""
         r = self.client.get(reverse('licencias:lista'))
         self.assertEqual(r.status_code, 302)
-        self.assertIn('login', r['Location'])
+        self.assertIn('acceso', r['Location'])
 
     def test_lista_licencias_accesible_para_persona(self):
         """Persona natural puede ver su lista de licencias."""

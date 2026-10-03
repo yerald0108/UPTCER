@@ -77,7 +77,7 @@ def detalle_equipo(request, pk):
 @never_cache
 @login_required
 def nuevo_equipo(request):
-    if not (request.user.es_operador or request.user.es_especialista or request.user.es_directivo):
+    if not (request.user.es_especialista_base or request.user.es_especialista_superior or request.user.es_directivo):
         messages.error(request, 'No tiene permisos para agregar equipos.')
         return redirect('equipos:lista')
 
@@ -103,7 +103,7 @@ def nuevo_equipo(request):
 @never_cache
 @login_required
 def editar_equipo(request, pk):
-    if not (request.user.es_operador or request.user.es_especialista or request.user.es_directivo):
+    if not (request.user.es_especialista_base or request.user.es_especialista_superior or request.user.es_directivo):
         messages.error(request, 'No tiene permisos para editar equipos.')
         return redirect('equipos:lista')
 
@@ -152,7 +152,7 @@ def desactivar_equipo(request, pk):
 @never_cache
 @login_required
 def lista_categorias(request):
-    if not (request.user.es_operador or request.user.es_especialista or request.user.es_directivo):
+    if not (request.user.es_especialista_base or request.user.es_especialista_superior or request.user.es_directivo):
         messages.error(request, 'No tiene permisos para acceder a esta sección.')
         return redirect('equipos:lista')
 

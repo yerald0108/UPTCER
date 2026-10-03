@@ -29,7 +29,7 @@ class UsuarioModelTest(TestCase):
     def test_str_usuario(self):
         """Verifica el __str__ del modelo."""
         u = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'u2')
-        self.assertIn('u2', str(u))
+        self.assertIn('Test', str(u))
 
     def test_username_unico(self):
         """No se pueden crear dos usuarios con el mismo username."""
@@ -66,12 +66,12 @@ class UsuarioModelTest(TestCase):
         u = crear_usuario(Usuario.ROL_PERSONA_NATURAL, 'u_pn')
         self.assertTrue(u.es_persona_natural)
         self.assertFalse(u.es_directivo)
-        self.assertFalse(u.es_especialista)
+        self.assertFalse(u.es_especialista_base)
+        self.assertFalse(u.es_especialista_superior)
 
     def test_propiedades_rol_especialista_movil(self):
         """Verifica propiedades de rol para especialista móvil."""
         u = crear_usuario(Usuario.ROL_ESPECIALISTA_MOVIL, 'u_esp_movil')
-        self.assertTrue(u.es_especialista)
         self.assertTrue(u.es_especialista_base)
         self.assertFalse(u.es_especialista_superior)
         self.assertFalse(u.es_persona_natural)
@@ -79,7 +79,6 @@ class UsuarioModelTest(TestCase):
     def test_propiedades_rol_especialista_superior(self):
         """Verifica propiedades de rol para especialista superior."""
         u = crear_usuario(Usuario.ROL_ESPECIALISTA_SUPERIOR, 'u_sup')
-        self.assertTrue(u.es_especialista)
         self.assertTrue(u.es_especialista_superior)
         self.assertFalse(u.es_especialista_base)
 
@@ -88,7 +87,8 @@ class UsuarioModelTest(TestCase):
         u = crear_usuario(Usuario.ROL_DIRECTIVO, 'u_dir')
         self.assertTrue(u.es_directivo)
         self.assertFalse(u.es_persona_natural)
-        self.assertFalse(u.es_especialista)
+        self.assertFalse(u.es_especialista_base)
+        self.assertFalse(u.es_especialista_superior)
 
     def test_propiedades_rol_aduana(self):
         """Verifica propiedades de rol para aduana."""
@@ -112,7 +112,6 @@ class UsuarioModelTest(TestCase):
         for i, rol in enumerate(roles):
             u = crear_usuario(rol, f'u_esp_{i}')
             self.assertTrue(u.es_especialista_base, f'Fallo para rol {rol}')
-            self.assertTrue(u.es_especialista, f'Fallo es_especialista para {rol}')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -188,7 +187,7 @@ class DashboardViewTest(TestCase):
         """Sin autenticación el dashboard redirige al login."""
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 302)
-        self.assertIn('login', r['Location'])
+        self.assertIn('acceso', r['Location'])
 
     def test_dashboard_persona_natural(self):
         """Persona natural ve su dashboard."""

@@ -146,7 +146,7 @@ class EquipoVistaTest(TestCase):
         """Sin autenticación redirige al login."""
         r = self.client.get(reverse('equipos:lista'))
         self.assertEqual(r.status_code, 302)
-        self.assertIn('login', r['Location'])
+        self.assertIn('acceso', r['Location'])
 
     def test_lista_equipos_accesible_autenticado(self):
         """Cualquier usuario autenticado puede ver el catálogo."""
@@ -245,7 +245,7 @@ class EquipoVistaTest(TestCase):
         """El endpoint AJAX de búsqueda retorna JSON."""
         self.client.login(username='eq_pn', password='test1234')
         r = self.client.get(
-            reverse('equipos:buscar'), {'q': 'Samsung'},
+            reverse('equipos:buscar_ajax'), {'q': 'Samsung'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(r.status_code, 200)
@@ -255,21 +255,21 @@ class EquipoVistaTest(TestCase):
     def test_busqueda_ajax_query_corta_retorna_vacio(self):
         """El endpoint AJAX no busca con 1 carácter."""
         self.client.login(username='eq_pn', password='test1234')
-        r = self.client.get(reverse('equipos:buscar'), {'q': 'S'})
+        r = self.client.get(reverse('equipos:buscar_ajax'), {'q': 'S'})
         data = json.loads(r.content)
         self.assertEqual(data['equipos'], [])
 
     def test_busqueda_ajax_vacia_retorna_todos(self):
         """El endpoint AJAX con q vacío retorna todos los equipos."""
         self.client.login(username='eq_pn', password='test1234')
-        r = self.client.get(reverse('equipos:buscar'), {'q': ''})
+        r = self.client.get(reverse('equipos:buscar_ajax'), {'q': ''})
         data = json.loads(r.content)
         self.assertGreater(len(data['equipos']), 0)
 
     def test_busqueda_por_marca(self):
         """La búsqueda filtra correctamente por marca."""
         self.client.login(username='eq_pn', password='test1234')
-        r = self.client.get(reverse('equipos:buscar'), {'q': 'Samsung'})
+        r = self.client.get(reverse('equipos:buscar_ajax'), {'q': 'Samsung'})
         data = json.loads(r.content)
         for e in data['equipos']:
             self.assertIn('Samsung', e['marca'])
@@ -278,7 +278,7 @@ class EquipoVistaTest(TestCase):
         """Una búsqueda sin resultados retorna lista vacía."""
         self.client.login(username='eq_pn', password='test1234')
         r = self.client.get(
-            reverse('equipos:buscar'), {'q': 'MarcaQueNoExisteXYZ123'}
+            reverse('equipos:buscar_ajax'), {'q': 'MarcaQueNoExisteXYZ123'}
         )
         data = json.loads(r.content)
         self.assertEqual(data['equipos'], [])
