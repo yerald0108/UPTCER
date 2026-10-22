@@ -27,63 +27,42 @@
 
   <!-- Barra de acciones -->
   <div class="f43-acciones">
-    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+    <div class="f43-acciones-grupo">
       {% if puede_gestionar %}
-        <a href="{% if volver_url %}{{ volver_url }}{% else %}{% url 'solicitudes:lista' %}{% endif %}" class="f43-btn-accion f43-btn-volver">
+        <a href="{% if volver_url %}{{ volver_url }}{% else %}{% url 'solicitudes:lista' %}{% endif %}" class="btn btn-ghost">
           <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Volver
         </a>
       {% else %}
-        <a href="{% url 'solicitudes:mis_solicitudes' %}" class="f43-btn-accion f43-btn-volver">
+        <a href="{% url 'solicitudes:mis_solicitudes' %}" class="btn btn-ghost">
           <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Volver
         </a>
       {% endif %}
-      <span id="badge-estado-solicitud" class="badge {{ solicitud.clase_badge }}" style="font-size:13px;padding:6px 14px;">
+      <span id="badge-estado-solicitud" class="badge {{ solicitud.clase_badge }}">
         {{ solicitud.get_estado_display }}
       </span>
     </div>
 
-    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-
-      <!-- Control de zoom -->
+    <div class="f43-acciones-grupo">
       <div class="f43-zoom-control" title="Ajustar tamaño del documento">
-        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(-10)"
-          title="Reducir tamaño de texto" aria-label="Reducir tamaño">
-          <i data-lucide="zoom-out" style="width:15px;height:15px;"></i>
-        </button>
-
         <span class="f43-zoom-nivel" id="zoom-nivel">100%</span>
-
         <div class="f43-zoom-divisor"></div>
-
-        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()"
-          title="Restablecer tamaño original" aria-label="Restablecer tamaño">
+        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()" title="Restablecer tamaño" aria-label="Restablecer">
           <i data-lucide="search" style="width:15px;height:15px;"></i>
         </button>
-
         <div class="f43-zoom-divisor"></div>
-
-        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(10)"
-          title="Aumentar tamaño de texto" aria-label="Aumentar tamaño">
+        <button type="button" class="f43-zoom-btn" id="zoom-btn-mas" onclick="cambiarZoom(10)" title="Aumentar tamaño" aria-label="Aumentar">
           <i data-lucide="zoom-in" style="width:15px;height:15px;"></i>
         </button>
       </div>
 
-      <button type="button" onclick="imprimirDocumento({
-        selector: '.f43-hoja',
-        titulo: 'Solicitud {{ solicitud.numero }}',
-        estilos: `
-          .f43-encabezado { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5mm; }
-          .f43-encabezado-titulo { font-size: 11px; font-weight: bold; text-align: center; flex: 1; }
-          .f43-encabezado-codigo { font-size: 14px; font-weight: bold; border: 2px solid #000; padding: 4px 8px; }
-          .f43-campo-label { font-weight: bold; width: 30%; background-color: #f8f8f8; }
-        `
-      })" class="f43-btn-accion f43-btn-imprimir">
+      <button type="button" onclick="window.print()" class="btn btn-ghost">
         <i data-lucide="printer" style="width:16px;height:16px;"></i>
         Imprimir / PDF
       </button>
     </div>
   </div>
 
+  <!-- TRACKER DE SEGUIMIENTO (solo persona natural) -->
   {% if user.es_persona_natural %}
     <div class="tracker-solicitud">
       <div class="tracker-header">
@@ -181,181 +160,331 @@
         <div class="alerta alerta-warning">
           <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
           Esta solicitud fue cancelada.
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- DOCUMENTO F43 (3 páginas Letter · solo lectura) -->
+  <div class="f43-documento" id="f43-documento">
+
+    <!-- PÁGINA 1 -->
+    <section class="page page1">
+      <header class="header">
+        <div class="logo-cell">
+          <img src="{% static 'assets/logo.jpeg' %}" alt="Logo">
+        </div>
+        <div class="header-title">
+          SOLICITUD DE AUTORIZACIÓN TÉCNICA POR<br>
+          PERSONAS NATURALES PARA LA IMPORTACIÓN<br>
+          DE EQUIPOS Y COMPONENTES REGULADOS POR<br>
+          EL MINISTERIO DE COMUNICACIONES.
+        </div>
+        <div class="header-code">F.43</div>
+      </header>
+
+      <div class="section-title">1. &nbsp; Datos Persona Solicitante</div>
+
+      <div class="rowlabel"><span>1.1.</span><span>Nombre y Apellidos del solicitante</span></div>
+      <input class="box blank field-input" type="text" value="{{ datos_f43.nombre_apellidos|default:'—' }}" readonly>
+
+      <div class="two-cols" style="margin-top:.11in">
+        <div>
+          <div class="rowlabel"><span>1.2.</span><span>Número de Pasaporte</span></div>
+          <div class="box passport-box">
+            <div class="passport-grid" id="passport-grid-readonly">
+              {% with pass=datos_f43.numero_pasaporte|default:"" %}
+                {% for i in "12345678901" %}
+                  <input type="text" maxlength="1" readonly value="{{ pass|slice:forloop.counter0|slice:'1' }}">
+                {% endfor %}
+              {% endwith %}
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="rowlabel"><span>1.3.</span><span>País de Residencia</span></div>
+          <input class="box passport-country" type="text" value="{{ datos_f43.pais_residencia|default:'—' }}" readonly>
+        </div>
+      </div>
+
+      <div class="rowlabel" style="margin-top:.11in"><span>1.4.</span><span>Dirección de Residencia</span></div>
+      <input class="box blank field-input" type="text" value="{{ datos_f43.direccion_residencia|default:'—' }}" readonly>
+
+      <div class="two-cols" style="margin-top:.11in">
+        <div>
+          <div class="rowlabel"><span>1.5.</span><span>Correo Electrónico</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.correo_electronico|default:'—' }}" readonly>
+        </div>
+        <div>
+          <div class="rowlabel"><span>1.6.</span><span>Teléfono:</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.telefono|default:'—' }}" readonly>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:.02in">2. &nbsp; Datos referentes a la importación.</div>
+
+      <div class="rowlabel"><span>2.1.</span><span>Provincia donde será realizada la solicitud</span></div>
+      <input class="box blank field-input" type="text" readonly
+        value="{% with p=datos_f43.provincia %}{% if p == 'pinar_del_rio' %}Pinar del Río{% elif p == 'artemisa' %}Artemisa{% elif p == 'la_habana' %}La Habana{% elif p == 'mayabeque' %}Mayabeque{% elif p == 'matanzas' %}Matanzas{% elif p == 'cienfuegos' %}Cienfuegos{% elif p == 'villa_clara' %}Villa Clara{% elif p == 'sancti_spiritus' %}Sancti Spíritus{% elif p == 'ciego_de_avila' %}Ciego de Ávila{% elif p == 'camaguey' %}Camagüey{% elif p == 'las_tunas' %}Las Tunas{% elif p == 'granma' %}Granma{% elif p == 'holguin' %}Holguín{% elif p == 'santiago_de_cuba' %}Santiago de Cuba{% elif p == 'guantanamo' %}Guantánamo{% elif p == 'isla_de_la_juventud' %}Isla de la Juventud{% else %}{{ p|default:'—' }}{% endif %}{% endwith %}">
+
+      <div class="rowlabel" style="margin-top:.05in"><span>2.2.</span><span>Modo de la Importación</span></div>
+      <div class="import-mode">
+        <div>Equipaje acompañante</div>
+        <div><input class="checkbox" type="checkbox" disabled {% if datos_f43.modo_importacion == 'equipaje' %}checked{% endif %}></div>
+        <div>Documento de Retención Aduanal (RAD)</div>
+        <div><input class="checkbox" type="checkbox" disabled {% if datos_f43.modo_importacion == 'rad' %}checked{% endif %}></div>
+        <div>Carga Acompañante</div>
+        <div><input class="checkbox" type="checkbox" disabled {% if datos_f43.modo_importacion == 'carga' %}checked{% endif %}></div>
+      </div>
+
+      <div class="three-cols" style="margin-top:.11in">
+        <div>
+          <div class="rowlabel"><span>2.3.</span><span>No. de vuelo</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.numero_vuelo|default:'—' }}" readonly>
+        </div>
+        <div>
+          <div class="rowlabel"><span>2.4.</span><span>Fecha de Arribo</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.fecha_arribo|default:'—' }}" readonly>
+        </div>
+        <div>
+          <div class="rowlabel"><span>2.5.</span><span>País de procedencia</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.pais_procedencia|default:'—' }}" readonly>
+        </div>
+      </div>
+
+      <div class="three-cols" style="margin-top:.11in">
+        <div>
+          <div class="rowlabel"><span>2.6.</span><span>Aduana de acceso</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.aduana_acceso|default:'—' }}" readonly>
+        </div>
+        <div>
+          <div class="rowlabel"><span>2.7.</span><span>Lugar de acceso</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.lugar_acceso|default:'—' }}" readonly>
+        </div>
+        <div>
+          <div class="rowlabel"><span>2.8.</span><span>No. del RAD</span></div>
+          <input class="box blank field-input" type="text" value="{{ datos_f43.numero_rad|default:'—' }}" readonly>
+        </div>
+      </div>
+
+      <div class="rowlabel" style="margin-top:.11in"><span>2.9.</span><span>Objetivo de la Importación</span></div>
+      <div class="objective">
+        <div>Empleo Directo</div>
+        <div><input class="checkbox" type="checkbox" disabled {% if datos_f43.objetivo_importacion == 'empleo_directo' %}checked{% endif %}></div>
+        <div>Muestra Expositiva</div>
+        <div><input class="checkbox" type="checkbox" disabled {% if datos_f43.objetivo_importacion == 'muestra_expositiva' %}checked{% endif %}></div>
+        <div>Otros</div>
+        <div><input class="checkbox" type="checkbox" disabled {% if datos_f43.objetivo_importacion == 'otros' %}checked{% endif %}></div>
+      </div>
+      {% if datos_f43.objetivo_importacion == 'otros' and datos_f43.objetivo_otros_detalle %}
+        <div class="other-line">
+          <span>Especificado:</span>
+          <input type="text" value="{{ datos_f43.objetivo_otros_detalle }}" readonly>
+        </div>
+      {% endif %}
+
+      <div class="rowlabel" style="margin-top:.10in"><span>2.10.</span><span>Periodo de la Importación</span></div>
+      <div class="period">
+        <div>Definitiva</div>
+        <div><input class="checkbox" type="radio" disabled {% if datos_f43.periodo_importacion == 'definitiva' or not datos_f43.periodo_importacion %}checked{% endif %}></div>
+        <div>Temporal</div>
+        <div><input class="checkbox" type="radio" disabled {% if datos_f43.periodo_importacion == 'temporal' %}checked{% endif %}></div>
+        <div>Tiempo Solicitado (meses)</div>
+        <input class="period-input" type="text" value="{% if datos_f43.periodo_importacion == 'temporal' %}{{ datos_f43.tiempo_solicitado|default:'' }}{% endif %}" readonly>
+      </div>
+
+      <div class="rowlabel" style="margin-top:.10in"><span>2.11.</span><span>Relación de Equipos y Medios</span></div>
+      <table class="equip">
+        <colgroup><col><col><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>DESCRIPCION</th>
+            <th>MARCA</th>
+            <th>MODELO</th>
+            <th>CANTIDAD</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eq in equipos %}
+            <tr>
+              <td style="text-align:center;">{{ forloop.counter }}</td>
+              <td style="padding:0 4px;">{{ eq.descripcion }}</td>
+              <td style="padding:0 4px;">{{ eq.marca }}</td>
+              <td style="padding:0 4px;">{{ eq.modelo }}</td>
+              <td style="text-align:center;">{{ eq.cantidad }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" style="text-align:center;color:#888;padding:6px;">Sin equipos registrados</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="small-heading">Datos Solicitud</div>
+      <table class="bottom-table">
+        <tr>
+          <td class="b1"><b>Fecha de Solicitud</b></td>
+          <td class="b2"><input type="text" readonly value="{% if datos_f43.fecha_solicitud %}{{ datos_f43.fecha_solicitud }}{% else %}{{ solicitud.fecha_creacion|date:'d/m/Y' }}{% endif %}"></td>
+          <td class="b3"><b>FIRMA</b></td>
+          <td class="b4"><input type="text" readonly value="{{ datos_f43.firma_ci|default:'—' }}"></td>
+        </tr>
+      </table>
+
+      <div class="small-heading">Para uso del Control de Trámites</div>
+      <table class="bottom-table control">
+        <tr>
+          <td class="b1"><b>REGISTRO<br>ENTRADA</b></td>
+          <td class="b2"><input type="text" readonly value="{{ solicitud.numero }}"></td>
+          <td class="b3"><b>FECHA<br>APROBACION</b></td>
+          <td class="b4"><input type="text" readonly value="{% if solicitud.fecha_resolucion %}{{ solicitud.fecha_resolucion|date:'d/m/Y' }}{% else %}—{% endif %}"></td>
+          <td class="b1"><b>REGISTRO<br>SALIDA</b></td>
+          <td class="b2"><input type="text" readonly value="{% if solicitud.esta_resuelta %}{{ solicitud.numero }}-R{% else %}—{% endif %}"></td>
+        </tr>
+      </table>
+
+      {% if solicitud.es_aprobada and solicitud.licencia %}
+        <div class="no-print" style="margin-top:.10in;padding:5px 10px;background:#E8F5E9;border:1px solid #A5D6A7;border-radius:4px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:9pt;font-weight:bold;color:#1B5E20;">Licencia generada:</span>
+            <span style="font-size:9pt;font-family:monospace;color:#1B5E20;">{{ solicitud.licencia.numero }}</span>
+          </div>
+          <a href="{% url 'licencias:detalle' solicitud.licencia.numero %}" style="font-size:9pt;color:#1B5E20;font-weight:bold;text-decoration:none;">Ver licencia →</a>
+        </div>
+      {% endif %}
+
+      {% if solicitud.observaciones_solicitante %}
+        <div class="no-print" style="margin-top:.08in;border:1px solid #111;padding:4px 8px;">
+          <strong style="font-size:8.5pt;">Observaciones del solicitante:</strong>
+          <p style="font-size:8.5pt;margin-top:2px;">{{ solicitud.observaciones_solicitante }}</p>
+        </div>
+      {% endif %}
+
+      {% if observaciones_tecnicas_parsed %}
+        <div class="no-print" style="margin-top:.08in;border:1px solid #111;padding:4px 8px;">
+          <strong style="font-size:8.5pt;">Criterio técnico del especialista:</strong>
+          <p style="font-size:8.5pt;margin-top:2px;">{{ observaciones_tecnicas_parsed.criterio|default:'—' }}</p>
+          {% if observaciones_tecnicas_parsed.evaluador %}
+            <p style="font-size:8pt;color:#555;margin-top:4px;line-height:1.4;">
+              Evaluado por: {{ observaciones_tecnicas_parsed.evaluador }}
+              {% if observaciones_tecnicas_parsed.banda_detectada %} · Banda: {{ observaciones_tecnicas_parsed.banda_detectada }}{% endif %}
+              {% if observaciones_tecnicas_parsed.cumple_normativa is not None %} · Cumple normativa: {% if observaciones_tecnicas_parsed.cumple_normativa %}Sí{% else %}No{% endif %}{% endif %}
+            </p>
           {% endif %}
         </div>
       {% endif %}
 
-  <!-- ── HOJA A4 – Solo lectura ──────────────────────────────────────────────────────────────── -->
-
-  <!-- ── HOJA A4 — Solo lectura ────────────────────────────────────────────── -->
-  <div class="f43-hoja">
-
-    <div class="f43-encabezado">
-      <div class="f43-encabezado-titulo">
-        SOLICITUD DE AUTORIZACIÓN TÉCNICA POR PERSONAS NATURALES PARA LA IMPORTACIÓN
-        DE EQUIPOS Y COMPONENTES REGULADOS POR EL MINISTERIO DE COMUNICACIONES.
-      </div>
-      <div class="f43-encabezado-codigo">F.43</div>
-    </div>
-
-    {% if solicitud.categoria %}
-    <div style="margin-top:4mm;padding:5px 8px;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:4px;display:flex;align-items:center;gap:8px;">
-      <i data-lucide="tag" style="width:14px;height:14px;color:#4338CA;"></i>
-      <span style="font-size:9.5pt;color:#4338CA;font-weight:600;">Categoría de solicitud: {{ solicitud.get_categoria_display }}</span>
-    </div>
-    {% endif %}
-
-    <table class="f43-tabla">
-      <thead><tr><th colspan="4">Datos de la Persona Solicitante</th></tr></thead>
-      <tbody>
-        <tr><td class="f43-campo-label">1. Nombre y Apellidos</td><td colspan="3">{{ datos_f43.nombre_apellidos|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">2. Número de Pasaporte</td><td>{{ datos_f43.numero_pasaporte|default:"—" }}</td><td class="f43-campo-label">3. País de Residencia</td><td>{{ datos_f43.pais_residencia|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">4. Dirección de Residencia</td><td colspan="3">{{ datos_f43.direccion_residencia|default:"—" }}</td></tr>
-        <tr><td class="f43-campo-label">5. Correo Electrónico</td><td>{{ datos_f43.correo_electronico|default:"—" }}</td><td class="f43-campo-label">6. Teléfono</td><td>{{ datos_f43.telefono|default:"—" }}</td></tr>
-      </tbody>
-    </table>
-
-    <table class="f43-tabla">
-      <thead><tr><th colspan="4">Datos referentes a la importación</th></tr></thead>
-      <tbody>
-        <tr>
-          <td class="f43-campo-label">1. Provincia</td>
-          <td colspan="3">
-            {% with p=datos_f43.provincia %}
-              {% if p == 'pinar_del_rio' %}Pinar del Río
-              {% elif p == 'artemisa' %}Artemisa
-              {% elif p == 'la_habana' %}La Habana
-              {% elif p == 'mayabeque' %}Mayabeque
-              {% elif p == 'matanzas' %}Matanzas
-              {% elif p == 'cienfuegos' %}Cienfuegos
-              {% elif p == 'villa_clara' %}Villa Clara
-              {% elif p == 'sancti_spiritus' %}Sancti Spíritus
-              {% elif p == 'ciego_de_avila' %}Ciego de Ávila
-              {% elif p == 'camaguey' %}Camagüey
-              {% elif p == 'las_tunas' %}Las Tunas
-              {% elif p == 'granma' %}Granma
-              {% elif p == 'holguin' %}Holguín
-              {% elif p == 'santiago_de_cuba' %}Santiago de Cuba
-              {% elif p == 'guantanamo' %}Guantánamo
-              {% elif p == 'isla_de_la_juventud' %}Isla de la Juventud
-              {% else %}{{ p|default:"—" }}{% endif %}
-            {% endwith %}
-          </td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">2. Modo de Importación</td>
-          <td colspan="3">
-            {% with m=datos_f43.modo_importacion %}
-              {% if m == 'equipaje' %}Equipaje acompañante
-              {% elif m == 'rad' %}Documento de Retención Aduanal (RAD)
-              {% elif m == 'carga' %}Carga acompañante
-              {% else %}{{ m|default:"—" }}{% endif %}
-            {% endwith %}
-          </td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">3. No. de vuelo</td>
-          <td>{{ datos_f43.numero_vuelo|default:"—" }}</td>
-          <td class="f43-campo-label">4. Fecha de Arribo</td>
-          <td>{{ datos_f43.fecha_arribo|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">5. País de procedencia</td>
-          <td>{{ datos_f43.pais_procedencia|default:"—" }}</td>
-          <td class="f43-campo-label">6. Aduana de acceso</td>
-          <td>{{ datos_f43.aduana_acceso|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">7. Lugar de acceso</td>
-          <td>{{ datos_f43.lugar_acceso|default:"—" }}</td>
-          <td class="f43-campo-label">8. No. del RAD</td>
-          <td>{{ datos_f43.numero_rad|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">9. Objetivo</td>
-          <td colspan="3">
-            {% with o=datos_f43.objetivo_importacion %}
-              {% if o == 'empleo_directo' %}Empleo directo
-              {% elif o == 'muestra_expositiva' %}Muestra expositiva
-              {% elif o == 'otros' %}Otros{% if datos_f43.objetivo_otros_detalle %} — {{ datos_f43.objetivo_otros_detalle }}{% endif %}
-              {% else %}{{ o|default:"—" }}{% endif %}
-            {% endwith %}
-          </td>
-        </tr>
-        <tr>
-          <td class="f43-campo-label">10. Período</td>
-          <td colspan="3">
-            {% with per=datos_f43.periodo_importacion %}
-              {% if per == 'definitiva' %}Definitiva
-              {% elif per == 'temporal' %}Temporal{% if datos_f43.tiempo_solicitado %} — {{ datos_f43.tiempo_solicitado }} meses{% endif %}
-              {% else %}{{ per|default:"—" }}{% endif %}
-            {% endwith %}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <table class="f43-tabla">
-      <thead>
-        <tr><th colspan="5">11. Relación de Equipos y Medios</th></tr>
-        <tr><th style="width:5%;">No.</th><th style="width:40%;">DESCRIPCIÓN</th><th style="width:20%;">MARCA</th><th style="width:20%;">MODELO</th><th style="width:15%;">CANTIDAD</th></tr>
-      </thead>
-      <tbody>
-        {% for eq in equipos %}
-        <tr><td style="text-align:center;">{{ forloop.counter }}</td><td>{{ eq.descripcion }}</td><td>{{ eq.marca }}</td><td>{{ eq.modelo }}</td><td style="text-align:center;">{{ eq.cantidad }}</td></tr>
-        {% empty %}
-        <tr><td colspan="5" style="text-align:center;color:#888;">Sin equipos registrados</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <table class="f43-tabla">
-      <tbody>
-        <tr><td class="f43-campo-label" style="width:20%;">Fecha de Solicitud</td><td style="width:30%;">{% if datos_f43.fecha_solicitud %}{{ datos_f43.fecha_solicitud }}{% else %}{{ solicitud.fecha_creacion|date:"d/m/Y" }}{% endif %}</td><td class="f43-campo-label" style="width:20%;">FIRMA</td><td style="width:30%;">{{ datos_f43.firma_ci|default:"—" }}</td></tr>
-      </tbody>
-    </table>
-
-    <table class="f43-tabla">
-      <thead><tr><th colspan="3">Para uso del Control de Trámites</th></tr></thead>
-      <tbody>
-        <tr><td class="f43-campo-label" style="width:33%;">REGISTRO ENTRADA</td><td class="f43-campo-label" style="width:33%;">FECHA APROBACIÓN</td><td class="f43-campo-label" style="width:34%;">REGISTRO SALIDA</td></tr>
-        <tr><td>{{ solicitud.numero }}</td><td>{% if solicitud.fecha_resolucion %}{{ solicitud.fecha_resolucion|date:"d/m/Y" }}{% else %}—{% endif %}</td><td>{% if solicitud.esta_resuelta %}{{ solicitud.numero }}-R{% else %}—{% endif %}</td></tr>
-      </tbody>
-    </table>
-
-    {% if solicitud.es_aprobada %}
-      {% with licencia=solicitud.licencia %}
-        {% if licencia %}
-        <div style="margin-top:5mm;padding:6px 10px;background-color:#E8F5E9;border:1px solid #A5D6A7;border-radius:4px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:9.5pt;font-weight:bold;color:#1B5E20;">Licencia generada:</span>
-            <span style="font-size:9.5pt;font-family:monospace;color:#1B5E20;">{{ licencia.numero }}</span>
-          </div>
-          <a href="{% url 'licencias:detalle' licencia.numero %}" style="font-size:9.5pt;color:#1B5E20;font-weight:bold;text-decoration:none;">Ver licencia →</a>
+      {% if solicitud.observaciones_operador %}
+        <div class="no-print" style="margin-top:.08in;border:1px solid #111;padding:4px 8px;">
+          <strong style="font-size:8.5pt;">Observaciones del operador:</strong>
+          <p style="font-size:8.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p>
         </div>
-        {% endif %}
-      {% endwith %}
-    {% endif %}
+      {% endif %}
+    </section>
 
-    {% if solicitud.observaciones_solicitante %}
-    <div style="margin-top:4mm;"><strong style="font-size:9.5pt;">Observaciones del solicitante:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_solicitante }}</p></div>
-    {% endif %}
+    <!-- PÁGINA 2 -->
+    <section class="page page2">
+      <header class="header">
+        <div class="logo-cell">
+          <img src="{% static 'assets/logo.jpeg' %}" alt="Logo">
+        </div>
+        <div class="header-title">
+          SOLICITUD DE AUTORIZACIÓN TÉCNICA POR<br>
+          PERSONAS NATURALES PARA LA IMPORTACIÓN<br>
+          DE EQUIPOS Y COMPONENTES REGULADOS POR<br>
+          EL MINISTERIO DE COMUNICACIONES.
+        </div>
+        <div class="header-code">F.43</div>
+      </header>
 
-    {% if solicitud.observaciones_tecnicas %}
-    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;"><strong style="font-size:9.5pt;">Criterio técnico del especialista:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_tecnicas }}</p></div>
-    {% endif %}
+      <div class="instructions-title">Instrucciones para llenar el Formulario</div>
+      <table class="inst-table">
+        <colgroup><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th>No. del<br>campo</th>
+            <th>Denominación del campo</th>
+            <th>Especificaciones del campo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1.1.</td><td>Nombre y Apellidos del Solicitante</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.2.</td><td>Número de Pasaporte</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.3.</td><td>País de Residencia</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.4.</td><td>Dirección de Residencia</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.5.</td><td>Correo Electrónico</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.6.</td><td>Teléfono</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.7.</td><td>Provincia donde será realizada la<br>solicitud</td><td>Provincia por donde se realiza la solicitud de<br>autorización y donde se recibirá la misma.</td></tr>
+          <tr><td>1.8.</td><td>Modo de importación</td><td>Si la importación se realiza como equipaje<br>acompañante o si el proceso se realiza después de<br>una retención aduanal.</td></tr>
+          <tr><td>1.9.</td><td>No. Vuelo</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.10.</td><td>Fecha de Arribo</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.11.</td><td>País de procedencia</td><td>Se explica por si solo</td></tr>
+          <tr><td>1.12.</td><td>Aduana de acceso</td><td>Se detalla si es por aeropuerto, puerto o aduana<br>postal</td></tr>
+          <tr><td>1.13.</td><td>Lugar de acceso</td><td>Se detalla por qué aeropuerto, puerto o aduana<br>postal específico se realizará la importación.</td></tr>
+          <tr><td>1.14.</td><td>No. del RAD</td><td>Se detalla el número del documento de retención<br>aduanal (RAD) que emite la aduana.</td></tr>
+          <tr><td>1.15.</td><td>Objetivo de la Importación</td><td>Debe definirse cuál de los objetivos relacionados se<br>persigue con la importación. En el caso de ser otro<br>objetivo, especificar.</td></tr>
+          <tr><td>1.16.</td><td>Periodo de la Importación</td><td>Se deberá especificar si es definitiva o temporal. En<br>el caso de ser temporal, determinar la cantidad de<br>meses.</td></tr>
+        </tbody>
+      </table>
+    </section>
 
-    {% if solicitud.observaciones_operador %}
-    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;"><strong style="font-size:9.5pt;">Observaciones del operador:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p></div>
-    {% endif %}
+    <!-- PÁGINA 3 -->
+    <section class="page page3">
+      <header class="header">
+        <div class="logo-cell">
+          <img src="{% static 'assets/logo.jpeg' %}" alt="Logo">
+        </div>
+        <div class="header-title">
+          SOLICITUD DE AUTORIZACIÓN TÉCNICA POR<br>
+          PERSONAS NATURALES PARA LA IMPORTACIÓN<br>
+          DE EQUIPOS Y COMPONENTES REGULADOS POR<br>
+          EL MINISTERIO DE COMUNICACIONES.
+        </div>
+        <div class="header-code">F.43</div>
+      </header>
+
+      <table class="inst-table">
+        <colgroup><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th>No. del<br>campo</th>
+            <th>Denominación del campo</th>
+            <th>Especificaciones del campo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="long">
+            <td>1.17.</td>
+            <td>Relación de Equipos y Medios</td>
+            <td>Deben consignarse, por renglones los componentes del embarque cuya liberación se solicita. En la columna "Descripción" expresar la función principal del artículo, en "Marca" y "Modelo" la información correspondiente, y en "Cantidad" la cifra de medios a importar.<br>Ampliar la cantidad de renglones del formato, si fuera necesario por la cantidad de ítems, o anexar un listado, con los mismos datos solicitados, en formato Excel o Word.<br><span class="bold-under">En esta relación de medios se pondrán exclusivamente los equipos y componentes que se encuentran regulados por la legislación vigente.</span></td>
+          </tr>
+          <tr class="data">
+            <td>-</td>
+            <td>Datos Solicitud</td>
+            <td>Fecha solicitud, se refiere a la fecha en que se envía el formulario. En la copia a enviar por vía electrónica, el espacio "Firma" se llenará con el número del Carné de Identidad o Pasaporte del solicitante.</td>
+          </tr>
+          <tr class="control">
+            <td>-</td>
+            <td>Para uso del Control de Tramites</td>
+            <td>Campos para los especialistas del MINCOM</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        NOTA: En el caso que la solicitud se realize posterior a una retención aduanal,<br>
+        adjunto a la solicitud se entregará o enviará copia del documento de retención<br>
+        emitido por la Aduana General de la República.
+      </div>
+    </section>
 
   </div>
-  <!-- FIN HOJA A4 -->
 
+  <!-- PANELES DE GESTIÓN -->
   {% if puede_gestionar or puede_evaluar %}
-  <div style="width:210mm;margin-top:var(--espacio-6);">
+  <div class="f43-panel-gestion">
 
-    <!-- Panel de supervisión directiva -->
     {% if user.es_directivo %}
     <div class="tarjeta" style="margin-bottom:var(--espacio-5);">
       <div class="tarjeta-cuerpo" style="display:flex;align-items:center;justify-content:space-between;gap:var(--espacio-4);">
@@ -395,7 +524,6 @@
     </div>
     {% endif %}
 
-    <!-- Historial de cambios -->
     <div class="tarjeta" style="margin-bottom:var(--espacio-5);">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
@@ -466,7 +594,6 @@
   </div>
   {% endif %}
 
-  <!-- Botón flotante "Volver arriba" -->
   <button type="button" class="btn-scroll-top" id="btn-scroll-top"
     title="Volver arriba" aria-label="Volver arriba"
     onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">
@@ -480,6 +607,56 @@
 <script>
   document.body.dataset.pagina = 'solicitud-detalle';
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     ZOOM (solo aumentar, máximo 130%)
+     ═══════════════════════════════════════════════════════════════════════ */
+  const ZOOM_MIN = 100;
+  const ZOOM_MAX = 130;
+  let _zoomActual = 100;
+
+  function cambiarZoom(delta) {
+    _zoomActual = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, _zoomActual + delta));
+    aplicarZoom();
+  }
+
+  function resetearZoom() {
+    _zoomActual = 100;
+    aplicarZoom();
+  }
+
+  function aplicarZoom() {
+    const doc    = document.getElementById('f43-documento');
+    const nivel  = document.getElementById('zoom-nivel');
+    const btnMas = document.getElementById('zoom-btn-mas');
+
+    if (doc) {
+      doc.style.transform = `scale(${_zoomActual / 100})`;
+      doc.style.transformOrigin = 'top center';
+      doc.style.marginBottom = `${(_zoomActual - 100) * 5}px`;
+    }
+    if (nivel) nivel.textContent = _zoomActual + '%';
+
+    if (btnMas) {
+      const enMaximo = _zoomActual >= ZOOM_MAX;
+      btnMas.disabled = enMaximo;
+      btnMas.style.opacity = enMaximo ? '0.4' : '';
+      btnMas.style.cursor = enMaximo ? 'not-allowed' : 'pointer';
+      btnMas.title = enMaximo ? 'Tamaño máximo alcanzado' : 'Aumentar tamaño';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     BOTÓN SCROLL TOP
+     ═══════════════════════════════════════════════════════════════════════ */
+  window.addEventListener('scroll', function() {
+    const btn = document.getElementById('btn-scroll-top');
+    if (!btn) return;
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     CAMBIO DE ESTADO
+     ═══════════════════════════════════════════════════════════════════════ */
   function confirmarCambioEstado() {
     const estadoSeleccionado = document.querySelector('input[name="estado_nuevo"]:checked');
     if (!estadoSeleccionado) { mostrarToast({ tipo: 'warning', mensaje: 'Seleccione un estado antes de continuar.' }); return; }
@@ -507,7 +684,7 @@
     .then(data => {
       if (data.ok) {
         const badgeEstado = document.getElementById('badge-estado-solicitud');
-        if (badgeEstado) { badgeEstado.textContent = data.estado_label; badgeEstado.className = `badge ${data.clase_badge}`; badgeEstado.style.fontSize = '13px'; badgeEstado.style.padding = '6px 14px'; }
+        if (badgeEstado) { badgeEstado.textContent = data.estado_label; badgeEstado.className = `badge ${data.clase_badge}`; }
         mostrarToast({ tipo: 'success', titulo: 'Estado actualizado', mensaje: `La solicitud cambió a "${data.estado_label}" correctamente.` });
         if (data.licencia_numero) { mostrarToast({ tipo: 'info', titulo: 'Licencia generada', mensaje: `Licencia ${data.licencia_numero} creada automáticamente.`, duracion: 6000 }); setTimeout(() => location.reload(), 1800); return; }
         const estadosResueltos = ['aprobada', 'denegada', 'cancelada'];
@@ -520,7 +697,9 @@
     .catch(() => { mostrarToast({ tipo: 'error', mensaje: 'Ocurrió un error al guardar. Intente de nuevo.' }); btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = textoOriginal; });
   }
 
-  // ─── Supervisión directiva ─────────────────────────────────────────────────
+  /* ═══════════════════════════════════════════════════════════════════════
+     SUPERVISIÓN DIRECTIVA
+     ═══════════════════════════════════════════════════════════════════════ */
   function confirmarSupervision() {
     const revisada = {{ solicitud.revisada_directivo|yesno:"true,false" }};
     confirmarAccion({

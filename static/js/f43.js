@@ -1,14 +1,22 @@
-/* ─── Formulario F43 — equipos con búsqueda en catálogo ─────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   F43 — JS adaptado al formulario fiel (3 páginas Letter + catálogo equipos)
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 let filaCount = 1;
 
-// ─── Agregar fila ─────────────────────────────────────────────────────────────
+/* URL base del endpoint de búsqueda de equipos (inyectada desde el template) */
+function _urlBuscarEquipos() {
+  return (window.F43_URLS && window.F43_URLS.buscarEquipos) || '/equipos/buscar/';
+}
+
+/* ─── Agregar fila ───────────────────────────────────────────────────────── */
 function agregarFila() {
   filaCount++;
   const tbody = document.getElementById('equipos-tbody');
-  const fila  = crearFila(filaCount);
+  if (!tbody) return;
+  const fila = crearFila(filaCount);
   tbody.appendChild(fila);
-  lucide.createIcons({ nodes: [fila] });
+  if (window.lucide) lucide.createIcons({ nodes: [fila] });
 }
 
 function crearFila(numero) {
@@ -58,25 +66,14 @@ function crearFila(numero) {
     </td>
   `;
 
-  // Cerrar dropdown al hacer click fuera
-  document.addEventListener('click', function(e) {
-    const dropdowns = document.querySelectorAll('.f43-dropdown');
-    dropdowns.forEach(d => {
-      if (!d.parentElement.contains(e.target)) {
-        d.style.display = 'none';
-      }
-    });
-  });
-
   return tr;
 }
 
-// ─── Poblar equipos desde JSON (restauración tras error de validación) ─────
+/* ─── Poblar equipos desde JSON (restauración tras error de validación) ──── */
 function poblarEquiposDesdeJSON(equipos) {
   const tbody = document.getElementById('equipos-tbody');
   if (!tbody || !equipos.length) return;
 
-  // Limpiar tabla existente
   tbody.innerHTML = '';
 
   equipos.forEach((equipo, index) => {
@@ -128,7 +125,6 @@ function poblarEquiposDesdeJSON(equipos) {
       </td>
     `;
 
-    // Si es equipo del catálogo, poner estilos de seleccionado
     if (equipo.listado && equipo.equipoId) {
       const input = tr.querySelector('.f43-input-busqueda');
       input.style.borderBottom = '2px solid var(--color-secundario)';
@@ -144,83 +140,52 @@ function poblarEquiposDesdeJSON(equipos) {
   });
 
   filaCount = equipos.length;
-
-  // Re-inicializar iconos Lucide
-  lucide.createIcons({ nodes: [tbody] });
+  if (window.lucide) lucide.createIcons({ nodes: [tbody] });
 }
 
-// ─── Helper para escapar HTML ────────────────────────────────────────────────
+/* ─── Helper para escapar HTML ───────────────────────────────────────────── */
 function escaparHTML(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
 
-// ─── Buscar en catálogo (AJAX) ────────────────────────────────────────────────
+/* ─── Buscar en catálogo (AJAX) ──────────────────────────────────────────── */
 let busquedaTimeout = null;
-let abortController = null;  // Para cancelar peticiones anteriores
+let abortController = null;
 
 function buscarEnCatalogo(input) {
   const q        = input.value.trim();
   const fila     = input.closest('tr');
   const dropdown = input.nextElementSibling;
+  const urlBase  = _urlBuscarEquipos();
 
-  // Si ya tiene un equipo del catálogo seleccionado y no cambió el texto, no buscar
+  if (!dropdown) return;
+
   if (fila.dataset.equipoId && input.value === input.dataset.valorOriginal) return;
 
-  // Limpiar selección previa si el usuario edita el texto
   if (fila.dataset.equipoId) {
     limpiarSeleccion(fila);
   }
 
   clearTimeout(busquedaTimeout);
-
-  // Cancelar petición anterior si existe
-  if (abortController) {
-    abortController.abort();
-  }
+  if (abortController) abortController.abort();
 
   if (q.length < 2) {
-    // Si el campo está vacío y es por foco, mostrar todos los equipos
     if (q.length === 0) {
       clearTimeout(busquedaTimeout);
       if (abortController) abortController.abort();
       abortController = new AbortController();
       mostrarEstadoCargando(input, dropdown);
-      fetch(`/equipos/buscar/?q=`, { signal: abortController.signal })
+      fetch(`${urlBase}?q=`, { signal: abortController.signal })
         .then(r => r.json())
         .then(data => {
           quitarEstadoCargando(input);
-          if (data.equipos.length === 0) {
+          if (!data.equipos || data.equipos.length === 0) {
             dropdown.style.display = 'none';
             return;
           }
-          dropdown.innerHTML = data.equipos.map(e => `
-            <div class="f43-dropdown-item"
-              onclick="seleccionarEquipo(this)"
-              data-id="${e.id}"
-              data-nombre="${e.nombre}"
-              data-marca="${e.marca}"
-              data-modelo="${e.modelo}"
-              data-banda="${e.banda}"
-              data-restringido="${e.restringido}"
-              data-libre="${e.libre}">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                  <div style="font-weight:600;font-size:10pt;">${e.marca} ${e.modelo}</div>
-                  <div style="font-size:9pt;color:#666;margin-top:1px;">${e.nombre}</div>
-                </div>
-                <div>
-                  ${e.restringido
-                    ? '<span style="font-size:8pt;background:#FFEBEE;color:#B71C1C;padding:2px 6px;border-radius:4px;border:1px solid #EF9A9A;">Restringida</span>'
-                    : e.libre
-                      ? '<span style="font-size:8pt;background:#E8F5E9;color:#1B5E20;padding:2px 6px;border-radius:4px;border:1px solid #A5D6A7;">Banda libre</span>'
-                      : '<span style="font-size:8pt;background:#E3F2FD;color:#0D47A1;padding:2px 6px;border-radius:4px;border:1px solid #90CAF9;">No aplica</span>'
-                  }
-                </div>
-              </div>
-            </div>
-          `).join('');
+          dropdown.innerHTML = data.equipos.map(renderItemEquipo).join('');
           dropdown.style.display = 'block';
         })
         .catch(err => {
@@ -235,21 +200,19 @@ function buscarEnCatalogo(input) {
     return;
   }
 
-  // ─── Mostrar estado de carga ──────────────────────────────────────────
   mostrarEstadoCargando(input, dropdown);
 
   busquedaTimeout = setTimeout(() => {
     abortController = new AbortController();
 
-    fetch(`/equipos/buscar/?q=${encodeURIComponent(q)}`, {
+    fetch(`${urlBase}?q=${encodeURIComponent(q)}`, {
       signal: abortController.signal
     })
       .then(r => r.json())
       .then(data => {
-        // Quitar estado de carga
         quitarEstadoCargando(input);
 
-        if (data.equipos.length === 0) {
+        if (!data.equipos || data.equipos.length === 0) {
           dropdown.innerHTML = `
             <div class="f43-dropdown-vacio">
               <i data-lucide="search-x" style="width:14px;height:14px;opacity:0.5;"></i>
@@ -257,42 +220,14 @@ function buscarEnCatalogo(input) {
             </div>
           `;
           dropdown.style.display = 'block';
-          lucide.createIcons({ nodes: [dropdown] });
-
-          // Marcar como no listado
+          if (window.lucide) lucide.createIcons({ nodes: [dropdown] });
           marcarNoListado(fila);
         } else {
-          dropdown.innerHTML = data.equipos.map(e => `
-            <div class="f43-dropdown-item"
-              onclick="seleccionarEquipo(this)"
-              data-id="${e.id}"
-              data-nombre="${e.nombre}"
-              data-marca="${e.marca}"
-              data-modelo="${e.modelo}"
-              data-banda="${e.banda}"
-              data-restringido="${e.restringido}"
-              data-libre="${e.libre}">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                  <div style="font-weight:600;font-size:10pt;">${e.marca} ${e.modelo}</div>
-                  <div style="font-size:9pt;color:#666;margin-top:1px;">${e.nombre}</div>
-                </div>
-                <div>
-                  ${e.restringido
-                    ? '<span style="font-size:8pt;background:#FFEBEE;color:#B71C1C;padding:2px 6px;border-radius:4px;border:1px solid #EF9A9A;">Restringida</span>'
-                    : e.libre
-                      ? '<span style="font-size:8pt;background:#E8F5E9;color:#1B5E20;padding:2px 6px;border-radius:4px;border:1px solid #A5D6A7;">Banda libre</span>'
-                      : '<span style="font-size:8pt;background:#E3F2FD;color:#0D47A1;padding:2px 6px;border-radius:4px;border:1px solid #90CAF9;">No aplica</span>'
-                  }
-                </div>
-              </div>
-            </div>
-          `).join('');
+          dropdown.innerHTML = data.equipos.map(renderItemEquipo).join('');
           dropdown.style.display = 'block';
         }
       })
       .catch((err) => {
-        // Ignorar errores por abort
         if (err.name === 'AbortError') return;
         quitarEstadoCargando(input);
         dropdown.style.display = 'none';
@@ -300,12 +235,37 @@ function buscarEnCatalogo(input) {
   }, 300);
 }
 
-// ─── Estado de carga ──────────────────────────────────────────────────────────
-function mostrarEstadoCargando(input, dropdown) {
-  // Clase visual en el input
-  input.classList.add('f43-buscando');
+function renderItemEquipo(e) {
+  return `
+    <div class="f43-dropdown-item"
+      onclick="seleccionarEquipo(this)"
+      data-id="${e.id}"
+      data-nombre="${e.nombre}"
+      data-marca="${e.marca}"
+      data-modelo="${e.modelo}"
+      data-banda="${e.banda}"
+      data-restringido="${e.restringido}"
+      data-libre="${e.libre}">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:600;font-size:10pt;">${e.marca} ${e.modelo}</div>
+          <div style="font-size:9pt;color:#666;margin-top:1px;">${e.nombre}</div>
+        </div>
+        <div>
+          ${e.restringido
+            ? '<span style="font-size:8pt;background:#FFEBEE;color:#B71C1C;padding:2px 6px;border-radius:4px;border:1px solid #EF9A9A;">Restringida</span>'
+            : e.libre
+              ? '<span style="font-size:8pt;background:#E8F5E9;color:#1B5E20;padding:2px 6px;border-radius:4px;border:1px solid #A5D6A7;">Banda libre</span>'
+              : '<span style="font-size:8pt;background:#E3F2FD;color:#0D47A1;padding:2px 6px;border-radius:4px;border:1px solid #90CAF9;">No aplica</span>'
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
 
-  // Mostrar spinner en el dropdown
+function mostrarEstadoCargando(input, dropdown) {
+  input.classList.add('f43-buscando');
   dropdown.innerHTML = `
     <div class="f43-dropdown-cargando">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" class="f43-spinner">
@@ -322,7 +282,6 @@ function quitarEstadoCargando(input) {
   input.classList.remove('f43-buscando');
 }
 
-// ─── Seleccionar equipo del catálogo ─────────────────────────────────────────
 function seleccionarEquipo(item) {
   const fila     = item.closest('tr');
   const input    = fila.querySelector('.f43-input-busqueda');
@@ -334,23 +293,17 @@ function seleccionarEquipo(item) {
   const restringido = item.dataset.restringido === 'true';
   const libre       = item.dataset.libre === 'true';
 
-  // Rellenar campos
   input.value = nombre;
   input.dataset.valorOriginal = nombre;
   fila.querySelector('.f43-input-marca').value  = marca;
   fila.querySelector('.f43-input-modelo').value = modelo;
 
-  // Guardar ID del equipo
   fila.dataset.equipoId = item.dataset.id;
   fila.dataset.listado  = 'true';
 
-  // Ocultar dropdown
   dropdown.style.display = 'none';
-
-  // Quitar estado de carga
   quitarEstadoCargando(input);
 
-  // Mostrar badge de banda
   ocultarBadges(fila);
   if (restringido) {
     fila.querySelector('.f43-badge-restringido').style.display = 'flex';
@@ -358,12 +311,10 @@ function seleccionarEquipo(item) {
     fila.querySelector('.f43-badge-libre').style.display = 'flex';
   }
 
-  // Estilo visual de campo seleccionado
   input.style.borderBottom = '2px solid var(--color-secundario)';
   input.style.backgroundColor = '#F0FBF0';
 }
 
-// ─── Marcar como no listado ───────────────────────────────────────────────────
 function marcarNoListado(fila) {
   fila.dataset.equipoId = '';
   fila.dataset.listado  = 'false';
@@ -376,7 +327,6 @@ function marcarNoListado(fila) {
   input.style.backgroundColor = '#FFFDF0';
 }
 
-// ─── Limpiar selección ────────────────────────────────────────────────────────
 function limpiarSeleccion(fila) {
   fila.dataset.equipoId = '';
   fila.dataset.listado  = 'false';
@@ -396,7 +346,6 @@ function ocultarBadges(fila) {
     .forEach(b => b.style.display = 'none');
 }
 
-// ─── Eliminar fila ────────────────────────────────────────────────────────────
 function eliminarFila(btn) {
   const filas = document.querySelectorAll('#equipos-tbody tr');
   if (filas.length <= 1) return;
@@ -411,7 +360,6 @@ function renumerarFilas() {
   filaCount = document.querySelectorAll('#equipos-tbody tr').length;
 }
 
-// ─── Recopilar equipos para envío ────────────────────────────────────────────
 function recopilarEquipos() {
   const filas   = document.querySelectorAll('#equipos-tbody tr');
   const equipos = [];
@@ -432,90 +380,223 @@ function recopilarEquipos() {
   return equipos;
 }
 
-// ─── Campos condicionales ─────────────────────────────────────────────────────
-function toggleRAD(checked) {
-  document.getElementById('modo_importacion_hidden').value = checked ? 'rad' : 'equipaje';
+function sincronizarEquiposJSON() {
+  const json = document.getElementById('equipos-json');
+  if (json) json.value = JSON.stringify(recopilarEquipos());
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAMPOS CONDICIONALES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+(function initModoImportacion() {
+  const hidden      = document.getElementById('modo_importacion_hidden');
+  const chkEquipaje = document.getElementById('modo_equipaje');
+  const chkRad      = document.getElementById('modo_rad');
+  const chkCarga    = document.getElementById('modo_carga');
+  if (!hidden) return;
+
+  function sync() {
+    if (chkRad?.checked) hidden.value = 'rad';
+    else if (chkCarga?.checked) hidden.value = 'carga';
+    else if (chkEquipaje?.checked) hidden.value = 'equipaje';
+    else hidden.value = '';
+  }
+
+  function exclusivo(activo, otros) {
+    otros.forEach(o => { if (o) o.checked = false; });
+    if (activo) activo.checked = true;
+    sync();
+  }
+
+  chkEquipaje?.addEventListener('change', () => exclusivo(chkEquipaje, [chkRad, chkCarga]));
+  chkRad?.addEventListener('change',      () => exclusivo(chkRad,      [chkEquipaje, chkCarga]));
+  chkCarga?.addEventListener('change',    () => exclusivo(chkCarga,    [chkEquipaje, chkRad]));
+
+  sync();
+})();
+
+(function initObjetivo() {
+  const hidden     = document.getElementById('objetivo_importacion_hidden');
+  const chkEmpleo  = document.getElementById('obj_empleo');
+  const chkMuestra = document.getElementById('obj_muestra');
+  const chkOtros   = document.getElementById('obj_otros');
+  if (!hidden) return;
+
+  function sync() {
+    if (chkOtros?.checked) hidden.value = 'otros';
+    else if (chkMuestra?.checked) hidden.value = 'muestra_expositiva';
+    else if (chkEmpleo?.checked) hidden.value = 'empleo_directo';
+    else hidden.value = '';
+  }
+
+  function exclusivo(activo, otros) {
+    otros.forEach(o => { if (o) o.checked = false; });
+    if (activo) activo.checked = true;
+    sync();
+  }
+
+  chkEmpleo?.addEventListener('change',  () => exclusivo(chkEmpleo,  [chkMuestra, chkOtros]));
+  chkMuestra?.addEventListener('change', () => exclusivo(chkMuestra, [chkEmpleo, chkOtros]));
+  chkOtros?.addEventListener('change',   () => {
+    exclusivo(chkOtros, [chkEmpleo, chkMuestra]);
+    toggleOtros(chkOtros.checked);
+  });
+
+  sync();
+})();
+
 function toggleOtros(checked) {
-  document.getElementById('campo-otros').style.display = checked ? 'block' : 'none';
-  const hidden = document.getElementById('objetivo_importacion_hidden');
-  hidden.value = checked ? 'otros' : 'empleo_directo';
+  const campo = document.getElementById('campo-otros');
+  if (campo) campo.style.display = checked ? 'flex' : 'none';
+}
+
+function toggleRAD(checked) {
+  const rad = document.getElementById('id_numero_rad');
+  if (checked && rad) rad.focus();
 }
 
 function toggleTemporal(checked) {
   const input = document.getElementById('id_tiempo_solicitado');
+  if (!input) return;
   input.disabled = !checked;
   if (!checked) input.value = '';
 }
 
-document.querySelectorAll('input[name="periodo_importacion"]').forEach(r => {
-  r.addEventListener('change', function() {
-    toggleTemporal(this.value === 'temporal');
-  });
-});
+/* ═══════════════════════════════════════════════════════════════════════════
+   PASAPORTE — 11 inputs sincronizados con hidden
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function initPasaporte() {
+  const grid   = document.getElementById('passport-grid');
+  const hidden = document.getElementById('id_numero_pasaporte');
+  if (!grid || !hidden) return;
 
-// ─── Manejo de archivo adjunto ────────────────────────────────────────────────
-function mostrarArchivo(input) {
-  if (input.files && input.files[0]) {
-    const archivo = input.files[0];
-    document.getElementById('upload-area').style.display          = 'none';
-    document.getElementById('archivo-seleccionado').style.display = 'flex';
-    document.getElementById('nombre-archivo').textContent          = archivo.name;
+  const inputs = Array.from(grid.querySelectorAll('input'));
+
+  if (hidden.value) {
+    const val = hidden.value.replace(/\s/g, '').toUpperCase();
+    inputs.forEach((inp, i) => { inp.value = val[i] || ''; });
+  }
+
+  function syncHidden() {
+    hidden.value = inputs.map(i => i.value).join('').trim();
+  }
+
+  inputs.forEach((inp, idx) => {
+    inp.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase();
+      if (e.target.value && idx < inputs.length - 1) {
+        inputs[idx + 1].focus();
+      }
+      syncHidden();
+    });
+
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !inp.value && idx > 0) {
+        inputs[idx - 1].focus();
+      }
+    });
+
+    inp.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const txt = (e.clipboardData || window.clipboardData).getData('text')
+        .replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 11);
+      txt.split('').forEach((ch, i) => { if (inputs[i]) inputs[i].value = ch; });
+      syncHidden();
+    });
+  });
+
+  const form = document.getElementById('form-f43');
+  if (form) form.addEventListener('submit', syncHidden);
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZOOM (solo aumentar, máximo 130%)
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ZOOM_MIN = 100;
+const ZOOM_MAX = 130;
+let _zoomActual = 100;
+
+function cambiarZoom(delta) {
+  _zoomActual = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, _zoomActual + delta));
+  aplicarZoom();
+}
+
+function resetearZoom() {
+  _zoomActual = 100;
+  aplicarZoom();
+}
+
+function aplicarZoom() {
+  const doc    = document.getElementById('f43-documento');
+  const nivel  = document.getElementById('zoom-nivel');
+  const btnMas = document.getElementById('zoom-btn-mas');
+
+  if (doc) {
+    doc.style.transform = `scale(${_zoomActual / 100})`;
+    doc.style.transformOrigin = 'top center';
+    doc.style.marginBottom = `${(_zoomActual - 100) * 5}px`;
+  }
+  if (nivel) nivel.textContent = _zoomActual + '%';
+
+  if (btnMas) {
+    const enMaximo = _zoomActual >= ZOOM_MAX;
+    btnMas.disabled = enMaximo;
+    btnMas.style.opacity = enMaximo ? '0.4' : '';
+    btnMas.style.cursor = enMaximo ? 'not-allowed' : 'pointer';
+    btnMas.title = enMaximo ? 'Tamaño máximo alcanzado' : 'Aumentar tamaño';
   }
 }
 
-function quitarArchivo() {
-  document.getElementById('id_documento_adjunto').value            = '';
-  document.getElementById('upload-area').style.display             = 'flex';
-  document.getElementById('archivo-seleccionado').style.display    = 'none';
-}
-
-// ─── Cerrar dropdowns al hacer click fuera o cambiar foco ────────────────────
-document.addEventListener('click', function(e) {
-  document.querySelectorAll('.f43-dropdown').forEach(dropdown => {
-    const contenedor = dropdown.closest('td');
-    if (contenedor && !contenedor.contains(e.target)) {
-      dropdown.style.display = 'none';
-    }
-  });
-});
-
-document.addEventListener('focusin', function(e) {
-  document.querySelectorAll('.f43-dropdown').forEach(dropdown => {
-    const input = dropdown.previousElementSibling;
-    if (input && input !== e.target) {
-      dropdown.style.display = 'none';
-    }
-  });
-});
-
-// ─── Enviar formulario ────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENVIAR FORMULARIO
+   ═══════════════════════════════════════════════════════════════════════════ */
 function enviarFormulario() {
+  const hiddenPass = document.getElementById('id_numero_pasaporte');
+  const grid = document.getElementById('passport-grid');
+  if (hiddenPass && grid) {
+    hiddenPass.value = Array.from(grid.querySelectorAll('input')).map(i => i.value).join('').trim();
+  }
+
   const equipos = recopilarEquipos();
 
-  if (!document.getElementById('id_nombre_apellidos').value.trim()) {
-    mostrarToast({ tipo: 'warning', mensaje: 'Complete el nombre y apellidos del solicitante.' });
-    document.getElementById('id_nombre_apellidos').focus();
+  if (!document.getElementById('id_nombre_apellidos')?.value.trim()) {
+    if (typeof mostrarToast === 'function') {
+      mostrarToast({ tipo: 'warning', mensaje: 'Complete el nombre y apellidos del solicitante.' });
+    } else {
+      alert('Complete el nombre y apellidos del solicitante.');
+    }
+    document.getElementById('id_nombre_apellidos')?.focus();
     return;
   }
-  if (!document.getElementById('id_numero_pasaporte').value.trim()) {
-    mostrarToast({ tipo: 'warning', mensaje: 'Complete el número de pasaporte.' });
-    document.getElementById('id_numero_pasaporte').focus();
+  if (!hiddenPass?.value.trim()) {
+    if (typeof mostrarToast === 'function') {
+      mostrarToast({ tipo: 'warning', mensaje: 'Complete el número de pasaporte.' });
+    } else {
+      alert('Complete el número de pasaporte.');
+    }
+    grid?.querySelector('input')?.focus();
     return;
   }
-  if (!document.getElementById('id_provincia').value) {
-    mostrarToast({ tipo: 'warning', mensaje: 'Seleccione la provincia.' });
+  if (!document.getElementById('id_provincia')?.value) {
+    if (typeof mostrarToast === 'function') {
+      mostrarToast({ tipo: 'warning', mensaje: 'Seleccione la provincia.' });
+    } else {
+      alert('Seleccione la provincia.');
+    }
     return;
   }
   if (equipos.length === 0) {
-    mostrarToast({ tipo: 'warning', mensaje: 'Agregue al menos un equipo a la relación.' });
+    if (typeof mostrarToast === 'function') {
+      mostrarToast({ tipo: 'warning', mensaje: 'Agregue al menos un equipo a la relación.' });
+    } else {
+      alert('Agregue al menos un equipo a la relación.');
+    }
     return;
   }
 
-  // Advertir si hay equipos con frecuencia restringida
   const restringidos = document.querySelectorAll('.f43-badge-restringido[style*="flex"]');
-  if (restringidos.length > 0) {
+  if (restringidos.length > 0 && typeof mostrarToast === 'function') {
     mostrarToast({
       tipo:    'warning',
       titulo:  'Equipos con frecuencia restringida',
@@ -523,44 +604,73 @@ function enviarFormulario() {
     });
   }
 
-  document.getElementById('equipos-json').value = JSON.stringify(equipos);
+  const json = document.getElementById('equipos-json');
+  if (json) json.value = JSON.stringify(equipos);
 
-  // Guardar en localStorage como respaldo extra
   try {
     localStorage.setItem('f43_equipos_respaldo', JSON.stringify(equipos));
-  } catch(e) {
-    // Silencioso si localStorage está lleno
-  }
+  } catch(e) {}
 
-  document.getElementById('form-f43').submit();
+  document.getElementById('form-f43')?.submit();
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
 
-  // Cerrar dropdowns con Escape
+  const temporal = document.getElementById('periodo_temporal');
+  if (temporal) toggleTemporal(temporal.checked);
+
+  const chkOtros = document.getElementById('obj_otros');
+  if (chkOtros) toggleOtros(chkOtros.checked);
+
+  // Inicializar zoom por si el botón "+" debe deshabilitarse al cargar
+  aplicarZoom();
+
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       document.querySelectorAll('.f43-dropdown').forEach(d => d.style.display = 'none');
     }
   });
 
-  // Limpiar respaldo de localStorage si estamos en una carga limpia (sin error previo)
-  if (!document.getElementById('equipos-json').value || document.getElementById('equipos-json').value === '[]') {
+  document.addEventListener('click', function(e) {
+    document.querySelectorAll('.f43-dropdown').forEach(dropdown => {
+      const contenedor = dropdown.closest('td');
+      if (contenedor && !contenedor.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+  });
+
+  document.addEventListener('focusin', function(e) {
+    document.querySelectorAll('.f43-dropdown').forEach(dropdown => {
+      const input = dropdown.previousElementSibling;
+      if (input && input !== e.target) {
+        dropdown.style.display = 'none';
+      }
+    });
+  });
+
+  window.addEventListener('scroll', function() {
+    const btn = document.getElementById('btn-scroll-top');
+    if (!btn) return;
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+
+  const jsonInput = document.getElementById('equipos-json');
+  if (!jsonInput || !jsonInput.value || jsonInput.value === '[]') {
     localStorage.removeItem('f43_equipos_respaldo');
   }
 
-  // ── Validación en tiempo real (on blur) ──────────────────────────────────
-
   const MENSAJES = {
-    'id_nombre_apellidos':    'El nombre y apellidos son obligatorios.',
-    'id_numero_pasaporte':    'El número de pasaporte es obligatorio.',
-    'id_pais_residencia':     'El país de residencia es obligatorio.',
-    'id_direccion_residencia':'La dirección de residencia es obligatoria.',
-    'id_correo_electronico':  'El correo electrónico es obligatorio.',
-    'id_telefono':            'El teléfono es obligatorio.',
-    'id_provincia':           'Seleccione la provincia.',
+    'id_nombre_apellidos':     'El nombre y apellidos son obligatorios.',
+    'id_pais_residencia':      'El país de residencia es obligatorio.',
+    'id_direccion_residencia': 'La dirección de residencia es obligatoria.',
+    'id_correo_electronico':   'El correo electrónico es obligatorio.',
+    'id_telefono':             'El teléfono es obligatorio.',
+    'id_provincia':            'Seleccione la provincia.',
   };
 
   function mostrarErrorCampo(campo, mensaje) {
@@ -572,23 +682,17 @@ document.addEventListener('DOMContentLoaded', () => {
       errorEl = document.createElement('div');
       errorEl.className = 'f43-error-inline';
       errorEl.style.cssText = `
-        font-size: 11px;
+        font-size: 10px;
         color: #C62828;
-        margin-top: 3px;
+        margin-top: 2px;
         display: flex;
         align-items: center;
         gap: 4px;
-        font-family: var(--fuente-principal);
+        font-family: var(--fuente-principal, Arial, sans-serif);
       `;
       campo.parentElement.appendChild(errorEl);
     }
-    errorEl.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      ${mensaje}
-    `;
+    errorEl.textContent = mensaje;
   }
 
   function limpiarErrorCampo(campo) {
@@ -599,11 +703,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function validarCampoIndividual(campo) {
-    const valor = campo.value.trim();
+    const valor = (campo.value || '').trim();
 
     if (!valor) {
-      const mensaje = MENSAJES[campo.id] || 'Este campo es obligatorio.';
-      mostrarErrorCampo(campo, mensaje);
+      mostrarErrorCampo(campo, MENSAJES[campo.id] || 'Este campo es obligatorio.');
       return false;
     }
 
@@ -621,30 +724,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return true;
   }
 
-  const camposValidar = [
-    'id_nombre_apellidos',
-    'id_numero_pasaporte',
-    'id_pais_residencia',
-    'id_direccion_residencia',
-    'id_correo_electronico',
-    'id_telefono',
-  ];
-
-  camposValidar.forEach(id => {
+  ['id_nombre_apellidos', 'id_pais_residencia', 'id_direccion_residencia',
+   'id_correo_electronico', 'id_telefono'].forEach(id => {
     const campo = document.getElementById(id);
     if (!campo) return;
 
     campo.addEventListener('blur', () => {
-      if (campo.value.trim()) {
-        validarCampoIndividual(campo);
-      }
+      if (campo.value.trim()) validarCampoIndividual(campo);
     });
 
     campo.addEventListener('input', () => {
-      if (campo.style.borderBottom.includes('C62828')) {
-        if (campo.value.trim()) {
-          limpiarErrorCampo(campo);
-        }
+      if (campo.style.borderBottom.includes('C62828') && campo.value.trim()) {
+        limpiarErrorCampo(campo);
       }
     });
   });
@@ -661,30 +752,4 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
-  const btnContinuarPaso1 = document.querySelector('#paso-1 .tarjeta-pie .btn-primario');
-  if (btnContinuarPaso1) {
-    btnContinuarPaso1.addEventListener('click', (e) => {
-      e.stopPropagation();
-      let todoValido = true;
-      camposValidar.forEach(id => {
-        const campo = document.getElementById(id);
-        if (campo && !validarCampoIndividual(campo)) {
-          todoValido = false;
-        }
-      });
-      if (!todoValido) {
-        mostrarToast({
-          tipo:    'warning',
-          titulo:  'Campos incompletos',
-          mensaje: 'Complete todos los campos requeridos antes de continuar.',
-        });
-        const primerError = document.querySelector('.f43-error-inline');
-        if (primerError) {
-          primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }, true);
-  }
-  
 });
