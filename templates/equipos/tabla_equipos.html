@@ -11,7 +11,7 @@
 {% endif %}
 
 {% if equipos %}
-  <div class="tabla-contenedor" style="border:none;border-radius:0;">
+  <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
     <table class="tabla">
       <thead>
         <tr>
@@ -26,7 +26,9 @@
       </thead>
       <tbody>
         {% for e in equipos %}
-        <tr>
+        <tr class="fila-clicable"
+            data-href="{% url 'equipos:detalle' pk=e.pk %}"
+            title="Doble clic para abrir">
           <td>
             <div style="font-weight:var(--peso-semi);">{{ e.nombre }}</div>
             {% if e.descripcion %}
@@ -61,7 +63,10 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'equipos:detalle' e.pk %}" class="btn btn-ghost btn-sm">
+            <a href="{% url 'equipos:detalle' e.pk %}"
+               class="btn btn-ghost btn-sm"
+               onclick="event.stopPropagation()"
+               title="Ver detalle">
               <i data-lucide="eye" style="width:15px;height:15px;"></i>
             </a>
           </td>

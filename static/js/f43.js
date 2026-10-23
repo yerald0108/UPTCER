@@ -511,44 +511,6 @@ function toggleTemporal(checked) {
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ZOOM (solo aumentar, máximo 130%)
-   ═══════════════════════════════════════════════════════════════════════════ */
-const ZOOM_MIN = 100;
-const ZOOM_MAX = 130;
-let _zoomActual = 100;
-
-function cambiarZoom(delta) {
-  _zoomActual = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, _zoomActual + delta));
-  aplicarZoom();
-}
-
-function resetearZoom() {
-  _zoomActual = 100;
-  aplicarZoom();
-}
-
-function aplicarZoom() {
-  const doc    = document.getElementById('f43-documento');
-  const nivel  = document.getElementById('zoom-nivel');
-  const btnMas = document.getElementById('zoom-btn-mas');
-
-  if (doc) {
-    doc.style.transform = `scale(${_zoomActual / 100})`;
-    doc.style.transformOrigin = 'top center';
-    doc.style.marginBottom = `${(_zoomActual - 100) * 5}px`;
-  }
-  if (nivel) nivel.textContent = _zoomActual + '%';
-
-  if (btnMas) {
-    const enMaximo = _zoomActual >= ZOOM_MAX;
-    btnMas.disabled = enMaximo;
-    btnMas.style.opacity = enMaximo ? '0.4' : '';
-    btnMas.style.cursor = enMaximo ? 'not-allowed' : 'pointer';
-    btnMas.title = enMaximo ? 'Tamaño máximo alcanzado' : 'Aumentar tamaño';
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
    ENVIAR FORMULARIO
    ═══════════════════════════════════════════════════════════════════════════ */
 function enviarFormulario() {
@@ -625,9 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const chkOtros = document.getElementById('obj_otros');
   if (chkOtros) toggleOtros(chkOtros.checked);
-
-  // Inicializar zoom por si el botón "+" debe deshabilitarse al cargar
-  aplicarZoom();
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {

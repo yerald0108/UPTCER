@@ -24,73 +24,48 @@
 
   <!-- Barra de acciones -->
   <div class="f43-acciones">
-    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-      <a href="{% url 'licencias:lista' %}" class="f43-btn-accion f43-btn-volver">
+    <div class="f43-acciones-grupo">
+      <a href="{% url 'licencias:lista' %}" class="btn btn-ghost">
         <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
         Volver
       </a>
-      <span class="badge {{ licencia.clase_badge }}" style="font-size:13px;padding:6px 14px;">
+      <span class="badge {{ licencia.clase_badge }}">
         {{ licencia.get_estado_display }}
       </span>
     </div>
 
-    <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-
-      <!-- Control de zoom -->
+    <div class="f43-acciones-grupo">
       <div class="f43-zoom-control" title="Ajustar tamaño del documento">
-        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(-10)" title="Reducir tamaño de texto" aria-label="Reducir tamaño">
+        <button type="button" class="f43-zoom-btn" id="zoom-btn-menos" onclick="cambiarZoom(-10)" title="Reducir tamaño" aria-label="Reducir">
           <i data-lucide="zoom-out" style="width:15px;height:15px;"></i>
         </button>
         <span class="f43-zoom-nivel" id="zoom-nivel">100%</span>
         <div class="f43-zoom-divisor"></div>
-        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()" title="Restablecer tamaño original" aria-label="Restablecer tamaño">
+        <button type="button" class="f43-zoom-btn" onclick="resetearZoom()" title="Restablecer tamaño" aria-label="Restablecer">
           <i data-lucide="search" style="width:15px;height:15px;"></i>
         </button>
         <div class="f43-zoom-divisor"></div>
-        <button type="button" class="f43-zoom-btn" onclick="cambiarZoom(10)" title="Aumentar tamaño de texto" aria-label="Aumentar tamaño">
+        <button type="button" class="f43-zoom-btn" id="zoom-btn-mas" onclick="cambiarZoom(10)" title="Aumentar tamaño" aria-label="Aumentar">
           <i data-lucide="zoom-in" style="width:15px;height:15px;"></i>
         </button>
       </div>
 
-      <div style="display:flex;gap:8px;">
-        <button type="button" onclick="imprimirDocumento({
-          selector: '.licencia-hoja',
-          titulo: 'Licencia {{ licencia.numero }}',
-          estilos: `
-            .licencia-encabezado { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5mm; }
-            .licencia-ministerio-nombre { font-size: 14px; font-weight: bold; text-align: center; }
-            .licencia-ministerio-subtitulo { font-size: 10px; text-align: center; }
-            .licencia-titulo { font-size: 13px; font-weight: bold; text-align: center; margin: 5mm 0; }
-            .licencia-subtitulo { font-size: 11px; text-align: center; margin-bottom: 3mm; }
-            .licencia-numero-doc { font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 5mm; }
-            .licencia-estado-vigente { color: green; font-weight: bold; font-size: 16px; text-align: center; }
-            .licencia-estado-vencida { color: red; font-weight: bold; font-size: 16px; text-align: center; }
-            .licencia-estado-revocada { color: red; font-weight: bold; font-size: 16px; text-align: center; }
-            .licencia-firmas { display: flex; justify-content: space-between; margin-top: 10mm; }
-            .licencia-firma-linea { border-top: 1px solid #000; width: 60mm; margin-bottom: 2mm; }
-            .licencia-firma-nombre { font-weight: bold; font-size: 11px; }
-            .licencia-firma-cargo { font-size: 10px; }
-            .licencia-nota-legal { font-size: 8px; margin-top: 8mm; border-top: 1px solid #000; padding-top: 3mm; text-align: center; }
-          `
-        })" class="f43-btn-accion f43-btn-imprimir">
-          <i data-lucide="printer" style="width:16px;height:16px;"></i>
-          Imprimir / PDF
-        </button>
-        {% if user.es_directivo %}
-          {% if licencia.estado == 'vigente' %}
-          <button type="button" onclick="abrirModal('modal-revocar')" class="f43-btn-accion" style="background-color:var(--color-acento);color:white;">
-            <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
-            Revocar licencia
-          </button>
-          {% endif %}
-        {% endif %}
-      </div>
+      <button type="button" onclick="window.print()" class="btn btn-ghost">
+        <i data-lucide="printer" style="width:16px;height:16px;"></i>
+        Imprimir / PDF
+      </button>
 
+      {% if user.es_directivo and licencia.estado == 'vigente' %}
+        <button type="button" onclick="abrirModal('modal-revocar')" class="btn btn-peligro">
+          <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
+          Revocar licencia
+        </button>
+      {% endif %}
     </div>
   </div>
 
-  <!-- ── DOCUMENTO OFICIAL ─────────────────────────────────────────────────── -->
-  <div class="f43-hoja licencia-hoja">
+  <!-- ── DOCUMENTO OFICIAL ─────────────────────────────────────────────── -->
+  <div class="f43-hoja licencia-hoja" id="licencia-documento">
 
     <div class="licencia-encabezado">
       <div class="licencia-ministerio">
@@ -168,7 +143,7 @@
         {% if licencia.fecha_vencimiento %}
         <tr><td class="f43-campo-label">Fecha de vencimiento</td><td colspan="3"><span style="{% if not licencia.es_vigente %}color:#C62828;font-weight:bold;{% endif %}">{{ licencia.fecha_vencimiento|date:"d/m/Y" }}{% if not licencia.es_vigente %} — VENCIDA{% endif %}</span></td></tr>
         {% endif %}
-                <tr>
+        <tr>
           <td class="f43-campo-label">Objetivo</td>
           <td colspan="3">
             {% with o=datos_f43.objetivo_importacion %}
@@ -184,11 +159,25 @@
     </table>
 
     <table class="f43-tabla" style="margin-top:4mm;">
-      <thead><tr><th colspan="5">III. Equipos y Medios Autorizados para Importación</th></tr>
-      <tr><th style="width:5%;">No.</th><th style="width:38%;">DESCRIPCIÓN</th><th style="width:20%;">MARCA</th><th style="width:20%;">MODELO</th><th style="width:17%;">CANTIDAD</th></tr></thead>
+      <thead>
+        <tr><th colspan="5">III. Equipos y Medios Autorizados para Importación</th></tr>
+        <tr>
+          <th style="width:5%;">No.</th>
+          <th style="width:38%;">DESCRIPCIÓN</th>
+          <th style="width:20%;">MARCA</th>
+          <th style="width:20%;">MODELO</th>
+          <th style="width:17%;">CANTIDAD</th>
+        </tr>
+      </thead>
       <tbody>
         {% for eq in equipos %}
-        <tr><td style="text-align:center;">{{ forloop.counter }}</td><td>{{ eq.descripcion }}</td><td>{{ eq.marca }}</td><td style="font-family:monospace;font-size:9pt;">{{ eq.modelo }}</td><td style="text-align:center;">{{ eq.cantidad }}</td></tr>
+        <tr>
+          <td style="text-align:center;">{{ forloop.counter }}</td>
+          <td>{{ eq.descripcion }}</td>
+          <td>{{ eq.marca }}</td>
+          <td style="font-family:monospace;font-size:9pt;">{{ eq.modelo }}</td>
+          <td style="text-align:center;">{{ eq.cantidad }}</td>
+        </tr>
         {% empty %}
         <tr><td colspan="5" style="text-align:center;color:#888;">Sin equipos registrados</td></tr>
         {% endfor %}
@@ -196,15 +185,27 @@
     </table>
 
     {% if solicitud.observaciones_operador %}
-    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;"><strong style="font-size:9.5pt;">Observaciones:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p></div>
+      <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;">
+        <strong style="font-size:9.5pt;">Observaciones:</strong>
+        <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_operador }}</p>
+      </div>
     {% endif %}
 
     {% if solicitud.observaciones_tecnicas %}
-    <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;"><strong style="font-size:9.5pt;">Criterio técnico:</strong><p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_tecnicas }}</p></div>
+      <div style="margin-top:4mm;border:1px solid #000;padding:6px 8px;">
+        <strong style="font-size:9.5pt;">Criterio técnico:</strong>
+        <p style="font-size:9.5pt;margin-top:2px;">{{ solicitud.observaciones_tecnicas }}</p>
+      </div>
     {% endif %}
 
     {% if licencia.estado == 'revocada' %}
-    <div style="margin-top:4mm;border:2px solid #C62828;padding:8px;background-color:#FFF5F5;"><strong style="font-size:9.5pt;color:#C62828;">LICENCIA REVOCADA</strong><p style="font-size:9.5pt;margin-top:2px;color:#C62828;">Motivo: {{ licencia.motivo_revocacion }}<br>Fecha: {{ licencia.fecha_revocacion|date:"d/m/Y H:i" }}</p></div>
+      <div style="margin-top:4mm;border:2px solid #C62828;padding:8px;background-color:#FFF5F5;">
+        <strong style="font-size:9.5pt;color:#C62828;">LICENCIA REVOCADA</strong>
+        <p style="font-size:9.5pt;margin-top:2px;color:#C62828;">
+          Motivo: {{ licencia.motivo_revocacion }}<br>
+          Fecha: {{ licencia.fecha_revocacion|date:"d/m/Y H:i" }}
+        </p>
+      </div>
     {% endif %}
 
     <div class="licencia-firmas">
@@ -215,7 +216,9 @@
         <div class="licencia-firma-cargo">Ministerio de Comunicaciones</div>
       </div>
       <div class="licencia-firma-bloque" style="text-align:center;">
-        <div style="width:80px;height:80px;border:2px dashed #999;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;"><span style="font-size:8pt;color:#999;">SELLO</span></div>
+        <div style="width:80px;height:80px;border:2px dashed #999;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:8pt;color:#999;">SELLO</span>
+        </div>
       </div>
     </div>
 
@@ -237,35 +240,68 @@
 
 <!-- Modal de revocación -->
 <div id="modal-revocar" class="modal-overlay">
-  <div class="modal" role="dialog" aria-modal="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-revocar-titulo">
     <div class="modal-cabecera">
-      <div class="modal-icono peligro"><i data-lucide="x-circle" style="width:24px;height:24px;"></i></div>
-      <div><div class="modal-titulo">Revocar licencia</div><div class="modal-subtitulo">Esta acción no se puede deshacer. La licencia quedará inválida permanentemente.</div></div>
+      <div class="modal-icono peligro">
+        <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
+      </div>
+      <div>
+        <div class="modal-titulo" id="modal-revocar-titulo">Revocar licencia</div>
+        <div class="modal-subtitulo">Esta acción no se puede deshacer. La licencia quedará inválida permanentemente.</div>
+      </div>
     </div>
     <form method="post" action="{% url 'licencias:revocar' licencia.numero %}">
       {% csrf_token %}
       <div class="modal-cuerpo">
         <div class="campo-grupo" style="margin-bottom:0;">
-          <label class="campo-etiqueta requerido">Motivo de revocación</label>
-          <textarea name="motivo" class="campo-textarea" rows="3" placeholder="Describa el motivo por el cual se revoca esta licencia..." required></textarea>
+          <label class="campo-etiqueta requerido" for="id_motivo_revocacion">Motivo de revocación</label>
+          <textarea name="motivo" id="id_motivo_revocacion" class="campo-textarea" rows="3" placeholder="Describa el motivo por el cual se revoca esta licencia..." required></textarea>
         </div>
       </div>
       <div class="modal-pie">
         <span class="modal-esc-hint">ESC para cancelar</span>
         <button type="button" class="btn btn-ghost" onclick="cerrarModal('modal-revocar')">Cancelar</button>
-        <button type="submit" class="btn btn-peligro"><i data-lucide="x-circle" style="width:16px;height:16px;"></i> Confirmar revocación</button>
+        <button type="submit" class="btn btn-peligro">
+          <i data-lucide="x-circle" style="width:16px;height:16px;"></i>
+          Confirmar revocación
+        </button>
       </div>
     </form>
   </div>
 </div>
+{% endblock %}
 
 {% block scripts_extra %}
 <script>
   document.body.dataset.pagina = 'licencia-detalle';
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     MODAL DE REVOCACIÓN
+     ═══════════════════════════════════════════════════════════════════════ */
+  function abrirModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('visible');
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  function cerrarModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('visible');
+    }
+  }
+
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') { cerrarModal('modal-revocar'); }
   });
+
+  // Cerrar modal al hacer click fuera
+  document.getElementById('modal-revocar')?.addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal('modal-revocar');
+  });
 </script>
-{% endblock %}
 {% endblock %}

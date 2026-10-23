@@ -11,7 +11,7 @@
 {% endif %}
 
 {% if licencias %}
-  <div class="tabla-contenedor" style="border:none;border-radius:0;">
+  <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
     <table class="tabla">
       <thead>
         <tr>
@@ -26,7 +26,9 @@
       </thead>
       <tbody>
         {% for l in licencias %}
-        <tr>
+        <tr class="fila-clicable"
+            data-href="{% url 'licencias:detalle' numero=l.numero %}"
+            title="Doble clic para abrir">
           <td>
             <span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
               {{ l.numero }}
@@ -34,6 +36,7 @@
           </td>
           <td>
             <a href="{% url 'solicitudes:detalle' l.solicitud.pk %}"
+              onclick="event.stopPropagation()"
               style="font-size:var(--texto-sm);color:var(--color-primario);text-decoration:none;font-family:var(--fuente-mono);">
               {{ l.solicitud.numero }}
             </a>
@@ -59,7 +62,10 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'licencias:detalle' l.numero %}" class="btn btn-ghost btn-sm">
+            <a href="{% url 'licencias:detalle' l.numero %}"
+               class="btn btn-ghost btn-sm"
+               onclick="event.stopPropagation()"
+               title="Ver detalle">
               <i data-lucide="eye" style="width:15px;height:15px;"></i>
             </a>
           </td>

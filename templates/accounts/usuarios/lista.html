@@ -1,7 +1,12 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Usuarios{% endblock %}
 {% block nav_usuarios %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
 <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -76,7 +81,7 @@
 <div class="tarjeta">
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if usuarios %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -86,13 +91,14 @@
               <th>Correo</th>
               <th>Estado</th>
               <th>Registro</th>
-              <th>Detalles</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {% for u in usuarios %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'accounts:detalle_usuario' u.pk %}"
+                title="Doble clic para abrir">
               <td>
                 <div style="display:flex;align-items:center;gap:var(--espacio-3);">
                   <div style="width:32px;height:32px;border-radius:50%;background-color:{% if u.is_active %}var(--color-primario){% else %}var(--color-texto-muted){% endif %};display:flex;align-items:center;justify-content:center;color:white;font-size:var(--texto-xs);font-weight:var(--peso-bold);flex-shrink:0;">
@@ -117,7 +123,10 @@
                 {{ u.fecha_registro|date:"d/m/Y" }}
               </td>
               <td>
-                <a href="{% url 'accounts:detalle_usuario' u.pk %}" class="btn btn-ghost btn-sm">
+                <a href="{% url 'accounts:detalle_usuario' u.pk %}"
+                   class="btn btn-ghost btn-sm"
+                   onclick="event.stopPropagation()"
+                   title="Ver detalle">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </a>
               </td>

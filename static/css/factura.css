@@ -1,0 +1,269 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FACTURA — Estilos para el detalle de factura
+   (complementa global.css, componentes.css y base.html)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Cabecera de la página ──────────────────────────────────────────────── */
+.pagina-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-4, 16px);
+  flex-wrap: wrap;
+  margin-bottom: var(--espacio-5, 20px);
+  padding-bottom: var(--espacio-4, 16px);
+  border-bottom: 1px solid var(--color-borde, #e2e8f0);
+}
+
+.pagina-titulo {
+  font-size: var(--texto-2xl, 24px);
+  font-weight: var(--peso-bold, 700);
+  color: var(--color-texto-principal, #1a202c);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pagina-subtitulo {
+  font-size: var(--texto-sm, 13px);
+  color: var(--color-texto-muted, #64748b);
+  margin: var(--espacio-1, 4px) 0 0 0;
+}
+
+/* ─── Tarjetas ───────────────────────────────────────────────────────────── */
+.card {
+  background: var(--color-fondo-blanco, #fff);
+  border: 1px solid var(--color-borde, #e2e8f0);
+  border-radius: var(--radio-lg, 8px);
+  padding: var(--espacio-5, 20px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.card-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--espacio-4, 16px);
+  padding-bottom: var(--espacio-3, 12px);
+  border-bottom: 1px solid var(--color-borde, #e2e8f0);
+}
+
+.card-titulo {
+  font-size: var(--texto-lg, 16px);
+  font-weight: var(--peso-semi, 600);
+  color: var(--color-texto-principal, #1a202c);
+  margin: 0;
+}
+
+/* ─── Filas de detalle (label + valor) ───────────────────────────────────── */
+.detalle-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espacio-3, 12px);
+  padding: var(--espacio-2, 8px) 0;
+  font-size: var(--texto-sm, 13px);
+}
+
+.detalle-label {
+  color: var(--color-texto-muted, #64748b);
+  font-weight: var(--peso-medio, 500);
+  flex-shrink: 0;
+}
+
+.detalle-valor {
+  color: var(--color-texto-principal, #1a202c);
+  font-weight: var(--peso-medio, 500);
+  text-align: right;
+  word-break: break-word;
+}
+
+a.detalle-valor {
+  color: var(--color-primario, #1e40af);
+  text-decoration: none;
+}
+a.detalle-valor:hover {
+  text-decoration: underline;
+}
+
+/* ─── Tabla de equipos ───────────────────────────────────────────────────── */
+.tabla-contenedor {
+  overflow-x: auto;
+  border: 1px solid var(--color-borde, #e2e8f0);
+  border-radius: var(--radio-md, 6px);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--texto-sm, 13px);
+  font-family: var(--fuente-principal, Arial, sans-serif);
+}
+
+.tabla thead {
+  background: var(--color-fondo, #f8fafc);
+}
+
+.tabla th {
+  text-align: left;
+  padding: var(--espacio-3, 12px) var(--espacio-4, 16px);
+  font-weight: var(--peso-semi, 600);
+  color: var(--color-texto-secundario, #475569);
+  border-bottom: 1px solid var(--color-borde, #e2e8f0);
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: var(--espacio-3, 12px) var(--espacio-4, 16px);
+  border-bottom: 1px solid var(--color-borde, #e2e8f0);
+  color: var(--color-texto-principal, #1a202c);
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla tbody tr:hover {
+  background: var(--color-fondo, #f8fafc);
+}
+
+/* ─── Modal de pago (si no está ya en modal.css) ────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--espacio-4, 16px);
+}
+
+.modal {
+  background: #fff;
+  border-radius: var(--radio-lg, 8px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+}
+
+.modal-cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-3, 12px);
+  padding: var(--espacio-5, 20px);
+  border-bottom: 1px solid var(--color-borde, #e2e8f0);
+}
+
+.modal-icono {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-md, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modal-icono.exito {
+  background: #E8F5E9;
+  color: #1B5E20;
+}
+.modal-icono.peligro {
+  background: #FFEBEE;
+  color: #B71C1C;
+}
+
+.modal-titulo {
+  font-size: var(--texto-lg, 16px);
+  font-weight: var(--peso-semi, 600);
+  color: var(--color-texto-principal, #1a202c);
+  margin: 0;
+}
+
+.modal-subtitulo {
+  font-size: var(--texto-sm, 13px);
+  color: var(--color-texto-muted, #64748b);
+  margin: var(--espacio-1, 4px) 0 0 0;
+}
+
+.modal-pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espacio-3, 12px);
+  padding: var(--espacio-4, 16px) var(--espacio-5, 20px);
+  border-top: 1px solid var(--color-borde, #e2e8f0);
+  background: var(--color-fondo, #f8fafc);
+}
+
+.modal-esc-hint {
+  margin-right: auto;
+  font-size: var(--texto-xs, 11px);
+  color: var(--color-texto-muted, #94a3b8);
+}
+
+/* ─── Campo de texto del modal ──────────────────────────────────────────── */
+.campo-label {
+  display: block;
+  font-size: var(--texto-sm, 13px);
+  font-weight: var(--peso-medio, 500);
+  color: var(--color-texto-secundario, #475569);
+  margin-bottom: var(--espacio-2, 8px);
+}
+
+.campo-input {
+  width: 100%;
+  padding: var(--espacio-3, 12px);
+  border: 1px solid var(--color-borde, #e2e8f0);
+  border-radius: var(--radio-md, 6px);
+  font-family: var(--fuente-principal, Arial, sans-serif);
+  font-size: var(--texto-sm, 13px);
+  color: var(--color-texto-principal, #1a202c);
+  background: #fff;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+}
+.campo-input:focus {
+  border-color: var(--color-primario, #1e40af);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pagina-cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pagina-titulo {
+    font-size: var(--texto-xl, 20px);
+  }
+  .detalle-fila {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-1, 4px);
+  }
+  .detalle-valor {
+    text-align: left;
+  }
+}
+
+/* ─── Impresión ──────────────────────────────────────────────────────────── */
+@media print {
+  .pagina-cabecera > div:last-child,
+  .modal-overlay,
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+
+  .card {
+    border: 1px solid #000;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  body {
+    background: #fff !important;
+  }
+}

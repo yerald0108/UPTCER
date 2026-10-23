@@ -1,7 +1,12 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Inicio{% endblock %}
 {% block nav_inicio %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
   <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -68,7 +73,7 @@
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if solicitudes_recientes %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -81,7 +86,9 @@
           </thead>
           <tbody>
             {% for s in solicitudes_recientes %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'solicitudes:detalle' pk=s.pk %}"
+                title="Doble clic para abrir">
               <td><span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ s.numero }}</span></td>
               <td>{{ s.get_flujo_display }}</td>
               <td>{{ s.equipo|default:s.equipo_marca_manual }}</td>
