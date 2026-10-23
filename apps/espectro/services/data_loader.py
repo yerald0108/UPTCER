@@ -1,4 +1,6 @@
 # apps/espectro/services/data_loader.py
+from decimal import Decimal
+
 from apps.espectro.models import FactorFrecuencia, FactorServicio, FactorK, IntensidadCampoE
 from django.core.cache import cache
 from django.db import models
@@ -54,6 +56,6 @@ def get_intensidad_campo(frecuencia_mhz):
         else:
             # Si no hay, tomar el primero (frecuencia más baja)
             registro = IntensidadCampoE.objects.first()
-            valor = registro.valor_e_mv_m if registro else Decimal(0.1)
+            valor = registro.valor_e_mv_m if registro else Decimal('0.1')
         cache.set(cache_key, valor, 3600)
     return valor

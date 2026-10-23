@@ -7,6 +7,7 @@ from django.utils import timezone
 from .models import Licencia, Factura
 from .servicios import registrar_pago
 from django.db.models import Q
+from django.views.decorators.http import require_POST
 
 
 @never_cache
@@ -191,6 +192,7 @@ def lista_facturas(request):
 # ─── Registrar pago de factura ────────────────────────────────────────────────
 @never_cache
 @login_required
+@require_POST
 def registrar_pago_factura(request, numero):
     if not request.user.es_directivo:
         messages.error(request, 'No tiene permisos para registrar pagos.')
@@ -202,17 +204,14 @@ def registrar_pago_factura(request, numero):
         messages.error(request, 'Esta factura ya fue pagada.')
         return redirect('licencias:detalle_factura', numero=numero)
 
-    if request.method == 'POST':
-        observaciones = request.POST.get('observaciones', '').strip()
-        factura.observaciones = observaciones
-        factura.save(update_fields=['observaciones'])
+    observaciones = request.POST.get('observaciones', '').strip()
+    factura.observaciones = observaciones
+    factura.save(update_fields=['observaciones'])
 
-        registrar_pago(factura, request.user)
+    registrar_pago(factura, request.user)
 
-        messages.success(
-            request,
-            f'Pago registrado correctamente. La licencia ha sido generada.'
-        )
-        return redirect('licencias:detalle_factura', numero=numero)
-
+    messages.success(
+        request,
+        'Pago registrado correctamente. La licencia ha sido generada.'
+    )
     return redirect('licencias:detalle_factura', numero=numero)

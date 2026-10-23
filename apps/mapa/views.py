@@ -1,31 +1,91 @@
 import json
 import os
 from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from urllib.parse import urlencode
 from django.views.decorators.http import require_GET, require_POST
+from apps.licencias.models import Licencia
 
 from .forms import ImportarArchivoForm
 from .models import PuntoMapa, ImportacionLog
 from .services.importador import parsear_archivo, importar_registros
 
 
+def _url_volver(request):
+    candidata = request.GET.get('next') or request.META.get('HTTP_REFERER')
+    if candidata and url_has_allowed_host_and_scheme(
+        candidata,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return candidata
+    return reverse('accounts:dashboard')
+
+
 # ============================================================
 # VISTAS DEL MAPA
 # ============================================================
 
+@login_required
 def mapa_view(request):
     """Vista principal del mapa."""
-    return render(request, 'mapa/mapa.html')
+    return render(request, 'mapa/mapa.html', {
+        'url_volver': _url_volver(request),
+    })
+
+
+@login_required
+def seleccionar_ubicacion_view(request):
+    """Selector de coordenadas para el formulario F43."""
+    return render(request, 'mapa/seleccionar_ubicacion.html', {
+        'consulta_inicial': request.GET.get('q', '').strip(),
+        'lat_inicial': request.GET.get('lat', ''),
+        'lon_inicial': request.GET.get('lon', ''),
+    })
 
 
 @require_GET
+@login_required
 def api_puntos_geojson(request):
     """API que devuelve todos los puntos activos en formato GeoJSON."""
-    puntos = PuntoMapa.objects.filter(estado='ACTIVO')
-    features = [p.geojson_feature for p in puntos]
+    puntos = PuntoMapa.objects.filter(estado='ACTIVO').select_related(
+        'solicitud__solicitante',
+        'solicitud__licencia',
+    )
+    if request.user.es_persona_natural:
+        puntos = puntos.filter(solicitud__solicitante=request.user)
+    features = []
+    for punto in puntos:
+        feature = punto.geojson_feature
+        solicitud = punto.solicitud
+        if solicitud:
+            properties = feature['properties']
+            properties['solicitud_numero'] = solicitud.numero
+            properties['solicitante'] = solicitud.solicitante.get_nombre_completo()
+            properties['direccion_instalacion'] = solicitud.direccion_instalacion
+            try:
+                licencia = solicitud.licencia
+            except Licencia.DoesNotExist:
+                licencia = None
+            if licencia:
+                properties['licencia_numero'] = licencia.numero
+                properties['licencia_estado'] = (
+                    'Vencida'
+                    if licencia.estado == Licencia.ESTADO_VIGENTE and not licencia.es_vigente
+                    else licencia.get_estado_display()
+                )
+                properties['licencia_fecha_vencimiento'] = (
+                    licencia.fecha_vencimiento.isoformat()
+                    if licencia.fecha_vencimiento else 'Sin vencimiento'
+                )
+        features.append(feature)
     geojson = {
         'type': 'FeatureCollection',
         'features': features
@@ -37,6 +97,7 @@ def api_puntos_geojson(request):
 # CREAR PUNTO DESDE EL MAPA (con coordenadas prellenadas)
 # ============================================================
 
+@staff_member_required(login_url='admin:login')
 def crear_punto_view(request):
     """Página con mini-mapa para crear un punto manualmente."""
     # Recibir latitud y longitud desde la URL si vienen del buscador
@@ -46,10 +107,13 @@ def crear_punto_view(request):
     return render(request, 'mapa/crear_punto.html', {
         'lat_inicial': lat,
         'lon_inicial': lon,
+        'url_volver': _url_volver(request),
+        'url_mapa': f"{reverse('mapa:mapa')}?{urlencode({'next': _url_volver(request)})}",
     })
 
 
 @require_POST
+@staff_member_required(login_url='admin:login')
 def api_crear_punto(request):
     """Endpoint AJAX que recibe datos y crea un punto en la BD."""
     try:
@@ -121,6 +185,7 @@ def api_crear_punto(request):
 # IMPORTAR EXCEL / CSV
 # ============================================================
 
+@login_required
 def importar_view(request):
     preview = None
     errores = []
@@ -197,5 +262,7 @@ def importar_view(request):
         'mapeo': mapeo,
         'total_registros': total_registros,
         'actualizar': request.session.get('actualizar', True),
+        'url_volver': _url_volver(request),
+        'url_mapa': f"{reverse('mapa:mapa')}?{urlencode({'next': _url_volver(request)})}",
     }
     return render(request, 'mapa/importar.html', contexto)

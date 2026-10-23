@@ -163,6 +163,28 @@ class LicenciaModelTest(TestCase):
             Licencia.objects.filter(solicitud=self.solicitud).count(), 1
         )
 
+    def test_licencia_registra_dispositivo_en_mapa(self):
+        self.solicitud.direccion_instalacion = 'Calle 1, La Habana'
+        self.solicitud.latitud_instalacion = 23.1136
+        self.solicitud.longitud_instalacion = -82.3666
+        self.solicitud.save(update_fields=[
+            'direccion_instalacion',
+            'latitud_instalacion',
+            'longitud_instalacion',
+        ])
+
+        licencia = generar_licencia(self.solicitud, self.directivo)
+        punto = self.solicitud.punto_mapa
+
+        self.assertEqual(punto.direccion, 'Calle 1, La Habana')
+        self.assertEqual(punto.latitud, 23.1136)
+        self.assertEqual(punto.longitud, -82.3666)
+        self.assertEqual(punto.atributos['licencia_numero'], licencia.numero)
+        self.assertEqual(punto.atributos['equipos'][0]['marca'], 'Samsung')
+
+        generar_licencia(self.solicitud, self.directivo)
+        self.assertEqual(self.solicitud.punto_mapa.pk, punto.pk)
+
     def test_licencia_definitiva_sin_vencimiento(self):
         """Una licencia definitiva no tiene fecha de vencimiento."""
         l = generar_licencia(self.solicitud, self.directivo)
@@ -356,14 +378,47 @@ class FacturaVistaTest(TestCase):
         self.assertEqual(r.status_code, 200)
 
     def test_registrar_pago_genera_licencia(self):
-        """Al registrar el pago desde la vista se genera la licencia."""
+        """Registrar el pago actualiza la factura y genera la licencia."""
         self.client.login(username='fv_dir', password='test1234')
-        self.client.post(
+        response = self.client.post(
             reverse('licencias:registrar_pago', args=[self.factura.numero]),
             {'observaciones': 'Pago registrado en caja'}
         )
+        self.factura.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse('licencias:detalle_factura', args=[self.factura.numero]),
+        )
+        self.assertTrue(self.factura.esta_pagada)
+        self.assertEqual(self.factura.observaciones, 'Pago registrado en caja')
+        self.assertEqual(self.factura.registrado_pago_por, self.directivo)
         self.assertTrue(
             Licencia.objects.filter(solicitud=self.solicitud).exists()
+        )
+
+    def test_registrar_pago_requiere_post(self):
+        self.client.login(username='fv_dir', password='test1234')
+
+        response = self.client.get(
+            reverse('licencias:registrar_pago', args=[self.factura.numero])
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.factura.refresh_from_db()
+        self.assertFalse(self.factura.esta_pagada)
+
+    def test_detalle_factura_muestra_boton_y_confirmacion_al_directivo(self):
+        self.client.login(username='fv_dir', password='test1234')
+
+        response = self.client.get(
+            reverse('licencias:detalle_factura', args=[self.factura.numero])
+        )
+
+        self.assertContains(response, "abrirModal('modal-pago')")
+        self.assertContains(response, 'Confirmar pago')
+        self.assertContains(
+            response,
+            reverse('licencias:registrar_pago', args=[self.factura.numero]),
         )
 
     def test_registrar_pago_denegado_para_persona_natural(self):

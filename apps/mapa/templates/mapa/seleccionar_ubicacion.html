@@ -1,0 +1,216 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubicar dispositivo — UPTCER</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Inter, Arial, sans-serif; color: #1f2937; }
+        .selector { min-height: 100vh; display: flex; flex-direction: column; }
+        .selector-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap; padding: 14px 20px;
+            background: #123b5d; color: white;
+        }
+        .selector-header h1 { margin: 0; font-size: 1.1rem; }
+        .selector-header p { margin: 4px 0 0; font-size: .85rem; color: #dbeafe; }
+        .selector-form { display: flex; gap: 8px; padding: 12px 20px; background: #f8fafc; }
+        .selector-form input {
+            min-width: 0; flex: 1; padding: 10px 12px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font: inherit;
+        }
+        .selector button {
+            padding: 9px 14px; border: 0; border-radius: 6px; cursor: pointer;
+            font: inherit; font-weight: 600;
+        }
+        .selector button:disabled { opacity: .55; cursor: wait; }
+        .buscar { background: #e2e8f0; color: #1f2937; }
+        .confirmar { background: #0d6efd; color: white; }
+        .cerrar { background: transparent; color: white; border: 1px solid #ffffff80 !important; }
+        #selector-mapa { flex: 1; min-height: 360px; }
+        .selector-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; flex-wrap: wrap; padding: 10px 20px; background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+        #selector-estado { flex: 1; min-width: 220px; font-size: .9rem; }
+        @media (max-width: 600px) {
+            .selector-form { padding: 10px; }
+            .selector-header, .selector-footer { padding: 12px; }
+            .selector-form button { padding-inline: 10px; }
+        }
+    </style>
+</head>
+<body>
+<main class="selector">
+    <header class="selector-header">
+        <div>
+            <h1>Ubicación del dispositivo</h1>
+            <p>Busque una dirección o haga clic en el mapa para marcar el lugar exacto.</p>
+        </div>
+        <button type="button" class="cerrar" id="cerrar-selector">Cancelar</button>
+    </header>
+    <form class="selector-form" id="form-busqueda">
+        <input type="search" id="busqueda-direccion" value="{{ consulta_inicial }}"
+               placeholder="Dirección, municipio o provincia" aria-label="Buscar dirección">
+        <button type="submit" class="buscar" id="btn-buscar">Buscar</button>
+    </form>
+    <div id="selector-mapa" aria-label="Mapa para seleccionar la ubicación"></div>
+    <footer class="selector-footer">
+        <span id="selector-estado" role="status" aria-live="polite">Busque o marque el punto en el mapa.</span>
+        <button type="button" class="confirmar" id="confirmar-ubicacion" disabled>
+            Usar esta ubicación
+        </button>
+        <small style="width:100%;color:#64748b;">Búsqueda y geocodificación: © OpenStreetMap contributors.</small>
+    </footer>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const estado = document.getElementById('selector-estado');
+    const campoBusqueda = document.getElementById('busqueda-direccion');
+    const botonBuscar = document.getElementById('btn-buscar');
+    const botonConfirmar = document.getElementById('confirmar-ubicacion');
+    const mapa = L.map('selector-mapa').setView([22.0, -79.0], 6);
+    let marcador = null;
+    let seleccion = null;
+
+    const capaCalles = L.tileLayer(
+        'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+        { attribution: '&copy; OpenStreetMap France', subdomains: 'abc', maxZoom: 20 }
+    );
+    const capaSatelite = L.tileLayer(
+        'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+        { attribution: 'Imagery &copy; Google', maxZoom: 21 }
+    );
+    const capaTopo = L.tileLayer(
+        'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        { attribution: 'Map data &copy; OSM, SRTM | Style &copy; OpenTopoMap', maxZoom: 17 }
+    );
+    const capaHibrido = L.tileLayer(
+        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+        { attribution: 'Imagery &copy; Google', maxZoom: 21 }
+    );
+
+    capaCalles.addTo(mapa);
+    L.control.layers({
+        'Calles': capaCalles,
+        'Satélite': capaSatelite,
+        'Topográfico': capaTopo,
+        'Híbrido': capaHibrido
+    }, null, { position: 'topright', collapsed: true }).addTo(mapa);
+    L.control.scale({ imperial: false, metric: true }).addTo(mapa);
+
+    function actualizarSeleccion(lat, lon, direccion) {
+        seleccion = { latitud: lat, longitud: lon, direccion: direccion || '' };
+        if (marcador) mapa.removeLayer(marcador);
+        marcador = L.marker([lat, lon]).addTo(mapa);
+        botonConfirmar.disabled = false;
+        estado.textContent = direccion
+            ? 'Punto seleccionado: ' + direccion
+            : 'Punto seleccionado. Puede confirmar esta ubicación.';
+    }
+
+    async function buscarDireccion(texto) {
+        const consulta = texto.trim();
+        if (!consulta) {
+            estado.textContent = 'Escriba una dirección para buscar.';
+            campoBusqueda.focus();
+            return;
+        }
+
+        botonBuscar.disabled = true;
+        estado.textContent = 'Buscando dirección…';
+        try {
+            const url = new URL('https://nominatim.openstreetmap.org/search');
+            url.searchParams.set('format', 'jsonv2');
+            url.searchParams.set('limit', '1');
+            url.searchParams.set('q', consulta);
+            const respuesta = await fetch(url.toString(), {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!respuesta.ok) throw new Error('No se pudo consultar el servicio de búsqueda.');
+            const resultados = await respuesta.json();
+            if (!resultados.length) {
+                throw new Error('No se encontró la dirección. Pruebe con más detalles.');
+            }
+
+            const resultado = resultados[0];
+            const lat = Number(resultado.lat);
+            const lon = Number(resultado.lon);
+            mapa.flyTo([lat, lon], 16);
+            actualizarSeleccion(lat, lon, resultado.display_name || consulta);
+        } catch (error) {
+            estado.textContent = error.message || 'Ocurrió un error al buscar la dirección.';
+        } finally {
+            botonBuscar.disabled = false;
+        }
+    }
+
+    document.getElementById('form-busqueda').addEventListener('submit', function(event) {
+        event.preventDefault();
+        buscarDireccion(campoBusqueda.value);
+    });
+
+    mapa.on('click', async function(event) {
+        const lat = event.latlng.lat;
+        const lon = event.latlng.lng;
+        actualizarSeleccion(lat, lon, '');
+        estado.textContent = 'Consultando la dirección del punto…';
+        try {
+            const url = new URL('https://nominatim.openstreetmap.org/reverse');
+            url.searchParams.set('format', 'jsonv2');
+            url.searchParams.set('lat', lat);
+            url.searchParams.set('lon', lon);
+            const respuesta = await fetch(url.toString(), {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!respuesta.ok) throw new Error('No se pudo obtener la dirección.');
+            const resultado = await respuesta.json();
+            seleccion.direccion = resultado.display_name || '';
+            campoBusqueda.value = seleccion.direccion;
+            estado.textContent = seleccion.direccion
+                ? 'Punto seleccionado: ' + seleccion.direccion
+                : 'Punto seleccionado. Puede confirmar esta ubicación.';
+        } catch (error) {
+            estado.textContent = 'Punto seleccionado; no se pudo determinar la dirección automáticamente.';
+        }
+    });
+
+    botonConfirmar.addEventListener('click', function() {
+        if (!seleccion) return;
+        if (!window.opener || window.opener.closed) {
+            estado.textContent = 'Vuelva al formulario y abra el selector desde el botón de ubicación.';
+            return;
+        }
+        window.opener.postMessage({
+            tipo: 'uptcer-ubicacion-seleccionada',
+            latitud: seleccion.latitud,
+            longitud: seleccion.longitud,
+            direccion: seleccion.direccion
+        }, window.location.origin);
+        window.close();
+    });
+
+    document.getElementById('cerrar-selector').addEventListener('click', function() {
+        window.close();
+    });
+
+    const latInicial = Number('{{ lat_inicial|escapejs }}');
+    const lonInicial = Number('{{ lon_inicial|escapejs }}');
+    if (
+        Number.isFinite(latInicial) && Number.isFinite(lonInicial) &&
+        '{{ lat_inicial|escapejs }}' && '{{ lon_inicial|escapejs }}'
+    ) {
+        mapa.setView([latInicial, lonInicial], 16);
+        actualizarSeleccion(latInicial, lonInicial, campoBusqueda.value);
+    } else if (campoBusqueda.value.trim()) {
+        buscarDireccion(campoBusqueda.value);
+    }
+});
+</script>
+</body>
+</html>

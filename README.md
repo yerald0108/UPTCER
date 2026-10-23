@@ -399,6 +399,8 @@ python manage.py poblar_datos
 python manage.py runserver
 ```
 
+El comando `poblar_datos` también carga los factores de servicio de los grupos CUP y USD del módulo de Espectro.
+
 El sistema estará disponible en `http://127.0.0.1:8000`.
 
 Para limpiar todos los datos y empezar desde cero:

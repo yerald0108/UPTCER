@@ -6,6 +6,7 @@ Uso:
     python manage.py poblar_datos --limpiar    # Limpia todo antes de poblar
 """
 
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -44,6 +45,14 @@ class Command(BaseCommand):
             equipos    = self._crear_equipos(categorias)
             solicitudes = self._crear_solicitudes(usuarios, equipos)
             self._crear_facturas_y_licencias(solicitudes, usuarios)
+            self.stdout.write('\nCargando servicios de espectro...')
+            call_command(
+                'cargar_servicios',
+                limpiar=options['limpiar'],
+                stdout=self.stdout,
+            )
+            self.stdout.write('\nCargando coeficientes base de espectro...')
+            call_command('load_fixtures', stdout=self.stdout)
 
         self.stdout.write('\n' + '─' * 60)
         self.stdout.write(self.style.SUCCESS('  Base de datos poblada correctamente.'))

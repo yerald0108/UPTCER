@@ -10,10 +10,10 @@ class PuntoMapaAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
         (None, {
-            'fields': ('nombre', 'tipo', 'estado')
+            'fields': ('nombre', 'tipo', 'estado', 'solicitud')
         }),
         ('Ubicación', {
-            'fields': ('latitud', 'longitud')
+            'fields': ('direccion', 'latitud', 'longitud')
         }),
         ('Información adicional', {
             'fields': ('atributos', 'descripcion', 'responsable', 'fecha_instalacion', 'ultima_revision')

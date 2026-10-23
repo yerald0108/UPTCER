@@ -405,7 +405,34 @@
           <input type="file" name="documento_adjunto" accept=".pdf,.jpg,.jpeg,.png"
                  style="font-family:var(--fuente-principal);font-size:12px;">
         </div>
+
       </section>
+
+      <div class="no-print" style="width:8.5in;margin:0 auto 24px;padding:16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+        <label for="id_direccion_instalacion" style="font-family:var(--fuente-principal);font-size:13px;font-weight:600;display:block;margin-bottom:6px;">
+          Dirección donde se utilizará el dispositivo:
+        </label>
+        <input class="field-input" type="text" name="direccion_instalacion"
+               id="id_direccion_instalacion" maxlength="255" autocomplete="street-address"
+               placeholder="Calle, número, municipio y provincia"
+               value="{{ form.direccion_instalacion.value|default:'' }}"
+               style="height:38px;border:1px solid #cbd5e1;border-radius:5px;padding:0 10px;">
+        {% if form.direccion_instalacion.errors %}<span class="f43-error-msg">{{ form.direccion_instalacion.errors.0 }}</span>{% endif %}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;">
+          <button type="button" class="btn btn-primario btn-sm" id="btn-ubicar-direccion">
+            <i data-lucide="map-pin" style="width:14px;height:14px;"></i> Buscar y ubicar en el mapa
+          </button>
+          <span id="estado-ubicacion" role="status" aria-live="polite"
+                style="font-family:var(--fuente-principal);font-size:11px;color:var(--color-texto-muted);">
+            Abra el mapa para buscar la dirección y elegir el punto exacto.
+          </span>
+        </div>
+        {{ form.latitud_instalacion }}
+        {{ form.longitud_instalacion }}
+        {% if form.latitud_instalacion.errors or form.longitud_instalacion.errors %}
+          <span class="f43-error-msg">Ubique la dirección en el mapa antes de enviar la solicitud.</span>
+        {% endif %}
+      </div>
 
     </form>
   </div>
@@ -426,6 +453,75 @@
   };
 
   document.body.dataset.pagina = 'f43';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const direccion = document.getElementById('id_direccion_instalacion');
+    const latitud = document.getElementById('id_latitud_instalacion');
+    const longitud = document.getElementById('id_longitud_instalacion');
+    const boton = document.getElementById('btn-ubicar-direccion');
+    const estado = document.getElementById('estado-ubicacion');
+
+    if (!direccion || !latitud || !longitud || !boton || !estado) return;
+
+    let ventanaMapa = null;
+    if (latitud.value && longitud.value) {
+      estado.textContent = 'Dirección ubicada correctamente.';
+      estado.style.color = 'var(--color-success, #198754)';
+    }
+
+    direccion.addEventListener('input', function() {
+      latitud.value = '';
+      longitud.value = '';
+      estado.textContent = 'Ubique la dirección para colocar el dispositivo en el mapa.';
+      estado.style.color = 'var(--color-texto-muted)';
+    });
+
+    boton.addEventListener('click', function() {
+      const url = new URL("{% url 'mapa:seleccionar_ubicacion' %}", window.location.origin);
+      const consulta = direccion.value.trim();
+      if (consulta) url.searchParams.set('q', consulta);
+      if (latitud.value && longitud.value) {
+        url.searchParams.set('lat', latitud.value);
+        url.searchParams.set('lon', longitud.value);
+      }
+
+      ventanaMapa = window.open(
+        url.toString(),
+        'uptcer-selector-ubicacion',
+        'popup,width=1100,height=750,resizable=yes,scrollbars=yes'
+      );
+      if (!ventanaMapa) {
+        estado.textContent = 'Permita las ventanas emergentes para abrir el selector de mapa.';
+        estado.style.color = '#b42318';
+        return;
+      }
+      estado.textContent = 'Seleccione el punto en el mapa y confirme la ubicación.';
+      estado.style.color = 'var(--color-texto-muted)';
+      ventanaMapa.focus();
+    });
+
+    window.addEventListener('message', function(event) {
+      if (event.origin !== window.location.origin || event.source !== ventanaMapa) return;
+      const seleccion = event.data;
+      if (
+        !seleccion ||
+        seleccion.tipo !== 'uptcer-ubicacion-seleccionada' ||
+        !Number.isFinite(Number(seleccion.latitud)) ||
+        !Number.isFinite(Number(seleccion.longitud)) ||
+        Number(seleccion.latitud) < -90 ||
+        Number(seleccion.latitud) > 90 ||
+        Number(seleccion.longitud) < -180 ||
+        Number(seleccion.longitud) > 180
+      ) return;
+
+      latitud.value = seleccion.latitud;
+      longitud.value = seleccion.longitud;
+      if (seleccion.direccion) direccion.value = seleccion.direccion;
+      estado.textContent = 'Ubicación seleccionada y lista para enviar.';
+      estado.style.color = 'var(--color-success, #198754)';
+      ventanaMapa = null;
+    });
+  });
 
   {% if equipos_iniciales %}
     (function() {

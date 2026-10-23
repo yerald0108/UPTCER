@@ -32,6 +32,15 @@ class PuntoMapa(models.Model):
     tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, default='GENERICO', verbose_name=_('Tipo'))
     latitud = models.FloatField(verbose_name=_('Latitud'), help_text=_('Ej: 23.1136'))
     longitud = models.FloatField(verbose_name=_('Longitud'), help_text=_('Ej: -82.3666'))
+    direccion = models.CharField(max_length=255, blank=True, verbose_name=_('Dirección'))
+    solicitud = models.OneToOneField(
+        'solicitudes.Solicitud',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='punto_mapa',
+        verbose_name=_('Solicitud asociada'),
+    )
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='ACTIVO', verbose_name=_('Estado'))
     atributos = models.JSONField(
         default=dict, blank=True, verbose_name=_('Atributos extra'),
@@ -75,6 +84,7 @@ class PuntoMapa(models.Model):
                 'tipo': self.tipo,
                 'tipo_display': self.get_tipo_display(),
                 'estado': self.get_estado_display(),
+                'direccion': self.direccion,
                 'descripcion': self.descripcion,
                 'responsable': self.responsable,
                 'fecha_instalacion': self.fecha_instalacion.isoformat() if self.fecha_instalacion else None,

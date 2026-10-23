@@ -188,7 +188,7 @@ class Command(BaseCommand):
                 actualizados += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f'\n✅ Carga completada:'
+            f'\nCarga completada:'
             f'\n   - Creados: {creados}'
             f'\n   - Actualizados: {actualizados}'
             f'\n   - Total Grupo 1 (CUP): {FactorServicio.objects.filter(grupo="1").count()}'

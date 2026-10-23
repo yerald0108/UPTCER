@@ -23,3 +23,14 @@ env/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# ==========================================
+# Base de datos local (¡NO SUBIR A GITHUB!)
+# ==========================================
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# Archivos media (importaciones, imágenes locales)
+media/
+staticfiles/

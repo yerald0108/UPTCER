@@ -88,10 +88,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         mostrarInfo(feature.properties);
                     });
                     var props = feature.properties;
-                    layer.bindPopup(
-                        '<b>' + (props.nombre || 'Sin nombre') + '</b><br>' +
-                        '<small>' + (props.tipo_display || props.tipo || '') + '</small>'
-                    );
+                    var popup = document.createElement('div');
+                    var titulo = document.createElement('strong');
+                    titulo.textContent = props.nombre || 'Sin nombre';
+                    popup.appendChild(titulo);
+
+                    var equipos = props.equipos || [];
+                    if (equipos.length) {
+                        var detalle = document.createElement('div');
+                        detalle.textContent = equipos.map(function (equipo) {
+                            return [equipo.descripcion, equipo.marca, equipo.modelo]
+                                .filter(Boolean).join(' ');
+                        }).filter(Boolean).join(', ');
+                        popup.appendChild(detalle);
+                    }
+                    layer.bindPopup(popup);
                 }
             }).addTo(markers);
             map.addLayer(markers);
@@ -112,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var excluidos = [
             'id','nombre','tipo','tipo_display','estado','descripcion',
-            'responsable','fecha_instalacion','ultima_revision'
+            'responsable','fecha_instalacion','ultima_revision','direccion'
         ];
         var attrContainer = document.getElementById('info-atributos');
         attrContainer.innerHTML = '';
@@ -122,7 +133,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 var labelBonito = key.replace(/_/g, ' ').replace(/\b\w/g, function (c) {
                     return c.toUpperCase();
                 });
-                p.innerHTML = '<strong>' + labelBonito + ':</strong> ' + props[key];
+                var label = document.createElement('strong');
+                label.textContent = labelBonito + ': ';
+                p.appendChild(label);
+                var valor = props[key];
+                if (Array.isArray(valor)) {
+                    valor = valor.map(function (equipo) {
+                        return [equipo.descripcion, equipo.marca, equipo.modelo]
+                            .filter(Boolean).join(' ');
+                    }).filter(Boolean).join(', ');
+                } else if (typeof valor === 'object') {
+                    valor = JSON.stringify(valor);
+                }
+                p.appendChild(document.createTextNode(valor));
                 attrContainer.appendChild(p);
             }
         }

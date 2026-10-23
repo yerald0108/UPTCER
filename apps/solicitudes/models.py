@@ -81,6 +81,14 @@ class Solicitud(models.Model):
     equipo_marca_manual     = models.CharField('Marca (manual)', max_length=100, blank=True)
     equipo_modelo_manual    = models.CharField('Modelo (manual)', max_length=100, blank=True)
 
+    direccion_instalacion = models.CharField(
+        'Dirección de utilización del dispositivo',
+        max_length=255,
+        blank=True,
+    )
+    latitud_instalacion = models.FloatField(null=True, blank=True)
+    longitud_instalacion = models.FloatField(null=True, blank=True)
+
     # Documento adjunto (F43 o RATS)
     documento_adjunto       = models.FileField(
                                 'Documento adjunto',

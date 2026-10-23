@@ -15,11 +15,8 @@
       {{ factura.get_estado_display }}
     </span>
     {% if user.es_directivo and not factura.esta_pagada %}
-      <button class="btn btn-primario"
-        onclick="abrirModalConfirmacion(
-          '¿Registrar pago?',
-          'Esta acción marcará la factura como pagada y generará la licencia automáticamente.',
-          '{% url "licencias:registrar_pago" numero=factura.numero %}')">
+      <button type="button" class="btn btn-primario"
+        onclick="abrirModal('modal-pago')">
         <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
         Registrar pago
       </button>
@@ -177,7 +174,7 @@
 
 <!-- Modal de confirmación de pago -->
 {% if user.es_directivo and not factura.esta_pagada %}
-<div id="modal-pago" class="modal-overlay" style="display:none;">
+<div id="modal-pago" class="modal-overlay">
   <div class="modal" role="dialog">
     <div class="modal-cabecera">
       <div class="modal-icono exito">
@@ -203,14 +200,6 @@
     </form>
   </div>
 </div>
-
-<script>
-  document.querySelector('[onclick*="abrirModalConfirmacion"]')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById('modal-pago').style.display = 'flex';
-  });
-</script>
 {% endif %}
 
 {% endblock %}

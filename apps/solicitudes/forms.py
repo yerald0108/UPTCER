@@ -153,18 +153,43 @@ class FormularioF43(forms.ModelForm):
                             widget=forms.NumberInput(attrs={'placeholder': 'Cantidad de meses', 'min': 1, 'max': 60})
                           )
 
+    direccion_instalacion = forms.CharField(
+                            label='Dirección donde se utilizará el dispositivo',
+                            max_length=255,
+                            required=True,
+                            widget=forms.TextInput(attrs={
+                                'maxlength': 255,
+                                'placeholder': 'Calle, número, municipio y provincia',
+                                'autocomplete': 'street-address',
+                            }),
+                          )
+
     # Documento adjunto
     documento_adjunto   = forms.FileField(
                             label='Documento adjunto (opcional)',
                             required=False,
                             help_text='Adjunte el modelo F43 firmado si lo tiene disponible (PDF, JPG, PNG)'
                           )
+    latitud_instalacion = forms.FloatField(
+                            required=True,
+                            widget=forms.HiddenInput(),
+                          )
+    longitud_instalacion = forms.FloatField(
+                            required=True,
+                            widget=forms.HiddenInput(),
+                          )
 
     class Meta:
         model  = Solicitud
-        fields = ['observaciones_solicitante']
+        fields = [
+            'observaciones_solicitante',
+            'direccion_instalacion',
+            'latitud_instalacion',
+            'longitud_instalacion',
+        ]
         labels = {
             'observaciones_solicitante': 'Observaciones adicionales',
+            'direccion_instalacion': 'Dirección donde se utilizará el dispositivo',
         }
         widgets = {
             'observaciones_solicitante': forms.Textarea(attrs={
@@ -190,5 +215,12 @@ class FormularioF43(forms.ModelForm):
         # Si el objetivo es "Otros", debe especificar
         if objetivo == self.OBJETIVO_OTROS and not cleaned.get('objetivo_otros_detalle'):
             self.add_error('objetivo_otros_detalle', 'Debe especificar el objetivo de la importación.')
+
+        latitud = cleaned.get('latitud_instalacion')
+        longitud = cleaned.get('longitud_instalacion')
+        if latitud is not None and not -90 <= latitud <= 90:
+            self.add_error('latitud_instalacion', 'La latitud está fuera de rango.')
+        if longitud is not None and not -180 <= longitud <= 180:
+            self.add_error('longitud_instalacion', 'La longitud está fuera de rango.')
 
         return cleaned
