@@ -1,0 +1,5 @@
+[
+  {"model": "mapa.puntomapa", "fields": {"nombre": "La Habana VOR", "tipo": "AERONAUTICO", "latitud": 23.1136, "longitud": -82.3666, "estado": "ACTIVO", "atributos": {"frecuencia_mhz": 113.6, "potencia_w": 50, "ganancia_dbi": 10, "altura_antena_m": 30}, "descripcion": "Radiofaro VOR para navegación aérea", "responsable": "IACC"}},
+  {"model": "mapa.puntomapa", "fields": {"nombre": "Santiago de Cuba DME", "tipo": "AERONAUTICO", "latitud": 19.975, "longitud": -75.835, "estado": "ACTIVO", "atributos": {"frecuencia_mhz": 112.3, "potencia_w": 100, "ganancia_dbi": 12, "altura_antena_m": 25}, "descripcion": "DME para aproximación", "responsable": "IACC"}},
+  {"model": "mapa.puntomapa", "fields": {"nombre": "Cayo Largo Marítimo", "tipo": "MARITIMO", "latitud": 21.616, "longitud": -81.516, "estado": "ACTIVO", "atributos": {"frecuencia_mhz": 2182, "potencia_w": 150, "ganancia_dbi": 3, "altura_antena_m": 15}, "descripcion": "Radiofaro de socorro marítimo", "responsable": "Guardacostas"}}
+]

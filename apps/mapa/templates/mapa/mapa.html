@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Puntos</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="{% static 'mapa/css/mapa.css' %}">
+    
+    <style>
+        /* Estilos corregidos para el buscador flotante */
+        .search-container {
+            position: absolute;
+            top: 70px; /* 🔽 Ajustado para quedar debajo del encabezado azul */
+            left: 50px; /* Al lado de los controles de zoom */
+            z-index: 1000;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 5px;
+            width: 320px;
+        }
+        .search-container input {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            border-radius: 3px;
+            outline: none;
+            font-size: 14px;
+        }
+        .search-container button {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .search-container button:hover { background: #0a58ca; }
+    </style>
+</head>
+<body>
+
+    <div id="mapa-header">
+        <h1>📍 Mapa de puntos</h1>
+        <div class="acciones-header">
+            <a href="{% url 'mapa:importar' %}" class="btn-header">📥 Importar</a>
+            <a href="{% url 'admin:mapa_puntomapa_add' %}" class="btn-header">+ Nuevo punto (Admin)</a>
+            <a href="{% url 'admin:index' %}">Administrar</a>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Barra de búsqueda flotante -->
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Buscar dirección, lugar..." onkeypress="if(event.key === 'Enter') window.buscarLugar()">
+        <button onclick="window.buscarLugar()">🔍</button>
+    </div>
+
+    <div id="info-panel" class="info-panel" style="display:none;">
+        <span class="close" id="close-panel">&times;</span>
+        <h4 id="info-nombre"></h4>
+        <p><strong>Tipo:</strong> <span id="info-tipo"></span></p>
+        <p><strong>Estado:</strong> <span id="info-estado"></span></p>
+        <p><strong>Responsable:</strong> <span id="info-responsable"></span></p>
+        <div id="info-atributos"></div>
+        <p id="info-descripcion"></p>
+    </div>
+
+    <script>
+        window.MAPA_CONFIG = {
+            apiUrl: "{% url 'mapa:api_puntos' %}",
+            urlCrear: "{% url 'mapa:crear_punto' %}",
+            iconos: {
+                'RADIOFARO_AEREO':        "{% static 'mapa/img/marker-blue.png' %}",
+                'RADIOFARO_MARITIMO':     "{% static 'mapa/img/marker-violet.png' %}",
+                'ANTENA_TORRE':           "{% static 'mapa/img/marker-green.png' %}",
+                'ANTENA_PANEL':           "{% static 'mapa/img/marker-green.png' %}",
+                'ANTENA_PARABOLICA':      "{% static 'mapa/img/marker-orange.png' %}",
+                'ANTENA_YAGI':            "{% static 'mapa/img/marker-green.png' %}",
+                'ANTENA_OMNIDIRECCIONAL': "{% static 'mapa/img/marker-green.png' %}",
+                'ESTACION_BASE':          "{% static 'mapa/img/marker-orange.png' %}",
+                'ESTACION_MOVIL':         "{% static 'mapa/img/marker-orange.png' %}",
+                'REPETIDORA':             "{% static 'mapa/img/marker-blue.png' %}",
+                'SATELITE':               "{% static 'mapa/img/marker-violet.png' %}",
+                'GENERICO':               "{% static 'mapa/img/marker-grey.png' %}",
+                'OTRO':                   "{% static 'mapa/img/marker-grey.png' %}"
+            },
+            shadowUrl: "{% static 'mapa/img/marker-shadow.png' %}"
+        };
+    </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="{% static 'mapa/js/mapa.js' %}?v=7"></script>
+</body>
+</html>
