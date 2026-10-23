@@ -1,7 +1,12 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Cola de evaluaciones{% endblock %}
 {% block nav_evaluaciones %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
 <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -38,7 +43,7 @@
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if pendientes %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -52,7 +57,9 @@
           </thead>
           <tbody>
             {% for s in pendientes %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'solicitudes:evaluar' s.pk %}"
+                title="Doble clic para evaluar">
               <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
                 {{ s.numero }}
               </td>
@@ -87,7 +94,10 @@
                 </span>
               </td>
               <td>
-                <a href="{% url 'solicitudes:evaluar' s.pk %}" class="btn btn-primario btn-sm">
+                <a href="{% url 'solicitudes:evaluar' s.pk %}"
+                   class="btn btn-primario btn-sm"
+                   onclick="event.stopPropagation()"
+                   title="Evaluar solicitud">
                   <i data-lucide="clipboard-check" style="width:14px;height:14px;"></i>
                   Evaluar
                 </a>
@@ -98,7 +108,6 @@
         </table>
       </div>
 
-      <!-- Paginación pendientes -->
       {% if paginator_pendientes.num_pages > 1 %}
       <div style="display:flex;align-items:center;justify-content:center;gap:var(--espacio-2);padding:var(--espacio-4);border-top:1px solid var(--color-borde);">
         {% if pendientes.has_previous %}
@@ -143,7 +152,7 @@
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if completadas %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -157,7 +166,9 @@
           </thead>
           <tbody>
             {% for s in completadas %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'solicitudes:detalle' s.pk %}"
+                title="Doble clic para abrir">
               <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
                 {{ s.numero }}
               </td>
@@ -168,7 +179,10 @@
                 {{ s.fecha_resolucion|date:"d/m/Y H:i" }}
               </td>
               <td>
-                <a href="{% url 'solicitudes:detalle' s.pk %}" class="btn btn-ghost btn-sm">
+                <a href="{% url 'solicitudes:detalle' s.pk %}"
+                   class="btn btn-ghost btn-sm"
+                   onclick="event.stopPropagation()"
+                   title="Ver detalle">
                   <i data-lucide="eye" style="width:14px;height:14px;"></i>
                 </a>
               </td>
@@ -178,7 +192,6 @@
         </table>
       </div>
 
-      <!-- Paginación completadas -->
       {% if paginator_completadas.num_pages > 1 %}
       <div style="display:flex;align-items:center;justify-content:center;gap:var(--espacio-2);padding:var(--espacio-4);border-top:1px solid var(--color-borde);">
         {% if completadas.has_previous %}

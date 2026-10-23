@@ -1,8 +1,13 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Dashboard — Especialista Superior{% endblock %}
 
 {% block nav_sup_inicio %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
   <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -65,7 +70,7 @@
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if pendientes_recientes %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -79,7 +84,9 @@
           </thead>
           <tbody>
             {% for solicitud in pendientes_recientes %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'solicitudes:evaluar' pk=solicitud.pk %}"
+                title="Doble clic para evaluar">
               <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
                 {{ solicitud.numero }}
               </td>
@@ -99,7 +106,10 @@
                 {{ solicitud.fecha_creacion|date:"d/m/Y" }}
               </td>
               <td>
-                <a href="{% url 'solicitudes:evaluar' pk=solicitud.pk %}" class="btn btn-primario btn-sm">
+                <a href="{% url 'solicitudes:evaluar' pk=solicitud.pk %}"
+                   class="btn btn-primario btn-sm"
+                   onclick="event.stopPropagation()"
+                   title="Evaluar solicitud">
                   <i data-lucide="clipboard-check" style="width:14px;height:14px;"></i>
                   Evaluar
                 </a>

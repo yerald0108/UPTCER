@@ -1,4 +1,5 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Inicio{% endblock %}
 {% block nav_dir_inicio %}activo{% endblock %}
@@ -219,7 +220,7 @@
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if solicitudes_recientes %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -233,7 +234,9 @@
           </thead>
           <tbody>
             {% for s in solicitudes_recientes %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'solicitudes:detalle' s.pk %}"
+                title="Doble clic para abrir">
               <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
                 {{ s.numero }}
               </td>
@@ -244,7 +247,10 @@
                 {{ s.fecha_creacion|date:"d/m/Y H:i" }}
               </td>
               <td>
-                <a href="{% url 'solicitudes:detalle' s.pk %}" class="btn btn-ghost btn-sm">
+                <a href="{% url 'solicitudes:detalle' s.pk %}"
+                   class="btn btn-ghost btn-sm"
+                   onclick="event.stopPropagation()"
+                   title="Ver detalle">
                   <i data-lucide="eye" style="width:15px;height:15px;"></i>
                 </a>
               </td>

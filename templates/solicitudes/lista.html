@@ -1,7 +1,12 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Solicitudes{% endblock %}
 {% block nav_solicitudes %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
 <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -68,7 +73,7 @@
 </div>
 
 <!-- Tabla -->
-<div class="tarjeta">
+<div class="tarjeta tarjeta-con-scroll">
   <div class="tarjeta-cuerpo" style="padding:0;" id="contenedor-tabla">
     {% include 'solicitudes/tabla_solicitudes.html' %}
   </div>
@@ -82,4 +87,73 @@
 </button>
 {% endblock %}
 
-{% block scripts_extra %}{% endblock %}
+{% block scripts_extra %}
+<script>
+  /* ═══════════════════════════════════════════════════════════════════════
+     BOTÓN SCROLL TOP
+     ═══════════════════════════════════════════════════════════════════════ */
+  window.addEventListener('scroll', function () {
+    const btn = document.getElementById('btn-scroll-top');
+    if (!btn) return;
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     BARRA DE SCROLL DUPLICADA ARRIBA DE LA TABLA
+     Crea una barra de scroll arriba que se sincroniza con la de abajo.
+     El usuario puede usar cualquiera de las dos.
+     ═══════════════════════════════════════════════════════════════════════ */
+  (function() {
+    function initScrollArriba() {
+      const contenedor = document.querySelector('.tabla-scroll-horizontal');
+      if (!contenedor) return;
+
+      // Evitar duplicar si ya existe
+      if (contenedor.parentElement.querySelector('.tabla-scroll-top-wrapper')) return;
+
+      // Crear el wrapper de la barra superior
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tabla-scroll-top-wrapper';
+
+      // Crear el div interno que tendrá el ancho de la tabla
+      const inner = document.createElement('div');
+      inner.className = 'tabla-scroll-top-inner';
+
+      wrapper.appendChild(inner);
+
+      // Insertar la barra arriba del contenedor de la tabla
+      contenedor.parentElement.insertBefore(wrapper, contenedor);
+
+      // Sincronizar: barra superior → tabla
+      wrapper.addEventListener('scroll', function() {
+        contenedor.scrollLeft = wrapper.scrollLeft;
+      });
+
+      // Sincronizar: tabla → barra superior
+      contenedor.addEventListener('scroll', function() {
+        wrapper.scrollLeft = contenedor.scrollLeft;
+      });
+
+      // Ajustar el ancho del inner al ancho real de la tabla
+      function ajustarAncho() {
+        const tabla = contenedor.querySelector('.tabla-con-acciones-fijas');
+        if (tabla) {
+          inner.style.width = tabla.scrollWidth + 'px';
+        }
+      }
+      ajustarAncho();
+      window.addEventListener('resize', ajustarAncho);
+
+      // Re-ajustar cuando la tabla se recargue por AJAX
+      const observer = new MutationObserver(ajustarAncho);
+      observer.observe(contenedor, { childList: true, subtree: true });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initScrollArriba);
+    } else {
+      initScrollArriba();
+    }
+  })();
+</script>
+{% endblock %}

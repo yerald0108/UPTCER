@@ -1,7 +1,12 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Categorías de equipos{% endblock %}
 {% block nav_equipos %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
 <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -29,7 +34,7 @@
     </div>
     <div class="tarjeta-cuerpo" style="padding:0;">
       {% if categorias %}
-        <div class="tabla-contenedor" style="border:none;border-radius:0;">
+        <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
           <table class="tabla">
             <thead>
               <tr>
@@ -40,7 +45,9 @@
             </thead>
             <tbody>
               {% for cat in categorias %}
-              <tr>
+              <tr class="fila-clicable"
+                  data-href="{% url 'equipos:lista' %}?categoria={{ cat.id }}"
+                  title="Doble clic para ver equipos de esta categoría">
                 <td style="font-weight:var(--peso-medio);">{{ cat.nombre }}</td>
                 <td style="color:var(--color-texto-muted);">{{ cat.descripcion|default:"—"|truncatechars:50 }}</td>
                 <td style="text-align:center;">

@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    F43 — CSS fiel al formulario oficial (3 páginas Letter) + integración Django
-   Integrado con el sistema de diseño del base.html (btn, badge, tarjeta, alerta)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─── Configuración de página e impresión ────────────────────────────────── */
@@ -458,9 +457,8 @@
 .f43-badge-libre     { background: #E8F5E9; color: #1B5E20; border: 1px solid #A5D6A7; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   BARRA DE ACCIONES F43 — Layout (los botones usan clases del base)
+   BARRA DE ACCIONES F43
    ═══════════════════════════════════════════════════════════════════════════ */
-
 .f43-acciones {
   width: 8.5in;
   max-width: 100%;
@@ -471,17 +469,13 @@
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
-
 .f43-acciones-grupo {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
-
-.f43-acciones .badge {
-  align-self: center;
-}
+.f43-acciones .badge { align-self: center; }
 
 /* ─── Control de zoom ────────────────────────────────────────────────────── */
 .f43-zoom-control {
@@ -515,6 +509,12 @@
   color: var(--color-primario, #1e40af);
 }
 .f43-zoom-btn:active { transform: scale(0.92); }
+.f43-zoom-btn:disabled,
+.f43-zoom-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .f43-zoom-nivel {
   font-size: 12px;
   font-weight: 600;
@@ -531,7 +531,7 @@
   flex-shrink: 0;
 }
 
-/* ─── Panel de gestión (historial, supervisión, cambiar estado) ──────────── */
+/* ─── Panel de gestión ───────────────────────────────────────────────────── */
 .f43-panel-gestion {
   width: 8.5in;
   max-width: 100%;
@@ -558,10 +558,7 @@
 }
 .btn-scroll-top.visible { display: flex; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODO SOLO LECTURA (detalle.html)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
+/* ─── Modo solo lectura ──────────────────────────────────────────────────── */
 .page input[readonly],
 .page input[disabled],
 .page .field-input[readonly],
@@ -572,7 +569,6 @@
   cursor: default;
   border-color: #111;
 }
-
 .page .equip input[readonly] {
   background: transparent !important;
   border: 0 !important;
@@ -586,8 +582,6 @@
 @media print {
   html, body { background: #fff !important; }
   .f43-pagina-fondo { background: #fff !important; padding: 0 !important; }
-
-  /* Ocultar todo lo que no es documento */
   .f43-acciones,
   .f43-zoom-control,
   .btn,
@@ -597,10 +591,7 @@
   .tracker-solicitud,
   .alerta,
   .layout-sidebar,
-  .layout-navbar {
-    display: none !important;
-  }
-
+  .layout-navbar { display: none !important; }
   .f43-documento { width: 100%; margin: 0; }
   .page {
     box-shadow: none !important;
@@ -608,7 +599,6 @@
     page-break-after: always;
   }
   .page:last-child { page-break-after: auto; }
-
   .field-input, .passport-country, .period-input,
   .other-line input, .bottom-table input {
     background: transparent !important;
@@ -624,7 +614,6 @@
   .f43-documento,
   .f43-acciones,
   .f43-panel-gestion { width: 100%; }
-
   .page {
     width: 100%;
     height: auto;
@@ -637,7 +626,6 @@
   .header-title { border-right: none; border-bottom: 1px solid #111; padding: 8px; }
   .header-code { padding: 8px; }
   .three-cols, .two-cols { grid-template-columns: 1fr; }
-
   .f43-acciones {
     flex-direction: column;
     align-items: stretch;
@@ -649,9 +637,8 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TRACKER DE SEGUIMIENTO — persona natural
+   TRACKER DE SEGUIMIENTO
    ═══════════════════════════════════════════════════════════════════════════ */
-
 .tracker-solicitud {
   width: 8.5in;
   max-width: 100%;
@@ -664,31 +651,22 @@
   font-family: var(--fuente-principal, Arial, sans-serif);
   box-sizing: border-box;
 }
-
-.tracker-header {
-  margin-bottom: 22px;
-  text-align: center;
-}
-
+.tracker-header { margin-bottom: 22px; text-align: center; }
 .tracker-titulo {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 16px; font-weight: 700;
   color: var(--color-texto-principal, #1a202c);
   margin: 0;
 }
-
 .tracker-subtitulo {
   font-size: 13px;
   color: var(--color-texto-secundario, #64748b);
   margin-top: 4px;
 }
-
 .tracker-pasos {
   display: flex;
   align-items: flex-start;
   margin-bottom: 22px;
 }
-
 .tracker-paso {
   display: flex;
   flex-direction: column;
@@ -697,7 +675,6 @@
   flex: 1;
   min-width: 0;
 }
-
 .tracker-paso-icono {
   width: 56px;
   height: 56px;
@@ -712,50 +689,41 @@
   margin-bottom: 10px;
   flex-shrink: 0;
 }
-
 .tracker-paso-titulo {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-texto-principal, #1a202c);
   margin-bottom: 2px;
 }
-
 .tracker-paso-fecha {
   font-size: 11px;
   color: var(--color-texto-muted, #94a3b8);
 }
-
-/* Estados del paso */
 .tracker-paso.completado .tracker-paso-icono {
   border-color: var(--color-secundario, #16a34a);
   background-color: var(--color-secundario, #16a34a);
   color: #fff;
 }
-
 .tracker-paso.activo .tracker-paso-icono {
   border-color: var(--color-primario, #1e40af);
   background-color: var(--color-primario-light, #dbeafe);
   color: var(--color-primario, #1e40af);
   animation: tracker-pulso 2s ease infinite;
 }
-
 .tracker-paso.denegado .tracker-paso-icono {
   border-color: var(--color-acento, #dc2626);
   background-color: var(--color-acento, #dc2626);
   color: #fff;
 }
-
 .tracker-paso.pendiente .tracker-paso-icono {
   border-color: var(--color-borde, #cbd5e1);
   background-color: var(--color-fondo, #f8fafc);
   color: var(--color-texto-muted, #94a3b8);
 }
-
 @keyframes tracker-pulso {
   0%, 100% { box-shadow: 0 0 0 0 rgba(30,64,175,0.25); }
   50%      { box-shadow: 0 0 0 8px rgba(30,64,175,0); }
 }
-
 .tracker-linea {
   flex: 1;
   height: 3px;
@@ -763,10 +731,7 @@
   margin-top: 27px;
   transition: all 0.25s ease;
 }
-
-.tracker-linea.completada {
-  background-color: var(--color-secundario, #16a34a);
-}
+.tracker-linea.completada { background-color: var(--color-secundario, #16a34a); }
 
 /* ─── Alertas dentro del tracker ────────────────────────────────────────── */
 .alerta {
@@ -781,37 +746,12 @@
   border: 1px solid transparent;
   margin-top: 16px;
 }
+.alerta-info    { background: #E3F2FD; color: #0D47A1; border-color: #90CAF9; }
+.alerta-success { background: #E8F5E9; color: #1B5E20; border-color: #A5D6A7; }
+.alerta-warning { background: #FFF8E1; color: #E65100; border-color: #FFCC80; }
+.alerta-error   { background: #FFEBEE; color: #B71C1C; border-color: #EF9A9A; }
+.alerta a { color: inherit; text-decoration: underline; }
 
-.alerta-info {
-  background: #E3F2FD;
-  color: #0D47A1;
-  border-color: #90CAF9;
-}
-
-.alerta-success {
-  background: #E8F5E9;
-  color: #1B5E20;
-  border-color: #A5D6A7;
-}
-
-.alerta-warning {
-  background: #FFF8E1;
-  color: #E65100;
-  border-color: #FFCC80;
-}
-
-.alerta-error {
-  background: #FFEBEE;
-  color: #B71C1C;
-  border-color: #EF9A9A;
-}
-
-.alerta a {
-  color: inherit;
-  text-decoration: underline;
-}
-
-/* Responsive */
 @media (max-width: 700px) {
   .tracker-solicitud   { padding: 16px; }
   .tracker-paso-titulo { font-size: 11px; }
@@ -820,14 +760,442 @@
   .tracker-linea       { margin-top: 21px; }
 }
 
-/* ─── Botón de zoom deshabilitado (al llegar al máximo) ─────────────────── */
-.f43-zoom-btn:disabled,
-.f43-zoom-btn[disabled] {
-  opacity: 0.4;
-  cursor: not-allowed;
-  pointer-events: none;
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOJA A4 — Documentos de una sola página (licencia)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.f43-hoja {
+  width: 210mm;
+  min-height: 297mm;
+  background-color: #FFFFFF;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10);
+  border-radius: 2px;
+  padding: 18mm 16mm 18mm 16mm;
+  position: relative;
+  margin-bottom: 24px;
+  box-sizing: border-box;
+  font-family: 'Times New Roman', Times, serif;
+  color: #000;
 }
-.f43-zoom-btn:disabled:hover {
-  background: transparent;
-  color: var(--color-texto-muted, #64748b);
+@media (max-width: 900px) {
+  .f43-hoja { width: 100%; padding: 16px; }
+}
+@media print {
+  .f43-hoja {
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABLA GENÉRICA F43 (licencia)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.f43-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 5mm;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+}
+.f43-tabla th,
+.f43-tabla td {
+  border: 1px solid #000;
+  padding: 4px 6px;
+  vertical-align: middle;
+  font-size: 10pt;
+}
+.f43-tabla th {
+  background-color: #E8E8E8;
+  font-weight: bold;
+  text-align: center;
+  font-size: 10pt;
+}
+.f43-tabla .f43-campo-label {
+  font-weight: bold;
+  white-space: nowrap;
+  font-size: 9.5pt;
+  background-color: #F5F5F5;
+  width: 1%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABLA DE SOLICITUDES — SCROLL HORIZONTAL + COLUMNA FIJA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* La tarjeta que contiene la tabla NO debe recortar el scroll */
+.tarjeta.tarjeta-con-scroll {
+  overflow: visible !important;
+}
+
+/* Contenedor con scroll horizontal */
+.tabla-scroll-horizontal {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  border: none !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+
+/* La tabla mantiene su ancho mínimo para forzar el scroll */
+.tabla-scroll-horizontal > .tabla-con-acciones-fijas {
+  min-width: 1100px !important;
+  width: 1100px !important;
+  table-layout: auto !important;
+}
+
+/* Celdas: no romper el texto (excepto solicitante y operador) */
+.tabla-con-acciones-fijas th,
+.tabla-con-acciones-fijas td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.tabla-con-acciones-fijas td:nth-child(3) {
+  white-space: normal;
+  min-width: 220px;
+}
+.tabla-con-acciones-fijas td:nth-child(7) {
+  white-space: normal;
+  min-width: 160px;
+}
+
+/* Columna de acciones fija a la derecha */
+.tabla-con-acciones-fijas th.col-acciones,
+.tabla-con-acciones-fijas td.col-acciones {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: -8px 0 10px -8px rgba(0, 0, 0, 0.12);
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.tabla-con-acciones-fijas thead th.col-acciones {
+  background: var(--color-fondo, #f8fafc);
+  z-index: 4;
+}
+.tabla-con-acciones-fijas tbody tr:hover td.col-acciones {
+  background: var(--color-fondo, #f8fafc);
+}
+
+/* Fila clicable */
+.fila-clicable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.fila-clicable:hover {
+  background-color: var(--color-fondo, #f8fafc) !important;
+}
+.fila-clicable:active {
+  background-color: var(--color-primario-light, #eff6ff) !important;
+}
+
+/* Scrollbar visible en Chrome/Edge/Safari */
+.tabla-scroll-horizontal::-webkit-scrollbar {
+  height: 12px;
+  background: #e2e8f0;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Firefox */
+.tabla-scroll-horizontal {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABLA DE SOLICITUDES — SCROLL HORIZONTAL + COLUMNA FIJA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* La tarjeta que contiene la tabla NO debe recortar el scroll */
+.tarjeta.tarjeta-con-scroll {
+  overflow: visible !important;
+}
+
+/* Contenedor con scroll horizontal (abajo) */
+.tabla-scroll-horizontal {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  border: none !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+
+/* La tabla mantiene su ancho mínimo para forzar el scroll */
+.tabla-scroll-horizontal > .tabla-con-acciones-fijas {
+  min-width: 1100px !important;
+  width: 1100px !important;
+  table-layout: auto !important;
+}
+
+/* Celdas: no romper el texto (excepto solicitante y operador) */
+.tabla-con-acciones-fijas th,
+.tabla-con-acciones-fijas td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.tabla-con-acciones-fijas td:nth-child(3) {
+  white-space: normal;
+  min-width: 220px;
+}
+.tabla-con-acciones-fijas td:nth-child(7) {
+  white-space: normal;
+  min-width: 160px;
+}
+
+/* Columna de acciones fija a la derecha */
+.tabla-con-acciones-fijas th.col-acciones,
+.tabla-con-acciones-fijas td.col-acciones {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: -8px 0 10px -8px rgba(0, 0, 0, 0.12);
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.tabla-con-acciones-fijas thead th.col-acciones {
+  background: var(--color-fondo, #f8fafc);
+  z-index: 4;
+}
+.tabla-con-acciones-fijas tbody tr:hover td.col-acciones {
+  background: var(--color-fondo, #f8fafc);
+}
+
+/* Fila clicable */
+.fila-clicable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.fila-clicable:hover {
+  background-color: var(--color-fondo, #f8fafc) !important;
+}
+.fila-clicable:active {
+  background-color: var(--color-primario-light, #eff6ff) !important;
+}
+
+/* Scrollbar visible en el contenedor de abajo (Chrome/Edge/Safari) */
+.tabla-scroll-horizontal::-webkit-scrollbar {
+  height: 12px;
+  background: #e2e8f0;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Firefox */
+.tabla-scroll-horizontal {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BARRA DE SCROLL SUPERIOR (sincronizada con la de abajo)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tabla-scroll-top-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  margin-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+/* WebKit: scrollbar visible arriba */
+.tabla-scroll-top-wrapper::-webkit-scrollbar {
+  height: 12px;
+  background: #e2e8f0;
+}
+.tabla-scroll-top-wrapper::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+.tabla-scroll-top-wrapper::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+.tabla-scroll-top-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.tabla-scroll-top-inner {
+  height: 1px;
+  min-width: 1100px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FILAS CLICABLES (doble click → detalle)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.fila-clicable,
+tr[data-href] {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.fila-clicable:hover,
+tr[data-href]:hover {
+  background-color: var(--color-fondo, #f8fafc) !important;
+}
+
+.fila-clicable:active,
+tr[data-href]:active {
+  background-color: var(--color-primario-light, #eff6ff) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABLA CON SCROLL HORIZONTAL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tabla-scroll-horizontal {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  border: none !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+
+/* La tabla mantiene su ancho mínimo para forzar el scroll */
+.tabla-scroll-horizontal > table {
+  min-width: 900px !important;
+  table-layout: auto !important;
+}
+
+/* Columna de acciones fija a la derecha (si existe) */
+.tabla-scroll-horizontal th.col-acciones,
+.tabla-scroll-horizontal td.col-acciones {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: -8px 0 10px -8px rgba(0, 0, 0, 0.12);
+}
+
+.tabla-scroll-horizontal thead th.col-acciones {
+  background: var(--color-fondo, #f8fafc);
+  z-index: 4;
+}
+
+.tabla-scroll-horizontal tbody tr:hover td.col-acciones {
+  background: var(--color-fondo, #f8fafc);
+}
+
+/* Scrollbar visible en Chrome/Edge/Safari */
+.tabla-scroll-horizontal::-webkit-scrollbar {
+  height: 12px;
+  background: #e2e8f0;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+.tabla-scroll-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Firefox */
+.tabla-scroll-horizontal {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BARRA DE SCROLL SUPERIOR (sincronizada con la de abajo)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tabla-scroll-top-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  margin-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+.tabla-scroll-top-wrapper::-webkit-scrollbar {
+  height: 12px;
+  background: #e2e8f0;
+}
+.tabla-scroll-top-wrapper::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+.tabla-scroll-top-wrapper::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+.tabla-scroll-top-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.tabla-scroll-top-inner {
+  height: 1px;
+  min-width: 900px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIX: forzar min-width en cualquier tabla dentro de .tabla-scroll-horizontal
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Cualquier tabla genérica dentro del scroll horizontal */
+.tabla-scroll-horizontal > table {
+  min-width: 1400px !important;
+  table-layout: auto !important;
+}
+
+/* Las tablas de solicitudes que ya tienen .tabla-con-acciones-fijas */
+.tabla-scroll-horizontal > .tabla-con-acciones-fijas {
+  min-width: 1400px !important;
+  width: 1400px !important;
+  table-layout: auto !important;
 }

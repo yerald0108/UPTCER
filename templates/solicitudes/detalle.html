@@ -44,6 +44,9 @@
 
     <div class="f43-acciones-grupo">
       <div class="f43-zoom-control" title="Ajustar tamaño del documento">
+        <button type="button" class="f43-zoom-btn" id="zoom-btn-menos" onclick="cambiarZoom(-10)" title="Reducir tamaño" aria-label="Reducir">
+          <i data-lucide="zoom-out" style="width:15px;height:15px;"></i>
+        </button>
         <span class="f43-zoom-nivel" id="zoom-nivel">100%</span>
         <div class="f43-zoom-divisor"></div>
         <button type="button" class="f43-zoom-btn" onclick="resetearZoom()" title="Restablecer tamaño" aria-label="Restablecer">
@@ -606,44 +609,6 @@
 {% block scripts_extra %}
 <script>
   document.body.dataset.pagina = 'solicitud-detalle';
-
-  /* ═══════════════════════════════════════════════════════════════════════
-     ZOOM (solo aumentar, máximo 130%)
-     ═══════════════════════════════════════════════════════════════════════ */
-  const ZOOM_MIN = 100;
-  const ZOOM_MAX = 130;
-  let _zoomActual = 100;
-
-  function cambiarZoom(delta) {
-    _zoomActual = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, _zoomActual + delta));
-    aplicarZoom();
-  }
-
-  function resetearZoom() {
-    _zoomActual = 100;
-    aplicarZoom();
-  }
-
-  function aplicarZoom() {
-    const doc    = document.getElementById('f43-documento');
-    const nivel  = document.getElementById('zoom-nivel');
-    const btnMas = document.getElementById('zoom-btn-mas');
-
-    if (doc) {
-      doc.style.transform = `scale(${_zoomActual / 100})`;
-      doc.style.transformOrigin = 'top center';
-      doc.style.marginBottom = `${(_zoomActual - 100) * 5}px`;
-    }
-    if (nivel) nivel.textContent = _zoomActual + '%';
-
-    if (btnMas) {
-      const enMaximo = _zoomActual >= ZOOM_MAX;
-      btnMas.disabled = enMaximo;
-      btnMas.style.opacity = enMaximo ? '0.4' : '';
-      btnMas.style.cursor = enMaximo ? 'not-allowed' : 'pointer';
-      btnMas.title = enMaximo ? 'Tamaño máximo alcanzado' : 'Aumentar tamaño';
-    }
-  }
 
   /* ═══════════════════════════════════════════════════════════════════════
      BOTÓN SCROLL TOP

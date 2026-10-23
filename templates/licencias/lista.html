@@ -1,6 +1,11 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Licencias{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
 <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -70,4 +75,12 @@
 </button>
 {% endblock %}
 
-{% block scripts_extra %}{% endblock %}
+{% block scripts_extra %}
+<script>
+  window.addEventListener('scroll', function () {
+    const btn = document.getElementById('btn-scroll-top');
+    if (!btn) return;
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+</script>
+{% endblock %}

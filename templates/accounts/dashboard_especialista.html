@@ -1,7 +1,12 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Dashboard — {{ usuario.get_rol_display }}{% endblock %}
 {% block nav_esp_inicio %}activo{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/f43.css' %}">
+{% endblock %}
 
 {% block breadcrumb %}
   <li style="display:flex;align-items:center;gap:var(--espacio-2);">
@@ -73,7 +78,7 @@
   </div>
   <div class="tarjeta-cuerpo" style="padding:0;">
     {% if solicitudes_recientes %}
-      <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
         <table class="tabla">
           <thead>
             <tr>
@@ -87,7 +92,9 @@
           </thead>
           <tbody>
             {% for solicitud in solicitudes_recientes %}
-            <tr>
+            <tr class="fila-clicable"
+                data-href="{% url 'solicitudes:detalle' pk=solicitud.pk %}"
+                title="Doble clic para abrir">
               <td style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
                 {{ solicitud.numero }}
               </td>
@@ -108,7 +115,11 @@
                 {% else %}—{% endif %}
               </td>
               <td>
-                <a href="{% url 'solicitudes:detalle' pk=solicitud.pk %}" class="btn btn-sm btn-ghost">
+                <a href="{% url 'solicitudes:detalle' pk=solicitud.pk %}"
+                   class="btn btn-sm btn-ghost"
+                   onclick="event.stopPropagation()"
+                   title="Ver detalle">
+                  <i data-lucide="eye" style="width:15px;height:15px;"></i>
                   Ver
                 </a>
               </td>

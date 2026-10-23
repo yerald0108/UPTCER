@@ -35,42 +35,42 @@
   </span>
 </div>
 
-<div class="grid-2">
+<div style="display:grid;grid-template-columns:1fr;gap:var(--espacio-5);max-width:100%;">
 
-  <!-- Columna izquierda: datos de la solicitud -->
-  <div style="display:flex;flex-direction:column;gap:var(--espacio-5);">
+  <!-- Fila 1: Datos del solicitante + Equipos a evaluar -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:var(--espacio-5);">
 
     <!-- Datos del solicitante -->
-    <div class="tarjeta">
+    <div class="tarjeta" style="min-width:0;">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <i data-lucide="user" style="width:18px;height:18px;"></i>
           </div>
           <h2 class="tarjeta-titulo">Datos del solicitante</h2>
         </div>
       </div>
-      <div class="tarjeta-cuerpo">
+      <div class="tarjeta-cuerpo" style="min-width:0;">
         <div style="display:flex;flex-direction:column;gap:var(--espacio-3);">
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Nombre</span>
-            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);">{{ datos_f43.nombre_apellidos|default:solicitud.solicitante.get_nombre_completo }}</span>
+            <span style="font-size:var(--texto-sm);font-weight:var(--peso-medio);text-align:right;">{{ datos_f43.nombre_apellidos|default:solicitud.solicitante.get_nombre_completo }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Pasaporte / CI</span>
-            <span style="font-size:var(--texto-sm);">{{ datos_f43.numero_pasaporte|default:"—" }}</span>
+            <span style="font-size:var(--texto-sm);text-align:right;">{{ datos_f43.numero_pasaporte|default:"—" }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">País</span>
-            <span style="font-size:var(--texto-sm);">{{ datos_f43.pais_residencia|default:"—" }}</span>
+            <span style="font-size:var(--texto-sm);text-align:right;">{{ datos_f43.pais_residencia|default:"—" }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Correo</span>
-            <span style="font-size:var(--texto-sm);">{{ datos_f43.correo_electronico|default:"—" }}</span>
+            <span style="font-size:var(--texto-sm);text-align:right;word-break:break-all;">{{ datos_f43.correo_electronico|default:"—" }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Provincia</span>
-            <span style="font-size:var(--texto-sm);">
+            <span style="font-size:var(--texto-sm);text-align:right;">
               {% with p=datos_f43.provincia %}
                 {% if p == 'pinar_del_rio' %}Pinar del Río
                 {% elif p == 'artemisa' %}Artemisa
@@ -92,9 +92,9 @@
               {% endwith %}
             </span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Objetivo</span>
-            <span style="font-size:var(--texto-sm);">
+            <span style="font-size:var(--texto-sm);text-align:right;">
               {% with o=datos_f43.objetivo_importacion %}
                 {% if o == 'empleo_directo' %}Empleo directo
                 {% elif o == 'muestra_expositiva' %}Muestra expositiva
@@ -103,9 +103,9 @@
               {% endwith %}
             </span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;justify-content:space-between;gap:var(--espacio-3);flex-wrap:wrap;">
             <span style="font-size:var(--texto-sm);color:var(--color-texto-muted);">Período</span>
-            <span style="font-size:var(--texto-sm);">
+            <span style="font-size:var(--texto-sm);text-align:right;">
               {{ datos_f43.periodo_importacion|default:"—"|capfirst }}
               {% if datos_f43.tiempo_solicitado %}
                 — {{ datos_f43.tiempo_solicitado }} meses
@@ -116,19 +116,19 @@
       </div>
     </div>
 
-    <!-- Equipos de la solicitud -->
-    <div class="tarjeta">
+    <!-- Equipos a evaluar -->
+    <div class="tarjeta" style="min-width:0;">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#FFF8E1;color:var(--color-advertencia);display:flex;align-items:center;justify-content:center;">
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#FFF8E1;color:var(--color-advertencia);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <i data-lucide="cpu" style="width:18px;height:18px;"></i>
           </div>
           <h2 class="tarjeta-titulo">Equipos a evaluar</h2>
         </div>
         <span class="badge badge-pendiente">No listados</span>
       </div>
-      <div class="tarjeta-cuerpo" style="padding:0;">
-        <div class="tabla-contenedor" style="border:none;border-radius:0;">
+      <div class="tarjeta-cuerpo" style="padding:0;min-width:0;">
+        <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;max-width:100%;">
           <table class="tabla">
             <thead>
               <tr>
@@ -159,111 +159,67 @@
       </div>
     </div>
 
-    <!-- Historial -->
-    {% if historial %}
-    <div class="tarjeta">
-      <div class="tarjeta-cabecera">
-        <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
-            <i data-lucide="history" style="width:18px;height:18px;"></i>
-          </div>
-          <h2 class="tarjeta-titulo">Historial</h2>
-        </div>
-      </div>
-      <div class="tarjeta-cuerpo" style="padding:0;">
-        <div class="tabla-contenedor" style="border:none;border-radius:0;">
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>Estado</th>
-                <th>Observación</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for h in historial %}
-              <tr>
-                <td style="white-space:nowrap;color:var(--color-texto-muted);font-size:var(--texto-xs);">
-                  {{ h.fecha|date:"d/m/Y H:i" }}
-                </td>
-                <td style="font-size:var(--texto-xs);">{{ h.usuario.get_nombre_completo }}</td>
-                <td>
-                  <span class="badge {{ h.clase_badge_nuevo }}">{{ h.get_estado_nuevo_display }}</span>
-                </td>
-                <td style="font-size:var(--texto-xs);color:var(--color-texto-secundario);">
-                  {{ h.observacion|default:"—"|truncatechars:60 }}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
   </div>
 
-  <!-- Columna derecha: formulario de evaluación -->
+  <!-- Fila 2: Formulario de evaluación (ancho completo) -->
   <div>
     {% if not solicitud.esta_resuelta %}
-    <form method="post" id="form-evaluacion">
+    <form method="post" id="form-evaluacion" style="min-width:0;">
       {% csrf_token %}
 
-      <div class="tarjeta mb-6">
+      <div class="tarjeta" style="margin-bottom:var(--espacio-5);min-width:0;">
         <div class="tarjeta-cabecera">
           <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-            <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <i data-lucide="clipboard-check" style="width:18px;height:18px;"></i>
             </div>
             <h2 class="tarjeta-titulo">Evaluación técnica</h2>
           </div>
         </div>
-        <div class="tarjeta-cuerpo">
+        <div class="tarjeta-cuerpo" style="min-width:0;">
 
-          <!-- Banda de frecuencia detectada -->
-          <div class="campo-grupo">
+          <!-- Banda de frecuencia detectada (grid responsive) -->
+          <div class="campo-grupo" style="min-width:0;">
             <label class="campo-etiqueta requerido">Banda de frecuencia detectada</label>
-            <div style="display:flex;flex-direction:column;gap:var(--espacio-2);">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--espacio-2);">
               {% for valor, etiqueta in BANDAS %}
-              <label style="display:flex;align-items:center;gap:var(--espacio-3);padding:var(--espacio-3) var(--espacio-4);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
+              <label style="display:flex;align-items:center;gap:var(--espacio-3);padding:var(--espacio-3) var(--espacio-4);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);min-width:0;"
                 onmouseover="this.style.borderColor='var(--color-primario)'"
                 onmouseout="this.style.borderColor='var(--color-borde)'">
-                <input type="radio" name="banda_detectada" value="{{ valor }}" required>
-                <span>{{ etiqueta }}</span>
+                <input type="radio" name="banda_detectada" value="{{ valor }}" required style="flex-shrink:0;">
+                <span style="min-width:0;overflow-wrap:break-word;">{{ etiqueta }}</span>
               </label>
               {% endfor %}
             </div>
           </div>
 
           <!-- Cumple normativa -->
-          <div class="campo-grupo">
+          <div class="campo-grupo" style="min-width:0;">
             <label class="campo-etiqueta requerido">¿Cumple con la normativa vigente?</label>
-            <div style="display:flex;gap:var(--espacio-3);">
-              <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-5);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
+            <div style="display:flex;gap:var(--espacio-3);flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-5);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);min-width:0;"
                 onmouseover="this.style.borderColor='var(--color-secundario)'"
                 onmouseout="this.style.borderColor='var(--color-borde)'">
-                <input type="radio" name="cumple_normativa" value="1" required>
-                <i data-lucide="check" style="width:15px;height:15px;color:var(--color-secundario);"></i>
+                <input type="radio" name="cumple_normativa" value="1" required style="flex-shrink:0;">
+                <i data-lucide="check" style="width:15px;height:15px;color:var(--color-secundario);flex-shrink:0;"></i>
                 Sí cumple
               </label>
-              <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-5);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);"
+              <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-5);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);min-width:0;"
                 onmouseover="this.style.borderColor='var(--color-acento)'"
                 onmouseout="this.style.borderColor='var(--color-borde)'">
-                <input type="radio" name="cumple_normativa" value="0" required>
-                <i data-lucide="x" style="width:15px;height:15px;color:var(--color-acento);"></i>
+                <input type="radio" name="cumple_normativa" value="0" required style="flex-shrink:0;">
+                <i data-lucide="x" style="width:15px;height:15px;color:var(--color-acento);flex-shrink:0;"></i>
                 No cumple
               </label>
             </div>
           </div>
 
           <!-- Criterio técnico -->
-          <div class="campo-grupo">
+          <div class="campo-grupo" style="min-width:0;">
             <label class="campo-etiqueta requerido">Criterio técnico</label>
             <textarea name="criterio_tecnico" class="campo-textarea" rows="6"
-              placeholder="Describa detalladamente el criterio técnico emitido sobre el equipo. Incluya análisis de frecuencias, compatibilidad con la normativa cubana, y recomendación fundamentada..."
-              required></textarea>
+              placeholder="Describa detalladamente el criterio técnico emitido sobre el equipo..."
+              required style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;"></textarea>
             <p class="campo-ayuda">Este criterio quedará registrado en el historial y aparecerá en el documento de licencia.</p>
           </div>
 
@@ -271,24 +227,24 @@
       </div>
 
       <!-- Agregar al catálogo -->
-      <div class="tarjeta mb-6">
-        <div class="tarjeta-cabecera">
-          <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-            <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#E8F5E9;color:var(--color-secundario);display:flex;align-items:center;justify-content:center;">
+      <div class="tarjeta" style="margin-bottom:var(--espacio-5);min-width:0;">
+        <div class="tarjeta-cabecera" style="flex-wrap:wrap;gap:var(--espacio-3);">
+          <div style="display:flex;align-items:center;gap:var(--espacio-3);min-width:0;">
+            <div style="width:32px;height:32px;border-radius:var(--radio-md);background:#E8F5E9;color:var(--color-secundario);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <i data-lucide="database" style="width:18px;height:18px;"></i>
             </div>
             <h2 class="tarjeta-titulo">Agregar al catálogo</h2>
           </div>
-          <label style="display:flex;align-items:center;gap:var(--espacio-2);cursor:pointer;font-size:var(--texto-sm);">
+          <label style="display:flex;align-items:center;gap:var(--espacio-2);cursor:pointer;font-size:var(--texto-sm);flex-shrink:0;">
             <input type="checkbox" name="agregar_catalogo" value="1" id="chk-catalogo"
               onchange="toggleCatalogo(this.checked)">
             Agregar este equipo al catálogo
           </label>
         </div>
-        <div class="tarjeta-cuerpo" id="panel-catalogo" style="display:none;">
+        <div class="tarjeta-cuerpo" id="panel-catalogo" style="display:none;min-width:0;">
           <div class="alerta alerta-info" style="margin-bottom:var(--espacio-5);">
             <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
-            Solo disponible si la solicitud es aprobada. El equipo se agregará automáticamente al catálogo para futuras solicitudes.
+            Solo disponible si la solicitud es aprobada. El equipo se agregará automáticamente al catálogo.
           </div>
 
           <div class="campo-grupo">
@@ -298,7 +254,7 @@
               placeholder="Ej: Teléfono inteligente, Router inalámbrico">
           </div>
 
-          <div class="grid-2">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--espacio-3);">
             <div class="campo-grupo">
               <label class="campo-etiqueta">Marca</label>
               <input type="text" name="cat_marca" class="campo-input"
@@ -335,22 +291,22 @@
       </div>
 
       <!-- Botones de acción -->
-      <div class="tarjeta">
-        <div class="tarjeta-cuerpo">
+      <div class="tarjeta" style="min-width:0;">
+        <div class="tarjeta-cuerpo" style="min-width:0;">
           <p style="font-size:var(--texto-sm);color:var(--color-texto-secundario);margin-bottom:var(--espacio-5);">
             Una vez emitido el criterio técnico esta acción no puede deshacerse. El solicitante recibirá una notificación automática.
           </p>
-          <div style="display:flex;gap:var(--espacio-3);">
+          <div style="display:flex;gap:var(--espacio-3);flex-wrap:wrap;">
             <button type="button"
               name="accion" value="aprobar"
-              class="btn btn-primario" style="flex:1;justify-content:center;background-color:var(--color-secundario);border-color:var(--color-secundario);"
+              class="btn btn-primario" style="flex:1;min-width:200px;justify-content:center;background-color:var(--color-secundario);border-color:var(--color-secundario);"
               onclick="confirmarEvaluacion('aprobar')">
               <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
               Aprobar solicitud
             </button>
             <button type="button"
               name="accion" value="denegar"
-              class="btn btn-peligro" style="flex:1;justify-content:center;"
+              class="btn btn-peligro" style="flex:1;min-width:200px;justify-content:center;"
               onclick="confirmarEvaluacion('denegar')">
               <i data-lucide="x-circle" style="width:18px;height:18px;"></i>
               Denegar solicitud
@@ -368,8 +324,8 @@
     </form>
 
     {% else %}
-    <div class="tarjeta">
-      <div class="tarjeta-cuerpo">
+    <div class="tarjeta" style="min-width:0;">
+      <div class="tarjeta-cuerpo" style="min-width:0;">
         <div class="alerta alerta-info">
           <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;"></i>
           Esta solicitud ya fue resuelta el {{ solicitud.fecha_resolucion|date:"d/m/Y \a \l\a\s H:i" }}.
@@ -377,12 +333,12 @@
         {% if solicitud.observaciones_tecnicas %}
           <div style="margin-top:var(--espacio-5);">
             <h3 style="font-size:var(--texto-sm);font-weight:var(--peso-semi);margin-bottom:var(--espacio-3);">Criterio técnico emitido:</h3>
-            <div style="background:var(--color-fondo);padding:var(--espacio-4);border-radius:var(--radio-md);font-size:var(--texto-sm);line-height:1.6;">
+            <div style="background:var(--color-fondo);padding:var(--espacio-4);border-radius:var(--radio-md);font-size:var(--texto-sm);line-height:1.6;overflow-wrap:break-word;">
               {% load json_extras %}
               {% with eval=solicitud.observaciones_tecnicas|parse_json %}
                 {% if eval.criterio %}
                   <p>{{ eval.criterio }}</p>
-                  <div style="margin-top:var(--espacio-3);display:flex;gap:var(--espacio-4);">
+                  <div style="margin-top:var(--espacio-3);display:flex;gap:var(--espacio-4);flex-wrap:wrap;">
                     <span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">
                       Banda: {{ eval.banda_detectada|default:"—" }}
                     </span>
@@ -407,6 +363,50 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Fila 3: Historial (ancho completo) -->
+  {% if historial %}
+  <div class="tarjeta" style="min-width:0;">
+    <div class="tarjeta-cabecera">
+      <div style="display:flex;align-items:center;gap:var(--espacio-3);">
+        <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i data-lucide="history" style="width:18px;height:18px;"></i>
+        </div>
+        <h2 class="tarjeta-titulo">Historial</h2>
+      </div>
+    </div>
+    <div class="tarjeta-cuerpo" style="padding:0;min-width:0;">
+      <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;max-width:100%;">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Estado</th>
+              <th>Observación</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in historial %}
+            <tr>
+              <td style="white-space:nowrap;color:var(--color-texto-muted);font-size:var(--texto-xs);">
+                {{ h.fecha|date:"d/m/Y H:i" }}
+              </td>
+              <td style="font-size:var(--texto-xs);">{{ h.usuario.get_nombre_completo }}</td>
+              <td>
+                <span class="badge {{ h.clase_badge_nuevo }}">{{ h.get_estado_nuevo_display }}</span>
+              </td>
+              <td style="font-size:var(--texto-xs);color:var(--color-texto-secundario);">
+                {{ h.observacion|default:"—"|truncatechars:60 }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}
@@ -435,7 +435,6 @@
     }
 
     const esAprobacion = accion === 'aprobar';
-    const btnSubmit    = document.querySelector(`button[value="${accion}"]`);
 
     confirmarAccion({
       titulo:         esAprobacion ? 'Aprobar solicitud' : 'Denegar solicitud',
@@ -446,7 +445,6 @@
       tipo:           esAprobacion ? 'info' : 'peligro',
       icono:          esAprobacion ? 'check-circle' : 'x-circle',
       onConfirmar: () => {
-        // Establecer el valor de acción y enviar el formulario
         const inputAccion = document.createElement('input');
         inputAccion.type  = 'hidden';
         inputAccion.name  = 'accion';

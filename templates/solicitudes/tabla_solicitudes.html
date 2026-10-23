@@ -11,8 +11,8 @@
 {% endif %}
 
 {% if solicitudes %}
-  <div class="tabla-contenedor" style="border:none;border-radius:0;">
-    <table class="tabla">
+  <div class="tabla-contenedor tabla-scroll-horizontal" style="border:none;border-radius:0;">
+    <table class="tabla tabla-con-acciones-fijas">
       <thead>
         <tr>
           <th>Número</th>
@@ -23,12 +23,14 @@
           <th>Supervisión</th>
           <th>Operador asignado</th>
           <th>Fecha</th>
-          <th></th>
+          <th class="col-acciones"></th>
         </tr>
       </thead>
       <tbody>
         {% for s in solicitudes %}
-        <tr>
+        <tr class="fila-clicable"
+            data-href="{% url 'solicitudes:detalle' s.pk %}?volver={{ request.get_full_path|urlencode }}"
+            title="Doble clic para abrir">
           <td>
             <span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);font-weight:var(--peso-semi);">
               {{ s.numero }}
@@ -70,8 +72,11 @@
           <td style="color:var(--color-texto-muted);white-space:nowrap;">
             {{ s.fecha_creacion|date:"d/m/Y H:i" }}
           </td>
-          <td>
-            <a href="{% url 'solicitudes:detalle' s.pk %}?volver={{ request.get_full_path|urlencode }}" class="btn btn-ghost btn-sm">
+          <td class="col-acciones">
+            <a href="{% url 'solicitudes:detalle' s.pk %}?volver={{ request.get_full_path|urlencode }}"
+               class="btn btn-ghost btn-sm"
+               onclick="event.stopPropagation()"
+               title="Ver detalle">
               <i data-lucide="eye" style="width:15px;height:15px;"></i>
             </a>
           </td>
