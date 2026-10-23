@@ -220,6 +220,10 @@ class DashboardViewTest(TestCase):
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 200)
         self.assertTemplateUsed(r, 'accounts/dashboard_directivo.html')
+        self.assertContains(r, f'href="{reverse("mapa:mapa")}?next=')
+        self.assertContains(r, '>Mapa</span>')
+        self.assertContains(r, f'href="{reverse("espectro:seleccion_anexo")}"')
+        self.assertContains(r, '>Espectro</span>')
 
     def test_dashboard_aduana(self):
         """Aduana ve su dashboard."""

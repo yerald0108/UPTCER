@@ -1,0 +1,232 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear nuevo punto</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; padding: 20px; }
+        .card { border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: none; max-width: 1200px; margin: auto; }
+        .card-header { background: #0d6efd; color: white; border-radius: 12px 12px 0 0 !important; }
+        #mini-mapa { height: 400px; border-radius: 8px; }
+        .instruccion {
+            background: #fff3cd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">➕ Crear nuevo punto</h3>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-3">
+                <a href="{{ url_mapa }}" class="btn btn-outline-secondary btn-sm">← Volver al mapa</a>
+            </div>
+
+            <div class="instruccion">
+                💡 <strong>Instrucción:</strong> Haz clic en el mapa para seleccionar la ubicación exacta.
+            </div>
+
+            <div class="row">
+                <div class="col-md-7">
+                    <div id="mini-mapa"></div>
+                </div>
+                <div class="col-md-5">
+                    <form id="form-crear-punto">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" class="form-control" name="nombre" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" name="tipo">
+                                <option value="GENERICO">Genérico</option>
+                                <option value="RADIOFARO_AEREO">Radiofaro Aéreo</option>
+                                <option value="RADIOFARO_MARITIMO">Radiofaro Marítimo</option>
+                                <option value="ANTENA_TORRE">Antena de Torre</option>
+                                <option value="ANTENA_PANEL">Antena de Panel</option>
+                                <option value="ANTENA_PARABOLICA">Antena Parabólica</option>
+                                <option value="ANTENA_YAGI">Antena Yagi</option>
+                                <option value="ANTENA_OMNIDIRECCIONAL">Antena Omnidireccional</option>
+                                <option value="ESTACION_BASE">Estación Base</option>
+                                <option value="ESTACION_MOVIL">Estación Móvil</option>
+                                <option value="REPETIDORA">Repetidora</option>
+                                <option value="SATELITE">Estación Satelital</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Latitud *</label>
+                                <input type="number" step="any" class="form-control" name="latitud" id="latitud" required value="{{ lat_inicial }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Longitud *</label>
+                                <input type="number" step="any" class="form-control" name="longitud" id="longitud" required value="{{ lon_inicial }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Responsable</label>
+                            <input type="text" class="form-control" name="responsable">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" name="descripcion" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="estado">
+                                <option value="ACTIVO">Activo</option>
+                                <option value="INACTIVO">Inactivo</option>
+                                <option value="MANTENIMIENTO">En mantenimiento</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Atributos extra (JSON)</label>
+                            <textarea class="form-control" name="atributos" rows="2"
+                                      placeholder='{"frecuencia_mhz": 113.6, "potencia_w": 50}'></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">💾 Guardar punto</button>
+                    </form>
+
+                    <div id="mensaje" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Leer coordenadas iniciales de los inputs (vienen del backend)
+        var latInicial = document.getElementById('latitud').value;
+        var lonInicial = document.getElementById('longitud').value;
+
+        var mapCenter = [22.0, -79.0];
+        var mapZoom = 7;
+        var marker = null;
+
+        // Si venimos de una búsqueda, centrar en las coordenadas
+        if (latInicial && lonInicial) {
+            mapCenter = [parseFloat(latInicial), parseFloat(lonInicial)];
+            mapZoom = 15;
+        }
+
+        var map = L.map('mini-mapa').setView(mapCenter, mapZoom);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap France',
+            subdomains: 'abc',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Si venimos de una búsqueda, poner el marcador
+        if (latInicial && lonInicial) {
+            marker = L.marker(mapCenter).addTo(map);
+            marker.bindPopup(`Lat: ${latInicial}<br>Lon: ${lonInicial}`).openPopup();
+        }
+
+        // Al hacer clic en el mapa
+        map.on('click', function (e) {
+            var lat = e.latlng.lat.toFixed(6);
+            var lng = e.latlng.lng.toFixed(6);
+
+            document.getElementById('latitud').value = lat;
+            document.getElementById('longitud').value = lng;
+
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+            marker.bindPopup(`Lat: ${lat}<br>Lon: ${lng}`).openPopup();
+        });
+
+        // Si el usuario cambia los números a mano, mover el marcador
+        ['latitud', 'longitud'].forEach(function (id) {
+            document.getElementById(id).addEventListener('change', function () {
+                var lat = parseFloat(document.getElementById('latitud').value);
+                var lng = parseFloat(document.getElementById('longitud').value);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    var pos = [lat, lng];
+                    if (marker) {
+                        marker.setLatLng(pos);
+                    } else {
+                        marker = L.marker(pos).addTo(map);
+                    }
+                    map.setView(pos, 12);
+                }
+            });
+        });
+
+        // Enviar por AJAX
+        document.getElementById('form-crear-punto').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var form = e.target;
+            var mensaje = document.getElementById('mensaje');
+            var atributosInput = form.querySelector('[name="atributos"]').value.trim();
+            var atributos = {};
+            
+            if (atributosInput) {
+                try {
+                    atributos = JSON.parse(atributosInput);
+                } catch (err) {
+                    mensaje.innerHTML = '<div class="alert alert-danger">⚠️ El JSON de atributos no es válido.</div>';
+                    return;
+                }
+            }
+
+            var data = {
+                nombre: form.nombre.value,
+                tipo: form.tipo.value,
+                latitud: form.latitud.value,
+                longitud: form.longitud.value,
+                estado: form.estado.value,
+                responsable: form.responsable.value,
+                descripcion: form.descripcion.value,
+                atributos: atributos,
+            };
+
+            fetch("{% url 'mapa:api_crear_punto' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': form.querySelector('[name="csrfmiddlewaretoken"]').value,
+                },
+                body: JSON.stringify(data),
+            })
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.ok) {
+                    mensaje.innerHTML = `<div class="alert alert-success">✅ ${resp.mensaje}</div>`;
+                    // Redirigir al mapa después de guardar
+                    setTimeout(() => { window.location.href = "{% url 'mapa:mapa' %}"; }, 1500);
+                } else {
+                    mensaje.innerHTML = `<div class="alert alert-danger">❌ ${resp.error}</div>`;
+                }
+            })
+            .catch(err => {
+                mensaje.innerHTML = `<div class="alert alert-danger">Error de red: ${err}</div>`;
+            });
+        });
+    </script>
+</body>
+</html>

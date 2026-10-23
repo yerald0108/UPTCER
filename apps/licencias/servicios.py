@@ -51,9 +51,13 @@ def generar_licencia(solicitud, emitida_por):
     Si ya existe una licencia para esta solicitud, la retorna sin crear otra.
     """
     try:
-        return solicitud.licencia
+        licencia = solicitud.licencia
     except Licencia.DoesNotExist:
-        pass
+        licencia = None
+
+    if licencia is not None:
+        _sincronizar_punto_mapa(solicitud, licencia)
+        return licencia
 
     fecha_vencimiento = None
 
@@ -73,4 +77,54 @@ def generar_licencia(solicitud, emitida_por):
         fecha_vencimiento = fecha_vencimiento,
     )
 
+    _sincronizar_punto_mapa(solicitud, licencia)
     return licencia
+
+
+def _sincronizar_punto_mapa(solicitud, licencia):
+    if (
+        not solicitud.direccion_instalacion
+        or solicitud.latitud_instalacion is None
+        or solicitud.longitud_instalacion is None
+    ):
+        return
+
+    from apps.mapa.models import PuntoMapa
+
+    try:
+        datos = json.loads(solicitud.equipo_descripcion or '{}')
+    except (json.JSONDecodeError, TypeError):
+        datos = {}
+
+    equipos = datos.get('equipos', [])
+    categoria_tipos = {
+        'radiofaro': 'RADIOFARO_AEREO',
+        'maritimo': 'RADIOFARO_MARITIMO',
+        'movil': 'ESTACION_MOVIL',
+        'internet': 'ESTACION_BASE',
+    }
+    atributos = {
+        'solicitud_numero': solicitud.numero,
+        'licencia_numero': licencia.numero,
+        'licencia_estado': licencia.get_estado_display(),
+        'licencia_fecha_vencimiento': (
+            licencia.fecha_vencimiento.isoformat()
+            if licencia.fecha_vencimiento else 'Sin vencimiento'
+        ),
+        'solicitante': solicitud.solicitante.get_nombre_completo(),
+        'equipos': equipos if isinstance(equipos, list) else [],
+    }
+    PuntoMapa.objects.update_or_create(
+        solicitud=solicitud,
+        defaults={
+            'nombre': solicitud.numero,
+            'tipo': categoria_tipos.get(solicitud.categoria, 'GENERICO'),
+            'latitud': solicitud.latitud_instalacion,
+            'longitud': solicitud.longitud_instalacion,
+            'direccion': solicitud.direccion_instalacion,
+            'estado': 'ACTIVO',
+            'atributos': atributos,
+            'descripcion': f'Dispositivos autorizados en la solicitud {solicitud.numero}.',
+            'responsable': solicitud.solicitante.get_nombre_completo(),
+        },
+    )

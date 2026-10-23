@@ -37,6 +37,8 @@ LOCAL_APPS = [
     'apps.equipos',
     'apps.notificaciones',
     'apps.licencias',
+    'apps.mapa',
+    'apps.espectro',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS

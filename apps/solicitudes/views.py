@@ -113,6 +113,9 @@ def nueva_solicitud_f43(request):
                 solicitante = request.user,
                 equipo_no_listado = hay_no_listado,
                 observaciones_solicitante = form.cleaned_data.get('observaciones_solicitante', ''),
+                direccion_instalacion = form.cleaned_data['direccion_instalacion'].strip(),
+                latitud_instalacion = form.cleaned_data['latitud_instalacion'],
+                longitud_instalacion = form.cleaned_data['longitud_instalacion'],
             )
 
             if form.cleaned_data.get('documento_adjunto'):

@@ -1,0 +1,155 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}Calculadora de Espectro{% endblock %}
+{% block nav_espectro %}activo{% endblock %}
+
+{% block estilos_extra %}
+<style>
+  .espectro-seleccion {
+    display: grid;
+    gap: var(--espacio-6);
+  }
+  .espectro-intro {
+    padding: var(--espacio-6);
+    border-radius: var(--radio-xl);
+    color: #fff;
+    background: linear-gradient(135deg, #123b5d, #0d6efd);
+  }
+  .espectro-intro h2 {
+    margin: 0 0 var(--espacio-2);
+    font-size: clamp(1.35rem, 3vw, 2rem);
+    color: #fff;
+  }
+  .espectro-intro p { margin: 0; color: rgba(255,255,255,.86); }
+  .espectro-intro .espectro-intro-nota {
+    margin-top: var(--espacio-2);
+    font-size: var(--texto-sm);
+  }
+  .espectro-anexos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espacio-5);
+  }
+  .espectro-anexo {
+    display: flex;
+    flex-direction: column;
+    padding: var(--espacio-6);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-xl);
+    background: var(--color-fondo-blanco);
+    box-shadow: var(--sombra-sm);
+    color: inherit;
+    text-decoration: none;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .espectro-anexo:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-primario);
+    box-shadow: var(--sombra-md);
+    color: inherit;
+  }
+  .espectro-anexo-cabecera { text-align: center; }
+  .espectro-anexo-icono { font-size: 2.5rem; line-height: 1; }
+  .espectro-anexo-grupo {
+    display: inline-flex;
+    margin: var(--espacio-3) 0;
+    padding: 5px 14px;
+    border-radius: var(--radio-full);
+    background: var(--color-exito-fondo, #e9f7ef);
+    color: var(--color-exito, #198754);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-semi);
+  }
+  .espectro-anexo-grupo.usd { background: #fff3cd; color: #856404; }
+  .espectro-anexo h3 { margin: 0 0 var(--espacio-2); color: var(--color-primario); }
+  .espectro-anexo-descripcion { color: var(--color-texto-secundario); }
+  .espectro-anexo ul {
+    flex: 1;
+    margin: var(--espacio-3) 0 var(--espacio-5);
+    padding-left: 1.25rem;
+    color: var(--color-texto-secundario);
+    font-size: var(--texto-sm);
+  }
+  .espectro-anexo li + li { margin-top: var(--espacio-2); }
+  .espectro-anexo-acceder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    padding: 10px 22px;
+    border-radius: var(--radio-full);
+    background: var(--color-primario);
+    color: #fff;
+    font-weight: var(--peso-semi);
+  }
+  .espectro-anexo:hover .espectro-anexo-acceder { background: var(--color-primario-hover, #0a58ca); }
+  .espectro-pie { margin: 0; text-align: center; color: var(--color-texto-muted); font-size: var(--texto-sm); }
+  .espectro-pie a { color: var(--color-primario); }
+  @media (max-width: 760px) {
+    .espectro-anexos { grid-template-columns: 1fr; }
+    .espectro-intro, .espectro-anexo { padding: var(--espacio-5); }
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">Espectro</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <div>
+    <h1 class="pagina-titulo">Calculadora del Espectro Radioeléctrico</h1>
+    <p class="pagina-subtitulo">Resolución 20/2025 — Ministerio de Comunicaciones</p>
+  </div>
+</div>
+
+<section class="espectro-seleccion">
+  <header class="espectro-intro">
+    <h2>Seleccione el anexo correspondiente</h2>
+    <p>Elija el grupo según la clasificación del solicitante para calcular el valor por uso del espectro.</p>
+    <p class="espectro-intro-nota">Cada anexo aplica su moneda y factores tarifarios correspondientes.</p>
+  </header>
+
+  <div class="espectro-anexos">
+    <a href="{% url 'espectro:calcular' '1' %}" class="espectro-anexo">
+      <div class="espectro-anexo-cabecera">
+        <div class="espectro-anexo-icono" aria-hidden="true">🇨🇺</div>
+        <span class="espectro-anexo-grupo">Grupo 1 — CUP</span>
+        <h3>ANEXO I</h3>
+        <p class="espectro-anexo-descripcion">Cálculo en pesos cubanos (CUP)</p>
+      </div>
+      <ul>
+        <li>Órganos y organismos del Estado</li>
+        <li>Entidades nacionales y empresas mixtas</li>
+        <li>Formas de gestión no estatal</li>
+        <li>Personas naturales residentes permanentes</li>
+      </ul>
+      <span class="espectro-anexo-acceder">Acceder <i data-lucide="arrow-right" style="width:16px;height:16px;"></i></span>
+    </a>
+
+    <a href="{% url 'espectro:calcular' '2' %}" class="espectro-anexo">
+      <div class="espectro-anexo-cabecera">
+        <div class="espectro-anexo-icono" aria-hidden="true">🌎</div>
+        <span class="espectro-anexo-grupo usd">Grupo 2 — USD</span>
+        <h3>ANEXO II</h3>
+        <p class="espectro-anexo-descripcion">Cálculo en dólares estadounidenses (USD)</p>
+      </div>
+      <ul>
+        <li>Personas jurídicas extranjeras</li>
+        <li>Personas naturales extranjeras no residentes</li>
+        <li>Misiones diplomáticas</li>
+        <li>Organismos internacionales y sucursales</li>
+      </ul>
+      <span class="espectro-anexo-acceder">Acceder <i data-lucide="arrow-right" style="width:16px;height:16px;"></i></span>
+    </a>
+  </div>
+
+  <p class="espectro-pie">
+    ¿Necesita calcular licencias de receptores satelitales? <a href="#">Ir al Anexo III</a>
+  </p>
+</section>
+{% endblock %}

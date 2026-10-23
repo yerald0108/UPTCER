@@ -12,6 +12,8 @@ urlpatterns = [
     path('equipos/',        include('apps.equipos.urls',    namespace='equipos')),
     path('licencias/',      include('apps.licencias.urls',  namespace='licencias')),
     path('notificaciones/', include('apps.notificaciones.urls', namespace='notificaciones')),
+    path('mapa/',           include('apps.mapa.urls', namespace='mapa')),
+    path('espectro/',       include('apps.espectro.urls', namespace='espectro')),
 ]
 
 if settings.DEBUG:

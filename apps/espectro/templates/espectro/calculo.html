@@ -1,0 +1,366 @@
+{% extends 'base/base.html' %}
+
+{% block titulo %}{{ nombre_anexo }} — Calculadora de Espectro{% endblock %}
+{% block nav_espectro %}activo{% endblock %}
+
+{% block estilos_extra %}
+<style>
+    .espectro-calculo { max-width: 1100px; margin: 0 auto; }
+    .espectro-calculo .breadcrumb-bar {
+        display: flex; align-items: center; gap: var(--espacio-3);
+        margin-bottom: var(--espacio-4); flex-wrap: wrap;
+    }
+    .espectro-calculo .espectro-card {
+        overflow: hidden; border: 1px solid var(--color-borde);
+        border-radius: var(--radio-xl); background: var(--color-fondo-blanco);
+        box-shadow: var(--sombra-sm);
+    }
+    .espectro-calculo .espectro-card-header {
+        padding: var(--espacio-5) var(--espacio-6);
+        color: #fff; background: linear-gradient(135deg, #123b5d, #0d6efd);
+    }
+    .espectro-calculo .espectro-card-header h2 { margin: 0; color: #fff; font-size: var(--texto-xl); }
+    .espectro-calculo .espectro-card-header p { margin: var(--espacio-2) 0 0; color: rgba(255,255,255,.86); font-size: var(--texto-sm); }
+    .espectro-calculo .espectro-card-body { padding: var(--espacio-6); }
+    .espectro-calculo .row {
+        display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: var(--espacio-4);
+    }
+    .espectro-calculo [class^="col-md-"] { min-width: 0; grid-column: span 12; }
+    .espectro-calculo .col-md-12 { grid-column: span 12; }
+    .espectro-calculo .col-md-6 { grid-column: span 6; }
+    .espectro-calculo .col-md-4 { grid-column: span 4; }
+    .espectro-calculo .mb-3 { margin-bottom: var(--espacio-3); }
+    .espectro-calculo .mt-1 { margin-top: var(--espacio-1); }
+    .espectro-calculo .mt-4 { margin-top: var(--espacio-4); }
+    .espectro-calculo .text-center { text-align: center; }
+    .espectro-calculo .text-danger { color: var(--color-error, #b42318); }
+    .espectro-calculo .text-success { color: var(--color-exito, #198754); }
+    .espectro-calculo .small { font-size: var(--texto-xs); }
+    .espectro-calculo .form-control,
+    .espectro-calculo .form-select {
+        display: block; width: 100%; min-height: 40px; padding: 8px 11px;
+        border: 1px solid var(--color-borde); border-radius: var(--radio-md);
+        background: var(--color-fondo-blanco); color: var(--color-texto-principal);
+        font: inherit;
+    }
+    .espectro-calculo .form-control:focus,
+    .espectro-calculo .form-select:focus {
+        outline: 2px solid var(--color-primario-light); border-color: var(--color-primario);
+    }
+    .espectro-calculo label { display: inline-block; margin-bottom: var(--espacio-2); font-weight: var(--peso-medio); }
+    .espectro-calculo h5 {
+        margin: var(--espacio-6) 0 var(--espacio-4); padding-bottom: var(--espacio-2);
+        border-bottom: 1px solid var(--color-borde); color: var(--color-primario);
+        font-size: var(--texto-base);
+    }
+    .espectro-calculo .form-check { display: flex; align-items: center; gap: var(--espacio-2); }
+    .espectro-calculo .form-check-input { width: 16px; height: 16px; }
+    .espectro-calculo .alert {
+        margin: var(--espacio-3) 0; padding: var(--espacio-3);
+        border: 1px solid var(--color-borde); border-radius: var(--radio-md);
+        background: var(--color-fondo); color: var(--color-texto-principal);
+    }
+    .espectro-calculo .alert-danger { border-left: 4px solid #dc3545; }
+    .espectro-calculo .alert-warning { border-left: 4px solid #ffc107; }
+    .espectro-calculo .alert-info { border-left: 4px solid var(--color-primario); }
+    .espectro-calculo .resultado-card {
+        margin-top: var(--espacio-6); padding: var(--espacio-5);
+        border-left: 5px solid #28a745; border-radius: var(--radio-lg);
+        background: #e9f7ef;
+    }
+    .espectro-calculo .resultado-card h3 { margin-top: 0; color: #198754; }
+    .espectro-calculo .resultado-card p { margin: var(--espacio-2) 0; }
+    .espectro-calculo .help-text {
+        display: block; margin-top: var(--espacio-1);
+        color: var(--color-texto-muted); font-size: var(--texto-xs);
+    }
+    .espectro-calculo .btn-primary {
+        padding: 11px 28px; border: 0; border-radius: var(--radio-md);
+        color: #fff; background: var(--color-primario); font: inherit;
+        font-weight: var(--peso-semi); cursor: pointer;
+    }
+    .espectro-calculo .btn-primary:hover { background: #0a58ca; }
+    .espectro-calculo .btn-outline-secondary {
+        display: inline-flex; padding: 8px 12px; border: 1px solid var(--color-borde);
+        border-radius: var(--radio-md); color: var(--color-texto-principal);
+        text-decoration: none; font-size: var(--texto-sm);
+    }
+    .espectro-calculo .badge {
+        display: inline-flex; padding: 6px 10px; border-radius: var(--radio-full);
+        color: #fff; background: var(--color-primario); font-size: var(--texto-xs);
+    }
+    @media (max-width: 760px) {
+        .espectro-calculo .espectro-card-body { padding: var(--espacio-4); }
+        .espectro-calculo .col-md-6,
+        .espectro-calculo .col-md-4 { grid-column: span 12; }
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <a href="{% url 'espectro:seleccion_anexo' %}" style="color:var(--color-texto-muted);text-decoration:none;">Espectro</a>
+</li>
+<li style="display:flex;align-items:center;gap:var(--espacio-2);">
+  <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+  <span style="color:var(--color-texto-principal);font-weight:var(--peso-medio);">{{ nombre_anexo }}</span>
+</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="pagina-cabecera">
+  <div>
+    <h1 class="pagina-titulo">Cálculo del valor por uso del espectro</h1>
+    <p class="pagina-subtitulo">{{ nombre_anexo }}</p>
+  </div>
+</div>
+<div class="espectro-calculo">
+    <div class="breadcrumb-bar">
+        <a href="{% url 'espectro:seleccion_anexo' %}" class="btn btn-outline-secondary btn-sm">
+            <i data-lucide="arrow-left" style="width:15px;height:15px;"></i> Volver a la selección
+        </a>
+        <span class="badge">{{ nombre_anexo }}</span>
+    </div>
+
+        <div class="espectro-card">
+            <div class="espectro-card-header">
+                <h2>📡 Cálculo del valor por uso del espectro radioeléctrico</h2>
+                <p>{{ descripcion_grupo }}</p>
+            </div>
+
+            <div class="espectro-card-body">
+                <form method="post" id="calculoForm">
+                    {% csrf_token %}
+                    {{ form.grupo }}  {# Campo oculto con el grupo #}
+
+                    {# ===== BLOQUE DE ERRORES MEJORADO ===== #}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger error-box">
+                            <strong>⚠️ Errores generales:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if form.errors %}
+                        <div class="alert alert-warning warning-box">
+                            <strong>⚠️ Errores en los campos:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    {# ===== FIN BLOQUE DE ERRORES ===== #}
+
+                    <!-- Servicio -->
+                    <h5>🔧 Servicio solicitado</h5>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            {{ form.servicio.label_tag }}
+                            {{ form.servicio }}
+                            {% if form.servicio.errors %}
+                                <div class="text-danger small mt-1">{{ form.servicio.errors }}</div>
+                            {% endif %}
+                            {% if form.servicio.help_text %}
+                                <span class="help-text">{{ form.servicio.help_text }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Parámetros técnicos -->
+                    <h5>📶 Parámetros técnicos comunes</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.fc.label_tag }}{{ form.fc }}
+                            {% if form.fc.errors %}<div class="text-danger small">{{ form.fc.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.htx.label_tag }}{{ form.htx }}
+                            {% if form.htx.errors %}<div class="text-danger small">{{ form.htx.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.hrx.label_tag }}{{ form.hrx }}
+                            {% if form.hrx.errors %}<div class="text-danger small">{{ form.hrx.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.pt.label_tag }}{{ form.pt }}
+                            {% if form.pt.errors %}<div class="text-danger small">{{ form.pt.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.gax.label_tag }}{{ form.gax }}
+                            {% if form.gax.errors %}<div class="text-danger small">{{ form.gax.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.lt_constante.label_tag }}{{ form.lt_constante }}
+                            {% if form.lt_constante.errors %}<div class="text-danger small">{{ form.lt_constante.errors }}</div>{% endif %}
+                            <span class="help-text">{{ form.lt_constante.help_text }}</span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.diff.label_tag }}{{ form.diff }}
+                            {% if form.diff.errors %}<div class="text-danger small">{{ form.diff.errors }}</div>{% endif %}
+                            <span class="help-text">{{ form.diff.help_text }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Ancho de banda -->
+                    <h5>📊 Ancho de banda (B)</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.metodo_b.label_tag }}{{ form.metodo_b }}
+                            {% if form.metodo_b.errors %}<div class="text-danger small">{{ form.metodo_b.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div id="b_estandar" class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.fi.label_tag }}{{ form.fi }}
+                            {% if form.fi.errors %}<div class="text-danger small">{{ form.fi.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.ff.label_tag }}{{ form.ff }}
+                            {% if form.ff.errors %}<div class="text-danger small">{{ form.ff.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div id="b_satelital" class="row" style="display:none;">
+                        <div class="col-md-6 mb-3">
+                            {{ form.velocidad_mbps.label_tag }}{{ form.velocidad_mbps }}
+                            {% if form.velocidad_mbps.errors %}<div class="text-danger small">{{ form.velocidad_mbps.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.modulacion.label_tag }}{{ form.modulacion }}
+                            {% if form.modulacion.errors %}<div class="text-danger small">{{ form.modulacion.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Área -->
+                    <h5>🗺️ Área de servicio (A)</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.metodo_a.label_tag }}{{ form.metodo_a }}
+                            {% if form.metodo_a.errors %}<div class="text-danger small">{{ form.metodo_a.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div id="a_directa" class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.area_directa.label_tag }}{{ form.area_directa }}
+                            {% if form.area_directa.errors %}<div class="text-danger small">{{ form.area_directa.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div id="a_d_alfa" class="row" style="display:none;">
+                        <div class="col-md-4 mb-3">
+                            {{ form.d.label_tag }}{{ form.d }}
+                            {% if form.d.errors %}<div class="text-danger small">{{ form.d.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.alfa.label_tag }}{{ form.alfa }}
+                            {% if form.alfa.errors %}<div class="text-danger small">{{ form.alfa.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check mt-4">
+                                {{ form.es_satelital_area }}
+                                {{ form.es_satelital_area.label_tag }}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="a_auto" style="display:none;">
+                        <div class="alert alert-info">
+                            Se calculará automáticamente con la fórmula de Okumura-Hata usando los parámetros técnicos.
+                        </div>
+                    </div>
+
+                    <!-- Otros parámetros -->
+                    <h5>⚙️ Otros parámetros</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.modo_uso.label_tag }}{{ form.modo_uso }}
+                            {% if form.modo_uso.errors %}<div class="text-danger small">{{ form.modo_uso.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.naturaleza.label_tag }}{{ form.naturaleza }}
+                            {% if form.naturaleza.errors %}<div class="text-danger small">{{ form.naturaleza.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.tiempo_anios.label_tag }}{{ form.tiempo_anios }}
+                            {% if form.tiempo_anios.errors %}<div class="text-danger small">{{ form.tiempo_anios.errors }}</div>{% endif %}
+                            <span class="help-text">{{ form.tiempo_anios.help_text }}</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">Calcular</button>
+                    </div>
+                </form>
+
+                {% if resultado %}
+                <div class="resultado-card" id="resultado">
+                    <h3>✅ Resultado del cálculo</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Ancho de banda B:</strong> {{ resultado.B|floatformat:4 }} MHz</p>
+                            <p><strong>Área A:</strong> {{ resultado.A|floatformat:4 }} km²</p>
+                            <p><strong>f(t):</strong> {{ resultado.ft }}</p>
+                            <p><strong>k:</strong> {{ resultado.k }}</p>
+                            <p><strong>c:</strong> {{ resultado.c }}</p>
+                            <p><strong>T:</strong> {{ resultado.T }} años</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Valor a pagar:</h4>
+                            <h2 class="text-success">
+                                {{ resultado.V|floatformat:2 }} {{ resultado.moneda }}
+                            </h2>
+                            {% if resultado.d_calculada %}
+                                <p><small>Distancia calculada: {{ resultado.d_calculada|floatformat:2 }} km</small></p>
+                            {% endif %}
+                            <p><small>Servicio: {{ resultado.servicio }}</small></p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <script>
+    function toggleMetodoB() {
+        const el = document.getElementById('metodo_b');
+        if (!el) return;
+        const val = el.value;
+        document.getElementById('b_estandar').style.display = (val === 'estandar') ? 'grid' : 'none';
+        document.getElementById('b_satelital').style.display = (val === 'satelital') ? 'grid' : 'none';
+    }
+    function toggleMetodoA() {
+        const el = document.getElementById('metodo_a');
+        if (!el) return;
+        const val = el.value;
+        document.getElementById('a_directa').style.display = (val === 'directa') ? 'grid' : 'none';
+        document.getElementById('a_d_alfa').style.display = (val === 'd_alfa') ? 'grid' : 'none';
+        document.getElementById('a_auto').style.display = (val === 'auto') ? 'block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inicializar toggles
+        const mb = document.getElementById('metodo_b');
+        const ma = document.getElementById('metodo_a');
+        if (mb) mb.addEventListener('change', toggleMetodoB);
+        if (ma) ma.addEventListener('change', toggleMetodoA);
+        toggleMetodoB();
+        toggleMetodoA();
+
+        // Scroll automático al resultado si existe
+        const resultado = document.getElementById('resultado');
+        if (resultado) {
+            resultado.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+    </script>
+{% endblock %}

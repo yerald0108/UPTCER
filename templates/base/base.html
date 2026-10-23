@@ -130,6 +130,14 @@
           <i data-lucide="file-badge" class="icono"></i>
           <span class="sidebar-enlace-texto">Licencias</span>
         </a>
+        <a href="{% url 'mapa:mapa' %}?next={{ request.get_full_path|urlencode }}" class="sidebar-enlace {% block nav_mapa %}{% endblock %}" data-tooltip="Mapa">
+          <i data-lucide="map" class="icono"></i>
+          <span class="sidebar-enlace-texto">Mapa</span>
+        </a>
+        <a href="{% url 'espectro:seleccion_anexo' %}" class="sidebar-enlace {% block nav_espectro %}{% endblock %}" data-tooltip="Espectro">
+          <i data-lucide="radio-tower" class="icono"></i>
+          <span class="sidebar-enlace-texto">Espectro</span>
+        </a>
         <a href="{% url 'accounts:lista_usuarios' %}" class="sidebar-enlace {% block nav_usuarios %}{% endblock %}" data-tooltip="Usuarios">
           <i data-lucide="users" class="icono"></i>
           <span class="sidebar-enlace-texto">Usuarios</span>

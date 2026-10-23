@@ -34,7 +34,11 @@
       {{ factura.get_estado_display }}
     </span>
     {% if user.es_directivo and not factura.esta_pagada %}
-      <button type="button" class="btn btn-primario" onclick="abrirModalPago()">
+      <button class="btn btn-primario"
+        onclick="abrirModalConfirmacion(
+          '¿Registrar pago?',
+          'Esta acción marcará la factura como pagada y generará la licencia automáticamente.',
+          '{% url "licencias:registrar_pago" numero=factura.numero %}')">
         <i data-lucide="check-circle" style="width:16px;height:16px;"></i>
         Registrar pago
       </button>
@@ -196,8 +200,8 @@
 
 <!-- Modal de confirmación de pago -->
 {% if user.es_directivo and not factura.esta_pagada %}
-<div id="modal-pago" class="modal-overlay" style="display:none;" onclick="if(event.target===this)cerrarModalPago()">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-pago-titulo">
+<div id="modal-pago" class="modal-overlay" style="display:none;">
+  <div class="modal" role="dialog">
     <div class="modal-cabecera">
       <div class="modal-icono exito">
         <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
@@ -225,27 +229,14 @@
     </form>
   </div>
 </div>
-{% endif %}
 
-{% endblock %}
-
-{% block scripts_extra %}
 <script>
-  function abrirModalPago() {
-    const modal = document.getElementById('modal-pago');
-    if (modal) {
-      modal.style.display = 'flex';
-      if (window.lucide) lucide.createIcons();
-    }
-  }
-
-  function cerrarModalPago() {
-    const modal = document.getElementById('modal-pago');
-    if (modal) modal.style.display = 'none';
-  }
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') cerrarModalPago();
+  document.querySelector('[onclick*="abrirModalConfirmacion"]')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('modal-pago').style.display = 'flex';
   });
 </script>
+{% endif %}
+
 {% endblock %}

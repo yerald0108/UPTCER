@@ -226,6 +226,8 @@ class SolicitudAccesoTest(TestCase):
         self.client.login(username='ac_pn1', password='test1234')
         r = self.client.get(reverse('solicitudes:nueva_f43'))
         self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'id="id_direccion_instalacion"')
+        self.assertContains(r, 'Buscar y ubicar en el mapa')
 
     def test_nueva_f43_denegado_para_especialista(self):
         """El especialista no puede acceder al formulario F43."""
