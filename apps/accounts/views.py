@@ -5,15 +5,17 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum, Avg
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal
 import json
 
 from apps.solicitudes.models import Solicitud
 from apps.licencias.models import Licencia, Factura
+from apps.equipos.models import Equipo
 from .forms import FormularioCrearUsuario
 from .forms import FormularioCambiarPassword
 from .forms import FormularioEditarUsuario
@@ -277,15 +279,84 @@ def _dashboard_directivo(request, usuario):
     roles_labels = [dict(Usuario.ROLES).get(r['rol'], r['rol']) for r in usuarios_por_rol]
     roles_data   = [r['total'] for r in usuarios_por_rol]
 
+    # Ganancias, Perdidas por mes (últimos 6 meses)
+    ganancia_qs = (Factura.objects.filter(estado=Factura.ESTADO_PAGADA,fecha_pago__gte=hace_6m).annotate(mes=TruncMonth('fecha_pago')).values('mes').annotate(total=Sum('total')).order_by('mes'))
+    
+    ganancia_map = {item['mes'].strftime('%Y-%m'): float(item['total'] or 0) for item in ganancia_qs }
+
+    perdida_qs = (Factura.objects.filter(estado=Factura.ESTADO_ANULADA,fecha_emision__gte=hace_6m,).annotate(mes=TruncMonth('fecha_emision')).values('mes').annotate(total=Sum('total')).order_by('mes'))
+
+    perdida_map = {item['mes'].strftime('%Y-%m'): float(item['total'] or 0) for item in perdida_qs}
+    
+    chart_ganancia_labels = []
+    chart_ganancia_data   = []
+    chart_perdida_data    = []
+
+    for i in range(6):
+        fecha = hace_6m + relativedelta(months=i)
+        clave = fecha.strftime('%Y-%m')
+        chart_ganancia_labels.append(MESES_ES[fecha.month - 1])
+        chart_ganancia_data.append(ganancia_map.get(clave, 0))
+        chart_perdida_data.append(perdida_map.get(clave, 0))
+    
+    # Evolución mensual de ingresos (últimos 6 meses) para gráfica
+    chart_fact_meses_labels = []
+    chart_fact_meses_data   = []
+    for i in range(5, -1, -1):
+        mes = hoy.month - i
+        anno = hoy.year
+        
+        while mes <= 0:
+            mes += 12
+            anno -= 1
+        
+        inicio = timezone.datetime(anno, mes, 1, tzinfo=timezone.get_current_timezone())
+        
+        if mes == 12:
+            fin = timezone.datetime(anno + 1, 1, 1, tzinfo=timezone.get_current_timezone())
+        else:
+            fin = timezone.datetime(anno, mes + 1, 1, tzinfo=timezone.get_current_timezone())
+
+        monto = _suma_total(Factura.objects.filter(estado=Factura.ESTADO_PAGADA,fecha_pago__gte=inicio,fecha_pago__lt=fin))
+        chart_fact_meses_labels.append(f"{inicio.strftime('%b %Y')}")
+        chart_fact_meses_data.append(float(monto))
+
+    import json
+    chart_fact_meses_labels_json = json.dumps(chart_fact_meses_labels)
+    chart_fact_meses_data_json   = json.dumps(chart_fact_meses_data)
+    
+    
     contexto = {
         'usuario':           usuario,
+        
+        # SOLICITUDES
         'total_solicitudes': total,
         'tasa_aprobacion':   round((aprobadas / total * 100), 1) if total > 0 else 0,
-        'usuarios_activos':  Usuario.objects.filter(is_active=True).count(),
+        'tasa_denegacion':   round((denegadas / total * 100), 1) if total > 0 else 0,
         'pendientes_firma':  pendientes,
         'aprobadas':         aprobadas,
         'denegadas':         denegadas,
+        
+        # GENERAL
+        'usuarios_activos':  Usuario.objects.filter(is_active=True).count(),
+        'equipos_activos':   Equipo.objects.filter(activo=True).count(),
+        
+        # LICENCIAS
+        'licencias_activas':  Licencia.objects.count(),
         'licencias_vigentes':  Licencia.objects.filter(estado=Licencia.ESTADO_VIGENTE).count(),
+        'licencias_vencidas':  Licencia.objects.filter(estado=Licencia.ESTADO_VENCIDA).count(),
+        'licencias_revocadas':  Licencia.objects.filter(estado=Licencia.ESTADO_REVOCADA).count(),
+        
+        # LICENCIAS
+        'facturas_activas':  Factura.objects.count(),
+        'facturas_pendientes':  Factura.objects.filter(estado=Factura.ESTADO_PENDIENTE).count(),
+        'facturas_pagadas':  Factura.objects.filter(estado=Factura.ESTADO_PAGADA).count(),
+        'facturas_anuladas':  Factura.objects.filter(estado=Factura.ESTADO_ANULADA).count(),
+        'monto_facturas_pendientes':   _suma_total(Factura.objects.filter(estado=Factura.ESTADO_PENDIENTE)),
+        'monto_facturas_pagadas':   _suma_total(Factura.objects.filter(estado=Factura.ESTADO_PAGADA)),
+        'monto_facturas_anuladas':   _suma_total(Factura.objects.filter(estado=Factura.ESTADO_ANULADA)),
+        
+        # FACTURAS
         'facturas_pendientes': Factura.objects.filter(estado=Factura.ESTADO_PENDIENTE).count(),
         'por_flujo':         {'f43': flujo_stats['f43'], 'rats': flujo_stats['rats']},
         'solicitudes_recientes': Solicitud.objects.select_related(
@@ -299,10 +370,18 @@ def _dashboard_directivo(request, usuario):
         'chart_estados_data':   json.dumps(estados_data),
         'chart_roles_labels':   json.dumps(roles_labels),
         'chart_roles_data':     json.dumps(roles_data),
+        'chart_ganancia_labels': json.dumps(chart_ganancia_labels),
+        'chart_ganancia_data':   json.dumps(chart_ganancia_data),
+        'chart_perdida_data':    json.dumps(chart_perdida_data),
+		'chart_fact_meses_labels': json.dumps(chart_fact_meses_labels),
+		'chart_fact_meses_data':   json.dumps(chart_fact_meses_data),
     }
 
     return render(request, 'accounts/dashboard_directivo.html', contexto)
 
+def _suma_total(qs):
+    return qs.aggregate(s=Sum('total'))['s'] or Decimal('0')
+    
 # ─── Gestión de usuarios (directivo) ─────────────────────────────────────────
 @never_cache
 @login_required

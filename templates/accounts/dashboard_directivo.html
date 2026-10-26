@@ -17,15 +17,45 @@
   <p class="pagina-subtitulo">Resumen ejecutivo del sistema de gestión de trámites.</p>
 </div>
 
-<!-- Estadísticas principales -->
-<div class="grid-4 mb-8">
+<!-- Solicitudes -->
+<div class="grid-3 mb-6">
   <div class="stat-card">
     <div class="stat-card-icono primario">
       <i data-lucide="file-text" style="width:24px;height:24px;"></i>
     </div>
     <div>
       <div class="stat-card-valor">{{ total_solicitudes }}</div>
-      <div class="stat-card-etiqueta">Total solicitudes</div>
+      <div class="stat-card-etiqueta">Solicitudes activas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ aprobadas }}</div>
+      <div class="stat-card-etiqueta">Solicitudes aprobadas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ denegadas }}</div>
+      <div class="stat-card-etiqueta">Solicitudes denegadas</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-3 mb-6">
+  <div class="stat-card">
+    <div class="stat-card-icono warning">
+      <i data-lucide="clock" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ pendientes_firma }}</div>
+      <div class="stat-card-etiqueta">Solicitudes pendientes</div>
     </div>
   </div>
   <div class="stat-card">
@@ -38,6 +68,130 @@
     </div>
   </div>
   <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="trending-down" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ tasa_denegacion }}%</div>
+      <div class="stat-card-etiqueta">Tasa de denegación</div>
+    </div>
+  </div>
+</div>
+
+<!-- Licencias -->
+<div class="grid-4 mb-6">
+  <div class="stat-card">
+    <div class="stat-card-icono info">
+      <i data-lucide="file-badge" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ licencias_activas }}</div>
+      <div class="stat-card-etiqueta">Licencias activos</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="circle-check" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ licencias_vigentes }}</div>
+      <div class="stat-card-etiqueta">Lic.vigentes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono warning">
+      <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ licencias_vencidas }}</div>
+      <div class="stat-card-etiqueta">Lic. vencidas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="ban" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ licencias_revocadas }}</div>
+      <div class="stat-card-etiqueta">Lic. revocadas</div>
+    </div>
+  </div>
+</div>
+
+<!-- Facturas -->
+<div class="grid-4 mb-6">
+  <div class="stat-card">
+    <div class="stat-card-icono info">
+      <i data-lucide="receipt" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ facturas_activas }}</div>
+      <div class="stat-card-etiqueta">Facturas activos</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="circle-check" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ facturas_pagadas }}</div>
+      <div class="stat-card-etiqueta">Fac. pagadas</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono warning">
+      <i data-lucide="clock" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ facturas_pendientes }}</div>
+      <div class="stat-card-etiqueta">Fac. pendientes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="ban" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ facturas_anuladas }}</div>
+      <div class="stat-card-etiqueta">Fac. anuladas</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-3 mb-6">
+  <div class="stat-card">
+    <div class="stat-card-icono success">
+      <i data-lucide="trending-up" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ monto_facturas_pagadas }}%</div>
+      <div class="stat-card-etiqueta">Ganancias</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono info">
+      <i data-lucide="trending-up" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ monto_facturas_pendientes }}</div>
+      <div class="stat-card-etiqueta">Ganancia potencial</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icono danger">
+      <i data-lucide="trending-down" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ monto_facturas_anuladas }}%</div>
+      <div class="stat-card-etiqueta">Pérdidas</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Segunda fila de stats -->
+<div class="grid-4 mb-8">
+  <div class="stat-card">
     <div class="stat-card-icono info">
       <i data-lucide="users" style="width:24px;height:24px;"></i>
     </div>
@@ -47,34 +201,12 @@
     </div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-icono warning">
-      <i data-lucide="clock" style="width:24px;height:24px;"></i>
+    <div class="stat-card-icono info">
+      <i data-lucide="router" style="width:24px;height:24px;"></i>
     </div>
     <div>
-      <div class="stat-card-valor">{{ pendientes_firma }}</div>
-      <div class="stat-card-etiqueta">Pendientes de revisión</div>
-    </div>
-  </div>
-</div>
-
-<!-- Segunda fila de stats -->
-<div class="grid-4 mb-8">
-  <div class="stat-card">
-    <div class="stat-card-icono success">
-      <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
-    </div>
-    <div>
-      <div class="stat-card-valor">{{ aprobadas }}</div>
-      <div class="stat-card-etiqueta">Aprobadas</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-card-icono danger">
-      <i data-lucide="x-circle" style="width:24px;height:24px;"></i>
-    </div>
-    <div>
-      <div class="stat-card-valor">{{ denegadas }}</div>
-      <div class="stat-card-etiqueta">Denegadas</div>
+      <div class="stat-card-valor">{{ equipos_activos }}</div>
+      <div class="stat-card-etiqueta">Equipos activos</div>
     </div>
   </div>
   <div class="stat-card">
@@ -82,11 +214,29 @@
       <i data-lucide="file-badge" style="width:24px;height:24px;"></i>
     </div>
     <div>
+      <div class="stat-card-valor">{{ licencias_activas }}</div>
+      <div class="stat-card-etiqueta">Licencias activas</div>
+    </div>
+  </div>
+  <!--<div class="stat-card">
+    <div class="stat-card-icono primario">
+      <i data-lucide="file-badge" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
       <div class="stat-card-valor">{{ licencias_vigentes }}</div>
       <div class="stat-card-etiqueta">Licencias vigentes</div>
     </div>
-  </div>
+  </div>-->
   <div class="stat-card">
+    <div class="stat-card-icono info">
+      <i data-lucide="inbox" style="width:24px;height:24px;"></i>
+    </div>
+    <div>
+      <div class="stat-card-valor">{{ facturas_activas }}</div>
+      <div class="stat-card-etiqueta">Facturas activas</div>
+    </div>
+  </div>
+  <!--<div class="stat-card">
     <div class="stat-card-icono info">
       <i data-lucide="inbox" style="width:24px;height:24px;"></i>
     </div>
@@ -94,7 +244,7 @@
       <div class="stat-card-valor">{{ por_flujo.f43 }}</div>
       <div class="stat-card-etiqueta">Flujo F43</div>
     </div>
-  </div>
+  </div>-->
 </div>
 
 <!-- Gráficas -->
@@ -138,7 +288,6 @@
 </div>
 
 <div class="grid-2 mb-8">
-
   <!-- Gráfica de barras: usuarios por rol -->
   <div class="tarjeta">
     <div class="tarjeta-cabecera">
@@ -210,6 +359,44 @@
     </div>
   </div>
 
+</div>
+
+<div class="grid-2 mb-8">
+	<!-- Ganancia vs Pérdida por mes -->
+	<div class="tarjeta mb-8">
+	  <div class="tarjeta-cabecera">
+		<div style="display:flex;align-items:center;gap:var(--espacio-3);">
+		  <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+			<i data-lucide="bar-chart-3" style="width:18px;height:18px;"></i>
+		  </div>
+		  <h2 class="tarjeta-titulo">Ganancia vs Pérdida por mes</h2>
+		</div>
+		<span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">Últimos 6 meses</span>
+	  </div>
+	  <div class="tarjeta-cuerpo">
+		<div style="position:relative;height:280px;">
+		  <canvas id="chart-ganancia-perdida"></canvas>
+		</div>
+	  </div>
+	</div>
+
+	<!-- Evolución de ingresos por mes -->
+	<div class="tarjeta mb-8">
+	  <div class="tarjeta-cabecera">
+		<div style="display:flex;align-items:center;gap:var(--espacio-3);">
+		  <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+			<i data-lucide="line-chart" style="width:18px;height:18px;"></i>
+		  </div>
+		  <h2 class="tarjeta-titulo">Evolución de ingresos</h2>
+		</div>
+		<span style="font-size:var(--texto-xs);color:var(--color-texto-muted);">Últimos 6 meses</span>
+	  </div>
+	  <div class="tarjeta-cuerpo">
+		<div style="position:relative;height:280px;">
+		  <canvas id="chart-ingresos"></canvas>
+		</div>
+	  </div>
+	</div>
 </div>
 
 <!-- Solicitudes recientes -->
@@ -426,5 +613,116 @@
       }
     }
   });
-</script>
+  
+  // ── Gráfica de barras: ganancia vs pérdida por mes ─────────────────────────
+  new Chart(document.getElementById('chart-ganancia-perdida'), {
+    type: 'bar',
+    data: {
+      labels: {{ chart_ganancia_labels|safe }},
+      datasets: [
+        {
+          label: 'Ganancia',
+          data:  {{ chart_ganancia_data|safe }},
+          backgroundColor: 'rgba(46,125,50,0.8)',   // verde
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'Pérdida',
+          data:  {{ chart_perdida_data|safe }},
+          backgroundColor: 'rgba(198,40,40,0.8)',   // rojo
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+      ]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display:  true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            boxWidth:      10,
+            boxHeight:     10,
+            padding:       16,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1A3A5C',
+          titleColor:      'white',
+          bodyColor:       'rgba(255,255,255,0.8)',
+          padding:         10,
+          cornerRadius:    8,
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('es-CU')} CUP`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:   { display: false },
+          border: { display: false },
+          ticks:  { maxRotation: 0 },
+        },
+        y: {
+          beginAtZero: true,
+          grid:   { color: 'rgba(0,0,0,0.05)' },
+          border: { display: false },
+          ticks: {
+            callback: (v) => v.toLocaleString('es-CU')
+          }
+        }
+      }
+    }
+  });
+
+  // ── Gráfica de línea: evolución de ingresos ────────────────────────────────
+  new Chart(document.getElementById('chart-ingresos'), {
+    type: 'line',
+    data: {
+      labels: {{ chart_fact_meses_labels|safe }},
+      datasets: [{
+        label: 'Ingresos',
+        data:  {{ chart_fact_meses_data|safe }},
+        borderColor:     COLORES.primario,
+        backgroundColor: 'rgba(26,58,92,0.08)',
+        borderWidth:     2.5,
+        pointBackgroundColor: COLORES.primario,
+        pointRadius:     4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A3A5C',
+          titleColor:      'white',
+          bodyColor:       'rgba(255,255,255,0.8)',
+          padding:         10,
+          cornerRadius:    8,
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, precision: 0 },
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          border: { display: false },
+        }
+      }
+    }
+  });
+  </script>
 {% endblock %}
