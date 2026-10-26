@@ -1,10 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Control de zoom del documento — reutilizable en todos los templates
+   Control de zoom del documento + impresión limpia
    ═══════════════════════════════════════════════════════════════════════════
    API global:
-     window.cambiarZoom(delta)   → suma/resta delta al zoom actual
-     window.resetearZoom()       → vuelve al 100%
-     window.aplicarZoom(nivel)   → fija un nivel concreto
+     window.cambiarZoom(delta)      → suma/resta delta al zoom actual
+     window.resetearZoom()          → vuelve al 100%
+     window.aplicarZoom(nivel)      → fija un nivel concreto
+     window.imprimirDocumento()     → resetea zoom a 100% e imprime
 
    Selectores de documento soportados (en este orden):
      [data-zoom-target]   → el que se indique explícitamente
@@ -14,7 +15,9 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 (function () {
-  const ZOOM_MIN     = 100;   // ya no se puede reducir por debajo de 100
+  'use strict';
+
+  const ZOOM_MIN     = 100;   // ya no se puede reducir
   const ZOOM_MAX     = 130;   // máximo permitido
   const ZOOM_DEFECTO = 100;
 
@@ -51,7 +54,7 @@
 
     documentos.forEach(doc => {
       doc.style.zoom = (nivel / 100);
-      doc.style.transform = ''; // por si acaso venía de una versión con transform
+      doc.style.transform = '';
       doc.style.transformOrigin = '';
       doc.style.marginBottom = '';
     });
@@ -96,12 +99,10 @@
     const nuevo = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, actual + delta));
     window.aplicarZoom(nuevo);
 
-    // Toast: tamaño máximo alcanzado
     if (nuevo === ZOOM_MAX && delta > 0 && typeof mostrarToast === 'function') {
       mostrarToast({ tipo: 'info', mensaje: 'Tamaño máximo alcanzado.', duracion: 2000 });
     }
 
-    // Toast: tamaño mínimo alcanzado
     if (nuevo === ZOOM_MIN && delta < 0 && typeof mostrarToast === 'function') {
       mostrarToast({ tipo: 'info', mensaje: 'Tamaño mínimo alcanzado.', duracion: 2000 });
     }
@@ -125,4 +126,118 @@
     }
     window.aplicarZoom(guardado);
   });
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     IMPRESIÓN LIMPIA
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ─── Resetear zoom antes de imprimir (Ctrl+P, botón del navegador) ───── */
+  window.addEventListener('beforeprint', function () {
+    // Forzar zoom a 100% sin toast
+    documentos.forEach(doc => {
+      doc.style.zoom = 1;
+      doc.style.transform = '';
+      doc.style.transformOrigin = '';
+      doc.style.marginBottom = '';
+    });
+    const indicador = document.getElementById('zoom-nivel');
+    if (indicador) indicador.textContent = '100%';
+  });
+
+  /* ─── Restaurar zoom guardado después de imprimir ─────────────────────── */
+  window.addEventListener('afterprint', function () {
+    let guardado;
+    try {
+      guardado = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO, 10);
+    } catch (e) {
+      guardado = ZOOM_DEFECTO;
+    }
+    window.aplicarZoom(guardado);
+  });
+
+  /* ─── Función para usar en los botones "Imprimir / PDF" ───────────────── */
+  window.imprimirDocumento = function () {
+    // Resetear zoom a 100% antes de imprimir
+    documentos.forEach(doc => {
+      doc.style.zoom = 1;
+      doc.style.transform = '';
+      doc.style.transformOrigin = '';
+      doc.style.marginBottom = '';
+    });
+    const indicador = document.getElementById('zoom-nivel');
+    if (indicador) indicador.textContent = '100%';
+
+    // Esperar un tick para que el navegador aplique el zoom, luego imprimir
+    setTimeout(function () {
+      window.print();
+
+      // Restaurar el zoom guardado después de imprimir
+      setTimeout(function () {
+        let guardado;
+        try {
+          guardado = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO, 10);
+        } catch (e) {
+          guardado = ZOOM_DEFECTO;
+        }
+        window.aplicarZoom(guardado);
+      }, 500);
+    }, 150);
+  };
+
+    /* ═══════════════════════════════════════════════════════════════════════
+     IMPRESIÓN LIMPIA
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ─── Resetear zoom antes de imprimir (Ctrl+P o botón) ──────────────── */
+  window.addEventListener('beforeprint', function () {
+    documentos.forEach(doc => {
+      doc.style.zoom = 1;
+      doc.style.transform = '';
+      doc.style.transformOrigin = '';
+      doc.style.marginBottom = '';
+    });
+    const indicador = document.getElementById('zoom-nivel');
+    if (indicador) indicador.textContent = '100%';
+  });
+
+  /* ─── Restaurar zoom después de imprimir ────────────────────────────── */
+  window.addEventListener('afterprint', function () {
+    let guardado;
+    try {
+      guardado = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO, 10);
+    } catch (e) {
+      guardado = ZOOM_DEFECTO;
+    }
+    window.aplicarZoom(guardado);
+  });
+
+  /* ─── Función global para el botón "Imprimir / PDF" ─────────────────── */
+  window.imprimirDocumento = function () {
+    // Resetear zoom a 100%
+    documentos.forEach(doc => {
+      doc.style.zoom = 1;
+      doc.style.transform = '';
+      doc.style.transformOrigin = '';
+      doc.style.marginBottom = '';
+    });
+    const indicador = document.getElementById('zoom-nivel');
+    if (indicador) indicador.textContent = '100%';
+
+    // Esperar un tick y luego imprimir
+    setTimeout(function () {
+      window.print();
+
+      // Restaurar zoom después de imprimir
+      setTimeout(function () {
+        let guardado;
+        try {
+          guardado = parseInt(localStorage.getItem(ZOOM_CLAVE) || ZOOM_DEFECTO, 10);
+        } catch (e) {
+          guardado = ZOOM_DEFECTO;
+        }
+        window.aplicarZoom(guardado);
+      }, 500);
+    }, 150);
+  };
+
 })();

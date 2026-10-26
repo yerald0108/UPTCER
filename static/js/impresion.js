@@ -1,16 +1,111 @@
-/* ─── Función de impresión de documentos ──────────────────────────────────── */
+/* ─── Función de impresión de documentos ────────────────────────────────────
+   Usa window.open() con SOLO el CSS del documento (impresion-f43.css).
+   URL ABSOLUTA para que el CSS cargue incluso en about:blank.
+   Espera a que el CSS cargue antes de imprimir.
+   ──────────────────────────────────────────────────────────────────────── */
+
 (function() {
-  /**
-   * Imprime un documento clonándolo en una ventana nueva.
-   * 
-   * @param {Object} config - Configuración de impresión
-   * @param {string} config.selector - Selector CSS del elemento a imprimir (ej: '.f43-hoja')
-   * @param {string} config.titulo - Título de la ventana de impresión
-   * @param {Object} [config.estilos] - Estilos CSS personalizados para la impresión
-   */
-  window.imprimirDocumento = function(config) {
+  'use strict';
+
+  function obtenerDocumento() {
+    const explicit = document.querySelector('[data-zoom-target]');
+    if (explicit) {
+      const sel = explicit.dataset.zoomTarget;
+      return sel ? document.querySelector(sel) : explicit;
+    }
+    return (
+      document.querySelector('.f43-documento') ||
+      document.querySelector('.licencia-hoja') ||
+      document.querySelector('.f43-hoja')
+    );
+  }
+
+  /* ─── URL ABSOLUTA del CSS de impresión ───────────────────────────────── */
+  function getCssImpresionUrl() {
+    const staticUrl = window.STATIC_URL || '/static/';
+    const origin    = window.location.origin;
+    return `${origin}${staticUrl}css/impresion-f43.css`;
+  }
+
+  /* ─── Imprimir cuando el CSS esté cargado ─────────────────────────────── */
+  function imprimirCuandoCargue(ventana) {
+    const links = ventana.document.querySelectorAll('link[rel="stylesheet"]');
+    let pendientes = links.length;
+
+    function imprimir() {
+      ventana.focus();
+      ventana.print();
+      ventana.onafterprint = function () { ventana.close(); };
+    }
+
+    if (pendientes === 0) {
+      setTimeout(imprimir, 300);
+      return;
+    }
+
+    links.forEach(link => {
+      link.onload = link.onerror = function () {
+        pendientes--;
+        if (pendientes === 0) {
+          setTimeout(imprimir, 300);
+        }
+      };
+    });
+
+    // Fallback: si después de 2s no ha cargado, imprimir igual
+    setTimeout(function () {
+      if (pendientes > 0) {
+        imprimir();
+      }
+    }, 2000);
+  }
+
+  /* ─── Impresión limpia con window.open() ─────────────────────────────── */
+  function imprimirLimpio() {
+    const docEl = obtenerDocumento();
+    if (!docEl) {
+      console.error('No se encontró el documento para imprimir.');
+      return;
+    }
+
+    const clon = docEl.cloneNode(true);
+    clon.style.zoom      = '1';
+    clon.style.transform = 'none';
+
+    const cssUrl = getCssImpresionUrl();
+    console.log('CSS de impresión:', cssUrl);
+
+    const ventana = window.open('', '_blank');
+    if (!ventana) {
+      alert('El navegador bloqueó la ventana de impresión.\n\nPermite las ventanas emergentes para este sitio e inténtalo de nuevo.');
+      return;
+    }
+
+    ventana.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Imprimir — Ministerio de Comunicaciones</title>
+        <link rel="stylesheet" href="${cssUrl}">
+      </head>
+      <body>
+        ${clon.outerHTML}
+      </body>
+      </html>
+    `);
+
+    ventana.document.close();
+
+    // Esperar a que el CSS cargue antes de imprimir
+    ventana.onload = function () {
+      imprimirCuandoCargue(ventana);
+    };
+  }
+
+  /* ─── Modo por selector ──────────────────────────────────────────────── */
+  function imprimirPorSelector(config) {
     const { selector, titulo, estilos } = config;
-    
     const hojaOriginal = document.querySelector(selector);
     if (!hojaOriginal) {
       console.error('No se encontró el elemento:', selector);
@@ -18,55 +113,20 @@
     }
 
     const clon = hojaOriginal.cloneNode(true);
-
-    // Resetear zoom y estilos en el clon
-    clon.style.zoom = '1';
+    clon.style.zoom      = '1';
     clon.style.transform = 'none';
-    clon.style.width = '210mm';
-    clon.style.margin = '0 auto';
-    clon.style.padding = '5mm';
-    clon.style.boxShadow = 'none';
-    clon.style.border = 'none';
-    clon.style.position = 'static';
 
-    // Estilos base de impresión
-    const estilosBase = `
-      @page { size: A4; margin: 3mm; }
-      body { 
-        margin: 0; 
-        padding: 3mm; 
-        display: flex; 
-        justify-content: center; 
-        background: white; 
-        font-family: Arial, sans-serif;
-      }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #000; padding: 2px 4px; font-size: 10px; }
-      th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
-      input, select, textarea { 
-        border: none !important; 
-        background: transparent !important; 
-        color: black !important; 
-        font-size: 10px !important; 
-        font-family: inherit !important; 
-        width: 100%; 
-      }
-      .no-print { display: none !important; }
-      a { color: black; text-decoration: none; }
-    `;
+    const cssUrl = getCssImpresionUrl();
 
-    // Crear ventana nueva
     const ventana = window.open('', '_blank', 'width=800,height=600');
     ventana.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>${titulo} — Ministerio de Comunicaciones</title>
-        <style>
-          ${estilosBase}
-          ${estilos || ''}
-        </style>
+        <title>${titulo || 'Documento'}</title>
+        <link rel="stylesheet" href="${cssUrl}">
+        ${estilos ? `<style>${estilos}</style>` : ''}
       </head>
       <body>
         ${clon.outerHTML}
@@ -75,6 +135,16 @@
     `);
     ventana.document.close();
     ventana.focus();
-    setTimeout(() => ventana.print(), 500);
+    setTimeout(() => ventana.print(), 800);
+  }
+
+  /* ─── Función principal ──────────────────────────────────────────────── */
+  window.imprimirDocumento = function (config) {
+    if (!config || !config.selector) {
+      imprimirLimpio();
+    } else {
+      imprimirPorSelector(config);
+    }
   };
+
 })();

@@ -577,34 +577,161 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   IMPRESIÓN
+   IMPRESIÓN — Solo el documento, sin interfaz, sin zoom
    ═══════════════════════════════════════════════════════════════════════════ */
+
 @media print {
-  html, body { background: #fff !important; }
-  .f43-pagina-fondo { background: #fff !important; padding: 0 !important; }
+  /* Reset general */
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Ocultar TODA la interfaz */
+  .layout-wrapper,
+  .layout-sidebar,
+  .layout-navbar,
+  .layout-main,
+  .layout-contenido,
   .f43-acciones,
   .f43-zoom-control,
+  .f43-zoom-btn,
+  .f43-zoom-nivel,
+  .f43-zoom-divisor,
   .btn,
   .btn-scroll-top,
   .no-print,
   .f43-panel-gestion,
   .tracker-solicitud,
   .alerta,
-  .layout-sidebar,
-  .layout-navbar { display: none !important; }
-  .f43-documento { width: 100%; margin: 0; }
-  .page {
-    box-shadow: none !important;
-    margin: 0 !important;
-    page-break-after: always;
+  .modal-overlay,
+  .sidebar-tooltip,
+  .btn-colapsar-sidebar,
+  .sidebar-overlay,
+  #btn-menu-movil,
+  #btn-colapsar,
+  #btn-scroll-top,
+  nav,
+  header.layout-navbar,
+  aside.layout-sidebar,
+  footer {
+    display: none !important;
   }
-  .page:last-child { page-break-after: auto; }
-  .field-input, .passport-country, .period-input,
-  .other-line input, .bottom-table input {
+
+  /* El fondo de la página desaparece */
+  .f43-pagina-fondo {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    display: block !important;
+  }
+
+  /* El documento ocupa el 100% del ancho */
+  .f43-documento,
+  .f43-hoja {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    zoom: 1 !important;
+    transform: none !important;
+  }
+
+  /* Las páginas del F43 se imprimen como Letter, una por hoja */
+  .page {
+    width: 8.5in !important;
+    height: 11in !important;
+    margin: 0 !important;
+    padding: 0.50in 0.99in 0.45in 0.99in !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important;
+    position: relative !important;
+    background: #fff !important;
+  }
+
+  .page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* La licencia (1 página A4) */
+  .f43-hoja {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    padding: 18mm 16mm !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* Inputs y campos: sin fondo, sin bordes dobles */
+  .field-input,
+  .passport-country,
+  .period-input,
+  .other-line input,
+  .bottom-table input,
+  input[readonly],
+  input[disabled] {
     background: transparent !important;
     border-color: #000 !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-  .checkbox:checked::after { color: #000 !important; }
+
+  /* Checkboxes: mostrar el check */
+  .checkbox:checked::after {
+    color: #000 !important;
+  }
+
+  /* El zoom no debe aplicarse al imprimir */
+  [style*="zoom"] {
+    zoom: 1 !important;
+  }
+  [style*="transform: scale"] {
+    transform: none !important;
+  }
+
+  /* Configuración de página */
+  @page {
+    size: Letter;
+    margin: 0;
+  }
+
+  /* Página A4 para licencia (override) */
+  .f43-hoja {
+    page: auto;
+  }
+
+  /* Colores exactos en la impresión */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    /* color-adjust: exact !important; */
+  }
+
+  /* Evitar saltos de página dentro de tablas */
+  table, .equip, .bottom-table, .inst-table, .f43-tabla {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Títulos que no deben quedar solos al final de la hoja */
+  h1, h2, h3, .section-title, .small-heading {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

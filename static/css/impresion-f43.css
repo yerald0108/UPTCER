@@ -1,0 +1,483 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPRESIÓN F43 — Réplica exacta del documento original
+   Solo estilos del documento (sin interfaz, sin sidebar, sin navbar)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Configuración de página ────────────────────────────────────────────── */
+@page { size: 8.5in 11in; margin: 0; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+  font-size: 10pt;
+}
+
+/* ─── Documento y páginas ────────────────────────────────────────────────── */
+.f43-documento {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.page {
+  width: 8.5in;
+  min-height: 11in;
+  height: auto;
+  margin: 0 auto;
+  padding: 0.35in 0.70in 0.30in 0.70in;
+  background: #fff;
+  overflow: visible;
+  position: relative;
+  page-break-after: always;
+  break-after: page;
+}
+
+.page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+/* ─── Header (logo | título | código) ────────────────────────────────────── */
+.header {
+  display: grid;
+  grid-template-columns: 1.50in 1fr 0.65in;
+  height: 0.62in;
+  border: 1px solid #111;
+  margin-bottom: 0.12in;
+}
+
+.logo-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #111;
+  padding: 2px;
+}
+
+.logo-cell img {
+  width: 1.20in;
+  height: auto;
+  max-height: 0.52in;
+  object-fit: contain;
+}
+
+.header-title {
+  border-right: 1px solid #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 0.05in;
+  font-weight: 700;
+  font-size: 7.5pt;
+  line-height: 1.05;
+}
+
+.header-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11pt;
+  font-weight: 700;
+}
+
+/* ─── Títulos de sección ─────────────────────────────────────────────────── */
+.section-title {
+  font-size: 10pt;
+  font-style: italic;
+  margin: 0 0 .02in .21in;
+  line-height: 1.2;
+}
+
+/* ─── Etiquetas de fila ──────────────────────────────────────────────────── */
+.rowlabel {
+  display: flex;
+  align-items: flex-end;
+  gap: .10in;
+  height: .20in;
+  margin-left: .10in;
+  font-size: 8.7pt;
+}
+
+/* ─── Cajas y campos ─────────────────────────────────────────────────────── */
+.box { border: 1px solid #111; }
+.blank { height: .21in; }
+
+.field-input,
+.passport-country {
+  width: 100%;
+  padding: 0 .04in;
+  background: #fff;
+  font: inherit;
+  color: #000;
+  outline: none;
+  font-size: 8.7pt;
+  height: .21in;
+  border: 1px solid #111;
+}
+
+/* ─── Pasaporte (11 casillas) ────────────────────────────────────────────── */
+.passport-box {
+  height: .38in;
+  overflow: hidden;
+  border: 1px solid #111;
+}
+
+.passport-grid {
+  height: .28in;
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  margin: .05in .04in;
+}
+
+.passport-grid input {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #111;
+  border-right: 0;
+  padding: 0;
+  text-align: center;
+  font: inherit;
+  font-size: 9pt;
+  outline: none;
+}
+
+.passport-grid input:last-child {
+  border-right: 1px solid #111;
+}
+
+.passport-country {
+  height: .38in;
+  border: 1px solid #111;
+  font-size: 8.7pt;
+  padding: 0 .05in;
+}
+
+/* ─── Layouts de columnas ────────────────────────────────────────────────── */
+.three-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.two-cols   { display: grid; grid-template-columns: 1fr 1fr; }
+
+/* ─── Modo de importación ────────────────────────────────────────────────── */
+.import-mode {
+  display: grid;
+  grid-template-columns: 1.55fr .25fr 2.30fr .25fr 1.55fr .25fr;
+  height: .25in;
+  font-size: 8.25pt;
+}
+
+.import-mode > div,
+.objective > div,
+.period > div {
+  border: 1px solid #111;
+  border-right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.import-mode > div:last-child,
+.objective > div:last-child,
+.period > div:last-child {
+  border-right: 1px solid #111;
+}
+
+/* ─── Checkboxes ─────────────────────────────────────────────────────────── */
+.checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: .10in;
+  height: .10in;
+  min-width: .10in;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #777;
+  background: #fff;
+}
+
+.checkbox:checked {
+  background: #fff;
+  position: relative;
+}
+
+.checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  left: -.01in;
+  top: -.045in;
+  font-size: 8pt;
+  line-height: 1;
+  color: #000;
+}
+
+/* ─── Objetivo ───────────────────────────────────────────────────────────── */
+.objective {
+  display: grid;
+  grid-template-columns: 2.05fr .34fr 1.55fr .34fr 1.40fr .34fr;
+  height: .25in;
+  font-size: 8.35pt;
+}
+
+/* ─── Línea "otros" ──────────────────────────────────────────────────────── */
+.other-line {
+  height: .22in;
+  border: 1px solid #111;
+  display: flex;
+  align-items: center;
+  padding-left: .10in;
+  font-size: 9.2pt;
+  gap: .08in;
+}
+
+.other-line input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  padding: 0 .05in;
+  font: inherit;
+  outline: none;
+  background: #fff;
+}
+
+/* ─── Periodo ────────────────────────────────────────────────────────────── */
+.period {
+  display: grid;
+  grid-template-columns: 1.45fr .34fr 1.35fr .34fr 1.85fr 1.28fr;
+  height: .25in;
+  font-size: 8.35pt;
+}
+
+.period-input {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid #111;
+  padding: 0 .03in;
+  text-align: center;
+  font: inherit;
+  outline: none;
+  background: #fff;
+  margin: 0;
+}
+
+/* ─── Tabla de equipos ───────────────────────────────────────────────────── */
+.equip {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 8.05pt;
+}
+
+.equip th,
+.equip td {
+  border: 1px solid #111;
+  height: .22in;
+  padding: 2px;
+  vertical-align: middle;
+}
+
+.equip th {
+  font-weight: 700;
+  text-align: center;
+}
+
+.equip col:nth-child(1) { width: .55in; }
+.equip col:nth-child(2) { width: 2.08in; }
+.equip col:nth-child(3) { width: 1.23in; }
+.equip col:nth-child(4) { width: 1.62in; }
+.equip col:nth-child(5) { width: .90in; }
+.equip col:nth-child(6) { width: .34in; }
+
+.f43-input-busqueda,
+.f43-input-marca,
+.f43-input-modelo,
+.f43-input-cantidad {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  background: transparent;
+  font-family: inherit;
+  font-size: 8.5pt;
+  padding: 2px 3px;
+  outline: none;
+}
+
+/* ─── Títulos pequeños ───────────────────────────────────────────────────── */
+.small-heading {
+  font-weight: 700;
+  font-size: 8pt;
+  margin: .06in 0 .02in .05in;
+}
+
+/* ─── Tablas inferiores ──────────────────────────────────────────────────── */
+.bottom-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: 8.1pt;
+}
+
+.bottom-table td {
+  border: 1px solid #111;
+  height: .22in;
+  text-align: center;
+}
+
+.bottom-table .b1,
+.bottom-table .b2,
+.bottom-table .b3,
+.bottom-table .b4 { width: 25%; }
+
+.bottom-table input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0 .03in;
+  background: #fff;
+  font: inherit;
+  text-align: center;
+  outline: none;
+}
+
+.control td {
+  height: .28in;
+  font-weight: 700;
+  font-size: 7.5pt;
+}
+
+.bottom-table.control {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.bottom-table.control td { width: auto !important; }
+.bottom-table.control td:nth-child(1),
+.bottom-table.control td:nth-child(3),
+.bottom-table.control td:nth-child(5) { width: 15.5% !important; }
+.bottom-table.control td:nth-child(2),
+.bottom-table.control td:nth-child(4),
+.bottom-table.control td:nth-child(6) { width: 17.8333% !important; }
+
+/* ─── Páginas 2 y 3: instrucciones ───────────────────────────────────────── */
+.instructions-title {
+  text-align: center;
+  text-decoration: underline;
+  font-size: 14pt;
+  margin-top: .30in;
+  margin-bottom: .20in;
+}
+
+.inst-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 8.85pt;
+}
+
+.inst-table th,
+.inst-table td {
+  border: 1px solid #111;
+  padding: .07in .07in;
+  vertical-align: middle;
+}
+
+.inst-table th {
+  font-weight: 700;
+  text-align: center;
+  font-size: 9.5pt;
+  height: .45in;
+}
+
+.inst-table col:nth-child(1) { width: .68in; }
+.inst-table col:nth-child(2) { width: 2.55in; }
+.inst-table col:nth-child(3) { width: 3.06in; }
+
+.inst-table td:nth-child(1) { text-align: center; }
+.inst-table td:nth-child(2) { font-weight: 700; }
+.inst-table td:nth-child(3) { font-weight: 400; }
+
+.note {
+  font-size: 12.5pt;
+  line-height: 1.30;
+  margin: .22in .10in 0 .10in;
+}
+
+.bold-under {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.page3 .header { margin-bottom: .15in; }
+.page3 .inst-table .long { height: 2.09in; vertical-align: middle; }
+.page3 .inst-table .data { height: .82in; }
+.page3 .inst-table .control { height: .36in; }
+
+/* ─── Inputs readonly ────────────────────────────────────────────────────── */
+.page input[readonly],
+.page input[disabled],
+.page .field-input[readonly],
+.page .passport-country[readonly],
+.page .period-input[readonly] {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #111 !important;
+}
+
+.page .equip input[readonly] {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 4px !important;
+  text-align: left;
+}
+
+/* ─── Impresión ──────────────────────────────────────────────────────────── */
+@media print {
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 auto !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  .field-input,
+  .passport-country,
+  .period-input,
+  .other-line input,
+  .bottom-table input,
+  input[readonly],
+  input[disabled] {
+    background: transparent !important;
+    border-color: #000 !important;
+    color: #000 !important;
+  }
+
+  .checkbox:checked::after {
+    color: #000 !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    /* color-adjust: exact !important; */
+  }
+}
