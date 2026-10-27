@@ -99,11 +99,7 @@
                 {{ solicitud.numero }}
               </td>
               <td>{{ solicitud.solicitante.get_nombre_completo }}</td>
-              <td>
-                <span class="badge {{ solicitud.clase_badge }}">
-                  {{ solicitud.get_estado_display }}
-                </span>
-              </td>
+              <td><span class="badge {{ solicitud.clase_badge }}">{{ solicitud.estado_detallado }}</span></td>
               <td style="color:var(--color-texto-muted);">
                 {{ solicitud.fecha_creacion|date:"d/m/Y" }}
               </td>

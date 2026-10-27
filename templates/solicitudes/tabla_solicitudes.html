@@ -41,7 +41,7 @@
             <div style="font-weight:var(--peso-medio);">{{ s.solicitante.get_nombre_completo }}</div>
             <div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ s.solicitante.email }}</div>
           </td>
-          <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+          <td><span class="badge {{ s.clase_badge }}">{{ s.estado_detallado }}</span></td>
           <td>
             {% if s.dias_en_cola is not None %}
               {% if s.dias_en_cola > 5 %}

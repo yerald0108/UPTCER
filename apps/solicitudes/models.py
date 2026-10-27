@@ -198,6 +198,138 @@ class Solicitud(models.Model):
         }
         return mapa.get(self.estado, 'badge-info')
 
+    # ─── Transiciones de estado por rol ───────────────────────────────────────
+    def estados_disponibles_para(self, usuario):
+        """
+        Devuelve la lista de estados a los que `usuario` puede
+        transicionar esta solicitud desde su estado actual.
+
+        Reglas del flujo F43:
+        ┌──────────────────────────────────────────────────────────────────┐
+        │  Rol                │  Estado actual          │  Puede pasar a  │
+        ├─────────────────────┼─────────────────────────┼─────────────────┤
+        │  Especialista base  │  enviada                │  en_revision    │
+        │                     │                         │  en_rev_sup     │
+        │                     │                         │  denegada       │
+        │                     │  en_revision            │  pendiente_aprob│
+        │                     │                         │  en_rev_sup     │
+        │                     │                         │  denegada       │
+        ├─────────────────────┼─────────────────────────┼─────────────────┤
+        │  Especialista sup.  │  en_revision_superior   │  pendiente_aprob│
+        │                     │                         │  denegada       │
+        ├─────────────────────┼─────────────────────────┼─────────────────┤
+        │  Directivo          │  pendiente_aprobacion   │  pendiente_pago │
+        │                     │                         │  denegada       │
+        │                     │  pendiente_pago         │  aprobada       │
+        │                     │  enviada / en_revision  │  cancelada      │
+        │                     │  en_rev_superior        │  cancelada      │
+        │                     │  pendiente_aprobacion   │  cancelada      │
+        └─────────────────────┴─────────────────────────┴─────────────────┘
+        """
+        estados = []
+        estado_actual = self.estado
+
+        # ─── Especialista superior ───────────────────────────────────────
+        if usuario.es_especialista_superior:
+            if estado_actual == self.ESTADO_EN_REVISION_SUPERIOR:
+                estados = [
+                    (self.ESTADO_PENDIENTE_APROBACION, 'Pendiente de aprobación'),
+                    (self.ESTADO_DENEGADA,             'Denegada'),
+                ]
+
+        # ─── Especialista base ──────────────────────────────────────────
+        elif usuario.es_especialista_base:
+            if estado_actual == self.ESTADO_ENVIADA:
+                estados = [
+                    (self.ESTADO_EN_REVISION,          'En revisión'),
+                    (self.ESTADO_EN_REVISION_SUPERIOR, 'En revisión superior'),
+                    (self.ESTADO_DENEGADA,             'Denegada'),
+                ]
+            elif estado_actual == self.ESTADO_EN_REVISION:
+                estados = [
+                    (self.ESTADO_PENDIENTE_APROBACION, 'Pendiente de aprobación'),
+                    (self.ESTADO_EN_REVISION_SUPERIOR, 'En revisión superior'),
+                    (self.ESTADO_DENEGADA,             'Denegada'),
+                ]
+
+        # ─── Directivo ──────────────────────────────────────────────────
+        elif usuario.es_directivo:
+            if estado_actual == self.ESTADO_PENDIENTE_APROBACION:
+                estados = [
+                    (self.ESTADO_PENDIENTE_PAGO, 'Pendiente de pago'),
+                    (self.ESTADO_DENEGADA,       'Denegada'),
+                    (self.ESTADO_CANCELADA,      'Cancelada'),
+                ]
+            elif estado_actual == self.ESTADO_PENDIENTE_PAGO:
+                estados = [
+                    (self.ESTADO_APROBADA,  'Aprobada'),
+                    (self.ESTADO_CANCELADA, 'Cancelada'),
+                ]
+            elif estado_actual in [
+                self.ESTADO_ENVIADA,
+                self.ESTADO_EN_REVISION,
+                self.ESTADO_EN_REVISION_SUPERIOR,
+            ]:
+                estados = [
+                    (self.ESTADO_CANCELADA, 'Cancelada'),
+                ]
+
+        return estados
+
+
+    # ─── Etiqueta detallada del estado (indica a quién va) ────────────────────
+    @property
+    def estado_detallado(self):
+        """
+        Devuelve una etiqueta más descriptiva del estado, indicando
+        a quién fue enviada o en qué fase está.
+        """
+        # ─── Enviada ────────────────────────────────────────────────────
+        if self.estado == self.ESTADO_ENVIADA:
+            if self.equipo_no_listado:
+                return 'Enviada a especialista superior'
+            elif self.categoria:
+                return f'Enviada a especialista de {self.get_categoria_display().lower()}'
+            else:
+                return 'Enviada a especialista'
+
+        # ─── En revisión ────────────────────────────────────────────────
+        if self.estado == self.ESTADO_EN_REVISION:
+            if self.categoria:
+                return f'En revisión por especialista de {self.get_categoria_display().lower()}'
+            return 'En revisión por especialista'
+
+        # ─── En revisión superior ───────────────────────────────────────
+        if self.estado == self.ESTADO_EN_REVISION_SUPERIOR:
+            return 'En revisión por especialista superior'
+
+        # ─── Pendiente de aprobación ────────────────────────────────────
+        if self.estado == self.ESTADO_PENDIENTE_APROBACION:
+            return 'Pendiente de aprobación por dirección'
+
+        # ─── Pendiente de pago ──────────────────────────────────────────
+        if self.estado == self.ESTADO_PENDIENTE_PAGO:
+            return 'Pendiente de pago'
+
+        # ─── Aprobada ───────────────────────────────────────────────────
+        if self.estado == self.ESTADO_APROBADA:
+            return 'Aprobada'
+
+        # ─── Denegada ───────────────────────────────────────────────────
+        if self.estado == self.ESTADO_DENEGADA:
+            return 'Denegada'
+
+        # ─── Cancelada ──────────────────────────────────────────────────
+        if self.estado == self.ESTADO_CANCELADA:
+            return 'Cancelada'
+
+        # ─── Borrador ───────────────────────────────────────────────────
+        if self.estado == self.ESTADO_BORRADOR:
+            return 'Borrador'
+
+        # ─── Fallback ───────────────────────────────────────────────────
+        return self.get_estado_display()
+
 
 class HistorialSolicitud(models.Model):
     solicitud       = models.ForeignKey(
@@ -229,15 +361,62 @@ class HistorialSolicitud(models.Model):
 
     def get_estado_nuevo_display(self):
         return dict(Solicitud.ESTADOS).get(self.estado_nuevo, self.estado_nuevo)
+    
+    @property
+    def estado_nuevo_detallado(self):
+        """
+        Devuelve la etiqueta detallada del estado nuevo del historial.
+        """
+        estado = self.estado_nuevo
+        solicitud = self.solicitud
+
+        # Replicar la lógica de estado_detallado pero con estado_nuevo
+        if estado == Solicitud.ESTADO_ENVIADA:
+            if solicitud.equipo_no_listado:
+                return 'Enviada a especialista superior'
+            elif solicitud.categoria:
+                return f'Enviada a especialista de {solicitud.get_categoria_display().lower()}'
+            return 'Enviada a especialista'
+
+        if estado == Solicitud.ESTADO_EN_REVISION:
+            if solicitud.categoria:
+                return f'En revisión por especialista de {solicitud.get_categoria_display().lower()}'
+            return 'En revisión por especialista'
+
+        if estado == Solicitud.ESTADO_EN_REVISION_SUPERIOR:
+            return 'En revisión por especialista superior'
+
+        if estado == Solicitud.ESTADO_PENDIENTE_APROBACION:
+            return 'Pendiente de aprobación por dirección'
+
+        if estado == Solicitud.ESTADO_PENDIENTE_PAGO:
+            return 'Pendiente de pago'
+
+        if estado == Solicitud.ESTADO_APROBADA:
+            return 'Aprobada'
+
+        if estado == Solicitud.ESTADO_DENEGADA:
+            return 'Denegada'
+
+        if estado == Solicitud.ESTADO_CANCELADA:
+            return 'Cancelada'
+
+        if estado == Solicitud.ESTADO_BORRADOR:
+            return 'Borrador'
+
+        return self.get_estado_nuevo_display()
 
     @property
     def clase_badge_nuevo(self):
         mapa = {
-            Solicitud.ESTADO_BORRADOR:    'badge-info',
-            Solicitud.ESTADO_ENVIADA:     'badge-pendiente',
-            Solicitud.ESTADO_EN_REVISION: 'badge-revision',
-            Solicitud.ESTADO_APROBADA:    'badge-aprobado',
-            Solicitud.ESTADO_DENEGADA:    'badge-denegado',
-            Solicitud.ESTADO_CANCELADA:   'badge-denegado',
+            Solicitud.ESTADO_BORRADOR:             'badge-info',
+            Solicitud.ESTADO_ENVIADA:              'badge-pendiente',
+            Solicitud.ESTADO_EN_REVISION:          'badge-revision',
+            Solicitud.ESTADO_EN_REVISION_SUPERIOR: 'badge-revision',
+            Solicitud.ESTADO_PENDIENTE_APROBACION: 'badge-pendiente',
+            Solicitud.ESTADO_PENDIENTE_PAGO:       'badge-pendiente',
+            Solicitud.ESTADO_APROBADA:             'badge-aprobado',
+            Solicitud.ESTADO_DENEGADA:             'badge-denegado',
+            Solicitud.ESTADO_CANCELADA:            'badge-denegado',
         }
         return mapa.get(self.estado_nuevo, 'badge-info')

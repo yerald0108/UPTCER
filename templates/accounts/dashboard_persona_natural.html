@@ -92,7 +92,7 @@
               <td><span style="font-family:var(--fuente-mono);font-size:var(--texto-xs);">{{ s.numero }}</span></td>
               <td>{{ s.get_flujo_display }}</td>
               <td>{{ s.equipo|default:s.equipo_marca_manual }}</td>
-              <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+              <td><span class="badge {{ s.clase_badge }}">{{ s.estado_detallado }}</span></td>
               <td style="color:var(--color-texto-muted);">{{ s.fecha_creacion|date:"d/m/Y" }}</td>
             </tr>
             {% endfor %}

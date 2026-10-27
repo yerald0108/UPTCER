@@ -232,13 +232,26 @@ def detalle_solicitud(request, pk):
             datos_f43 = {}
 
     equipos   = datos_f43.get('equipos', [])
-    historial = solicitud.historial.select_related('usuario').all()
+    historial = solicitud.historial.select_related('usuario').order_by('fecha')
+
+    # ─── Parsear observaciones técnicas (vienen como JSON) ────────────────
+    observaciones_tecnicas_parsed = None
+    if solicitud.observaciones_tecnicas:
+        try:
+            observaciones_tecnicas_parsed = json.loads(solicitud.observaciones_tecnicas)
+        except (json.JSONDecodeError, TypeError):
+            observaciones_tecnicas_parsed = {'criterio': solicitud.observaciones_tecnicas}
+
+    # ─── Estados disponibles según el rol del usuario ─────────────────────
+    estados_disponibles = solicitud.estados_disponibles_para(usuario)
 
     contexto = {
         'solicitud': solicitud,
         'datos_f43': datos_f43,
         'equipos':   equipos,
         'historial': historial,
+        'observaciones_tecnicas_parsed': observaciones_tecnicas_parsed,
+        'estados_disponibles': estados_disponibles,
         'puede_gestionar':  usuario.es_directivo,
         'puede_evaluar':    usuario.es_especialista_base,
         'puede_eval_sup':   usuario.es_especialista_superior,

@@ -174,7 +174,7 @@
               </td>
               <td>{{ s.solicitante.get_nombre_completo }}</td>
               <td>{{ s.equipo_marca_manual }} {{ s.equipo_modelo_manual }}</td>
-              <td><span class="badge {{ s.clase_badge }}">{{ s.get_estado_display }}</span></td>
+              <td><span class="badge {{ s.clase_badge }}">{{ s.estado_detallado }}</span></td>
               <td style="color:var(--color-texto-muted);white-space:nowrap;">
                 {{ s.fecha_resolucion|date:"d/m/Y H:i" }}
               </td>

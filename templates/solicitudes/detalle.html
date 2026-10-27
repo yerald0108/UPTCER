@@ -38,7 +38,7 @@
         </a>
       {% endif %}
       <span id="badge-estado-solicitud" class="badge {{ solicitud.clase_badge }}">
-        {{ solicitud.get_estado_display }}
+        {{ solicitud.estado_detallado }}
       </span>
     </div>
 
@@ -58,7 +58,7 @@
         </button>
       </div>
 
-      <button type="button" onclick="imprimirDocumento()" class="btn btn-ghost">
+      <button type="button" onclick="imprimirDocumento()" class="btn btn-primario">
         <i data-lucide="printer" style="width:16px;height:16px;"></i>
         Imprimir / PDF
       </button>
@@ -70,7 +70,7 @@
     <div class="tracker-solicitud">
       <div class="tracker-header">
         <h2 class="tracker-titulo">Seguimiento de su solicitud</h2>
-        <p class="tracker-subtitulo">Estado actual: <strong>{{ solicitud.get_estado_display }}</strong></p>
+        <p class="tracker-subtitulo">Estado actual: <strong>{{ solicitud.estado_detallado }}</strong></p>
       </div>
 
       <div class="tracker-pasos">
@@ -527,33 +527,46 @@
     </div>
     {% endif %}
 
+    <!-- Historial en timeline (cascada) -->
     <div class="tarjeta" style="margin-bottom:var(--espacio-5);">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;"><i data-lucide="history" style="width:18px;height:18px;"></i></div>
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="history" style="width:18px;height:18px;"></i>
+          </div>
           <h2 class="tarjeta-titulo">Historial de la solicitud</h2>
         </div>
       </div>
-      <div class="tarjeta-cuerpo" style="padding:0;">
+      <div class="tarjeta-cuerpo">
         {% if historial %}
-          <div class="tabla-contenedor" style="border:none;border-radius:0;">
-            <table class="tabla">
-              <thead><tr><th>Fecha</th><th>Realizado por</th><th>Estado anterior</th><th>Estado nuevo</th><th>Observación</th></tr></thead>
-              <tbody>
-                {% for h in historial %}
-                <tr>
-                  <td style="white-space:nowrap;color:var(--color-texto-muted);">{{ h.fecha|date:"d/m/Y H:i" }}</td>
-                  <td><div style="font-weight:var(--peso-medio);">{{ h.usuario.get_nombre_completo }}</div><div style="font-size:var(--texto-xs);color:var(--color-texto-muted);">{{ h.usuario.get_rol_display }}</div></td>
-                  <td>{% if h.estado_anterior %}<span class="badge badge-info">{{ h.get_estado_anterior_display }}</span>{% else %}<span style="color:var(--color-texto-muted);">—</span>{% endif %}</td>
-                  <td><span class="badge {{ h.clase_badge_nuevo }}">{{ h.get_estado_nuevo_display }}</span></td>
-                  <td style="color:var(--color-texto-secundario);">{{ h.observacion|default:"—" }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <div class="timeline">
+            {% for h in historial %}
+            <div class="timeline-item">
+              <div class="timeline-marker">
+                <div class="timeline-dot"></div>
+                {% if not forloop.last %}<div class="timeline-line"></div>{% endif %}
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-fecha">{{ h.fecha|date:"d/m/Y H:i" }}</span>
+                  <span class="badge {{ h.clase_badge_nuevo }}">{{ h.estado_nuevo_detallado }}</span>
+                </div>
+                <div class="timeline-user">
+                  <i data-lucide="user" style="width:13px;height:13px;"></i>
+                  <span>{{ h.usuario.get_nombre_completo }}</span>
+                  <span class="timeline-rol">— {{ h.usuario.get_rol_display }}</span>
+                </div>
+                {% if h.observacion %}
+                  <div class="timeline-obs">{{ h.observacion }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
           </div>
         {% else %}
-          <div style="padding:var(--espacio-8);text-align:center;color:var(--color-texto-muted);"><p style="font-size:var(--texto-sm);">Sin cambios registrados aún.</p></div>
+          <div style="padding:var(--espacio-8);text-align:center;color:var(--color-texto-muted);">
+            <p style="font-size:var(--texto-sm);">Sin cambios registrados aún.</p>
+          </div>
         {% endif %}
       </div>
     </div>
@@ -562,7 +575,9 @@
     <div class="tarjeta">
       <div class="tarjeta-cabecera">
         <div style="display:flex;align-items:center;gap:var(--espacio-3);">
-          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;"><i data-lucide="settings-2" style="width:18px;height:18px;"></i></div>
+          <div style="width:32px;height:32px;border-radius:var(--radio-md);background:var(--color-primario-light);color:var(--color-primario);display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="settings-2" style="width:18px;height:18px;"></i>
+          </div>
           <h2 class="tarjeta-titulo">Gestionar solicitud</h2>
         </div>
       </div>
@@ -572,13 +587,15 @@
           <div class="campo-grupo">
             <label class="campo-etiqueta requerido">Cambiar estado a</label>
             <div style="display:flex;flex-wrap:wrap;gap:var(--espacio-3);">
-              {% for valor, etiqueta in ESTADOS %}
-                {% if valor != solicitud.estado and valor != 'borrador' %}
+              {% for valor, etiqueta in estados_disponibles %}
                 <label style="display:flex;align-items:center;gap:var(--espacio-2);padding:var(--espacio-3) var(--espacio-4);border:1px solid var(--color-borde);border-radius:var(--radio-md);cursor:pointer;font-size:var(--texto-sm);transition:var(--transicion-rapida);" onmouseover="this.style.borderColor='var(--color-primario)'" onmouseout="this.style.borderColor='var(--color-borde)'">
                   <input type="radio" name="estado_nuevo" value="{{ valor }}" required> {{ etiqueta }}
                 </label>
-                {% endif %}
-              {% endfor %}
+                {% empty %}
+                  <p style="color:var(--color-texto-muted);font-size:var(--texto-sm);padding:var(--espacio-3) 0;">
+                    No hay transiciones disponibles para su rol en el estado actual de la solicitud.
+                  </p>
+                {% endfor %}
             </div>
           </div>
           <div class="campo-grupo">
