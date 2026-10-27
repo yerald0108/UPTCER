@@ -413,7 +413,7 @@
 
       <div class="no-print" style="width:8.5in;margin:0 auto 24px;padding:16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.08);">
         <label for="id_direccion_instalacion" style="font-family:var(--fuente-principal);font-size:13px;font-weight:600;display:block;margin-bottom:6px;">
-          Dirección donde se utilizará el dispositivo:
+          Dirección donde se utilizará el dispositivo (opcional):
         </label>
         <input class="field-input" type="text" name="direccion_instalacion"
                id="id_direccion_instalacion" maxlength="255" autocomplete="street-address"
@@ -427,13 +427,13 @@
           </button>
           <span id="estado-ubicacion" role="status" aria-live="polite"
                 style="font-family:var(--fuente-principal);font-size:11px;color:var(--color-texto-muted);">
-            Abra el mapa para buscar la dirección y elegir el punto exacto.
+            Si lo desea, abra el mapa para buscar la dirección y elegir el punto exacto.
           </span>
         </div>
         {{ form.latitud_instalacion }}
         {{ form.longitud_instalacion }}
         {% if form.latitud_instalacion.errors or form.longitud_instalacion.errors %}
-          <span class="f43-error-msg">Ubique la dirección en el mapa antes de enviar la solicitud.</span>
+          <span class="f43-error-msg">Revise las coordenadas de la ubicación seleccionada.</span>
         {% endif %}
       </div>
 

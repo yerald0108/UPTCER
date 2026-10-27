@@ -41,7 +41,6 @@ def mapa_view(request):
     })
 
 
-@login_required
 def seleccionar_ubicacion_view(request):
     """Selector de coordenadas para el formulario F43."""
     return render(request, 'mapa/seleccionar_ubicacion.html', {
