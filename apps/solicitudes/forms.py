@@ -156,7 +156,7 @@ class FormularioF43(forms.ModelForm):
     direccion_instalacion = forms.CharField(
                             label='Dirección donde se utilizará el dispositivo',
                             max_length=255,
-                            required=True,
+                            required=False,
                             widget=forms.TextInput(attrs={
                                 'maxlength': 255,
                                 'placeholder': 'Calle, número, municipio y provincia',
@@ -171,11 +171,11 @@ class FormularioF43(forms.ModelForm):
                             help_text='Adjunte el modelo F43 firmado si lo tiene disponible (PDF, JPG, PNG)'
                           )
     latitud_instalacion = forms.FloatField(
-                            required=True,
+                            required=False,
                             widget=forms.HiddenInput(),
                           )
     longitud_instalacion = forms.FloatField(
-                            required=True,
+                            required=False,
                             widget=forms.HiddenInput(),
                           )
 

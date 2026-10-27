@@ -47,6 +47,14 @@ class MapaViewTest(TestCase):
         self.assertContains(response, 'Buscar dirección')
         self.assertContains(response, 'Usar esta ubicación')
 
+    def test_selector_de_ubicacion_no_exige_inicio_de_sesion(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('mapa:seleccionar_ubicacion'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'mapa/seleccionar_ubicacion.html')
+
     def test_crear_punto_requiere_cuenta_de_personal_admin(self):
         usuario = Usuario.objects.create_user(
             username='mapa_usuario',

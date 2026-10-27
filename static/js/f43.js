@@ -548,27 +548,6 @@ function enviarFormulario() {
     }
     return;
   }
-  if (!document.getElementById('id_direccion_instalacion')?.value.trim()) {
-    if (typeof mostrarToast === 'function') {
-      mostrarToast({ tipo: 'warning', mensaje: 'Indique la dirección de utilización y ubíquela en el mapa.' });
-    } else {
-      alert('Indique la dirección de utilización y ubíquela en el mapa.');
-    }
-    document.getElementById('id_direccion_instalacion')?.focus();
-    return;
-  }
-  if (
-    !document.getElementById('id_latitud_instalacion')?.value ||
-    !document.getElementById('id_longitud_instalacion')?.value
-  ) {
-    if (typeof mostrarToast === 'function') {
-      mostrarToast({ tipo: 'warning', mensaje: 'Pulse «Ubicar dirección» antes de enviar la solicitud.' });
-    } else {
-      alert('Pulse «Ubicar dirección» antes de enviar la solicitud.');
-    }
-    document.getElementById('btn-ubicar-direccion')?.focus();
-    return;
-  }
   if (equipos.length === 0) {
     if (typeof mostrarToast === 'function') {
       mostrarToast({ tipo: 'warning', mensaje: 'Agregue al menos un equipo a la relación.' });

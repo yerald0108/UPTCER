@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
@@ -228,6 +229,41 @@ class SolicitudAccesoTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'id="id_direccion_instalacion"')
         self.assertContains(r, 'Buscar y ubicar en el mapa')
+
+    @patch('apps.solicitudes.views.notificar_solicitud_nueva')
+    def test_nueva_f43_permite_enviar_sin_direccion_ni_ubicacion(self, notificar):
+        self.client.force_login(self.persona1)
+        datos = {
+            'nombre_apellidos': 'Ana Solicitante',
+            'numero_pasaporte': 'A12345678',
+            'pais_residencia': 'Cuba',
+            'direccion_residencia': 'Calle 1, La Habana',
+            'correo_electronico': self.persona1.email,
+            'telefono': '+53 5 000 0000',
+            'provincia': 'la_habana',
+            'modo_importacion': 'equipaje',
+            'objetivo_importacion': 'empleo_directo',
+            'periodo_importacion': 'definitiva',
+            'equipos_json': json.dumps([{
+                'descripcion': 'Teléfono',
+                'marca': 'Samsung',
+                'modelo': 'Galaxy',
+                'cantidad': 1,
+                'equipoId': '',
+                'listado': False,
+            }]),
+        }
+
+        response = self.client.post(reverse('solicitudes:nueva_f43'), datos)
+
+        self.assertEqual(response.status_code, 302)
+        solicitud = Solicitud.objects.exclude(pk=self.solicitud.pk).get(
+            solicitante=self.persona1,
+        )
+        self.assertEqual(solicitud.direccion_instalacion, '')
+        self.assertIsNone(solicitud.latitud_instalacion)
+        self.assertIsNone(solicitud.longitud_instalacion)
+        notificar.assert_called_once_with(solicitud)
 
     def test_nueva_f43_denegado_para_especialista(self):
         """El especialista no puede acceder al formulario F43."""
