@@ -1,218 +1,245 @@
+import {
+    anadirLimites,
+    boundsFeature,
+    buscarMunicipio,
+    cargarLimites,
+    crearCobertura,
+    crearMapa,
+    maplibregl
+} from './mapa-offline.js?v=3';
+
 document.addEventListener('DOMContentLoaded', function () {
     var config = window.MAPA_CONFIG || {};
+    var mapa = crearMapa('map');
+    var puntos = [];
+    var estado = document.getElementById('mapa-estado');
+    var popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true });
 
-    // ============================================================
-    // 1. MAPA
-    // ============================================================
-    var map = L.map('map').setView([22.0, -79.0], 7);
-
-    // ============================================================
-    // 2. CAPAS BASE
-    // ============================================================
-    var capaCalles = L.tileLayer(
-        'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
-        { attribution: '&copy; OpenStreetMap France', subdomains: 'abc', maxZoom: 20 }
-    );
-    var capaSatelite = L.tileLayer(
-        'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-        { attribution: 'Imagery &copy; Google', maxZoom: 21 }
-    );
-    var capaTopo = L.tileLayer(
-        'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-        { attribution: 'Map data &copy; OSM, SRTM | Style &copy; OpenTopoMap', maxZoom: 17 }
-    );
-    var capaHibrido = L.tileLayer(
-        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-        { attribution: 'Imagery &copy; Google', maxZoom: 21 }
-    );
-
-    capaCalles.addTo(map);
-
-    L.control.layers({
-        "Calles": capaCalles,
-        "Satelite": capaSatelite,
-        "Topografico": capaTopo,
-        "Hibrido": capaHibrido
-    }, null, { position: 'topright', collapsed: true }).addTo(map);
-
-    L.control.scale({ imperial: false, metric: true }).addTo(map);
-
-    // ============================================================
-    // 3. CLUSTER
-    // ============================================================
-    var markers = L.markerClusterGroup({
-        showCoverageOnHover: false,
-        maxClusterRadius: 50,
-        spiderfyOnMaxZoom: true,
-        disableClusteringAtZoom: 15
-    });
-
-    // ============================================================
-    // 4. ICONOS
-    // ============================================================
-    var iconosUrls = config.iconos || {
-        'GENERICO': '/static/mapa/img/marker-grey.png'
-    };
-    var shadowUrl = config.shadowUrl || '/static/mapa/img/marker-shadow.png';
-
-    function crearIcono(tipoKey) {
-        var url = iconosUrls[tipoKey] || iconosUrls['GENERICO'];
-        return L.icon({
-            iconUrl: url,
-            shadowUrl: shadowUrl,
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
-        });
+    function radioKm(properties) {
+        var radio = Number(properties.radio_km);
+        return Number.isFinite(radio) && radio > 0 && radio <= 1000 ? radio : null;
     }
 
-    // ============================================================
-    // 5. CARGAR PUNTOS EXISTENTES
-    // ============================================================
-    var apiUrl = config.apiUrl || '/mapa/api/puntos.geojson';
+    function renderizarPuntos(datos) {
+        puntos = datos.features || [];
+        var conRadio = puntos.map(function (feature) {
+            return {
+                feature: feature,
+                radio: radioKm(feature.properties || {}),
+                coordenadas: feature.geometry.coordinates
+            };
+        }).filter(function (punto) { return punto.radio !== null; });
+        var solapamientos = {};
 
-    fetch(apiUrl)
-        .then(function (response) {
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            return response.json();
-        })
-        .then(function (data) {
-            L.geoJSON(data, {
-                pointToLayer: function (feature, latlng) {
-                    var tipoKey = feature.properties.tipo || 'GENERICO';
-                    return L.marker(latlng, { icon: crearIcono(tipoKey) });
-                },
-                onEachFeature: function (feature, layer) {
-                    layer.on('click', function () {
-                        mostrarInfo(feature.properties);
-                    });
-                    var props = feature.properties;
-                    var popup = document.createElement('div');
-                    var titulo = document.createElement('strong');
-                    titulo.textContent = props.nombre || 'Sin nombre';
-                    popup.appendChild(titulo);
-
-                    var equipos = props.equipos || [];
-                    if (equipos.length) {
-                        var detalle = document.createElement('div');
-                        detalle.textContent = equipos.map(function (equipo) {
-                            return [equipo.descripcion, equipo.marca, equipo.modelo]
-                                .filter(Boolean).join(' ');
-                        }).filter(Boolean).join(', ');
-                        popup.appendChild(detalle);
-                    }
-                    layer.bindPopup(popup);
+        for (var i = 0; i < conRadio.length; i++) {
+            for (var j = i + 1; j < conRadio.length; j++) {
+                var lat1 = conRadio[i].coordenadas[1] * Math.PI / 180;
+                var lat2 = conRadio[j].coordenadas[1] * Math.PI / 180;
+                var deltaLatitud = lat2 - lat1;
+                var deltaLongitud = (conRadio[j].coordenadas[0] - conRadio[i].coordenadas[0]) * Math.PI / 180;
+                var haversine = Math.sin(deltaLatitud / 2) ** 2 +
+                    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLongitud / 2) ** 2;
+                var distancia = 6371.0088 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+                if (distancia < conRadio[i].radio + conRadio[j].radio) {
+                    solapamientos[conRadio[i].feature.properties.id] = true;
+                    solapamientos[conRadio[j].feature.properties.id] = true;
                 }
-            }).addTo(markers);
-            map.addLayer(markers);
-        })
-        .catch(function (error) {
-            console.error('Error cargando puntos:', error);
-        });
-
-    // ============================================================
-    // 6. UTILIDADES DE INFO
-    // ============================================================
-    function mostrarInfo(props) {
-        document.getElementById('info-nombre').textContent = props.nombre || 'Sin nombre';
-        document.getElementById('info-tipo').textContent = props.tipo_display || props.tipo || 'N/D';
-        document.getElementById('info-estado').textContent = props.estado || 'N/D';
-        document.getElementById('info-responsable').textContent = props.responsable || 'N/D';
-        document.getElementById('info-descripcion').textContent = props.descripcion || '';
-
-        var excluidos = [
-            'id','nombre','tipo','tipo_display','estado','descripcion',
-            'responsable','fecha_instalacion','ultima_revision','direccion'
-        ];
-        var attrContainer = document.getElementById('info-atributos');
-        attrContainer.innerHTML = '';
-        for (var key in props) {
-            if (excluidos.indexOf(key) === -1 && props[key] !== null && props[key] !== '') {
-                var p = document.createElement('p');
-                var labelBonito = key.replace(/_/g, ' ').replace(/\b\w/g, function (c) {
-                    return c.toUpperCase();
-                });
-                var label = document.createElement('strong');
-                label.textContent = labelBonito + ': ';
-                p.appendChild(label);
-                var valor = props[key];
-                if (Array.isArray(valor)) {
-                    valor = valor.map(function (equipo) {
-                        return [equipo.descripcion, equipo.marca, equipo.modelo]
-                            .filter(Boolean).join(' ');
-                    }).filter(Boolean).join(', ');
-                } else if (typeof valor === 'object') {
-                    valor = JSON.stringify(valor);
-                }
-                p.appendChild(document.createTextNode(valor));
-                attrContainer.appendChild(p);
             }
         }
 
-        document.getElementById('info-panel').style.display = 'block';
-    }
-
-    var closePanel = document.getElementById('close-panel');
-    if (closePanel) {
-        closePanel.addEventListener('click', function () {
-            document.getElementById('info-panel').style.display = 'none';
-        });
-    }
-
-    // ============================================================
-    // 7. BUSCADOR Y CREACIÓN DE PUNTOS
-    // ============================================================
-    window.searchMarker = null;
-
-    window.buscarLugar = function() {
-        var query = document.getElementById('search-input').value;
-        if (!query) return;
-
-        // Nominatim API de OpenStreetMap
-        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
-
-        fetch(url)
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data && data.length > 0) {
-                    var lat = parseFloat(data[0].lat);
-                    var lon = parseFloat(data[0].lon);
-                    var displayName = data[0].display_name;
-
-                    // Volar a la ubicación
-                    map.flyTo([lat, lon], 14, { duration: 1.5 });
-
-                    // Quitar marcador anterior
-                    if (window.searchMarker) {
-                        map.removeLayer(window.searchMarker);
-                    }
-
-                    // URL para crear el punto con las coordenadas
-                    var urlCrear = config.urlCrear + '?lat=' + lat + '&lon=' + lon;
-
-                    // Popup con botón de crear
-                    var popupHtml = `
-                        <div style="text-align:center;">
-                            <b>📍 Resultado</b><br>
-                            <small>${displayName.substring(0, 50)}...</small><br><br>
-                            <a href="${urlCrear}" class="btn btn-primary btn-sm" style="background:#0d6efd;color:white;padding:5px 10px;border-radius:4px;text-decoration:none;font-weight:bold;">
-                                ➕ Crear punto aquí
-                            </a>
-                        </div>
-                    `;
-
-                    window.searchMarker = L.marker([lat, lon]).addTo(map)
-                        .bindPopup(popupHtml)
-                        .openPopup();
-
-                } else {
-                    alert('No se encontró la dirección. Intenta con otros términos.');
+        var coberturas = conRadio.map(function (punto) {
+            var propiedades = punto.feature.properties || {};
+            var solapa = Boolean(solapamientos[propiedades.id]);
+            return crearCobertura(
+                punto.coordenadas[0],
+                punto.coordenadas[1],
+                punto.radio,
+                {
+                    id: propiedades.id,
+                    nombre: propiedades.nombre || 'Punto sin nombre',
+                    radio_km: punto.radio,
+                    solapa: solapa,
+                    color: solapa ? '#dc2626' : '#2563eb'
                 }
+            );
+        });
+
+        mapa.addSource('cobertura-puntos', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: coberturas }
+        });
+        mapa.addLayer({
+            id: 'cobertura-puntos-fill',
+            type: 'fill',
+            source: 'cobertura-puntos',
+            paint: {
+                'fill-color': ['get', 'color'],
+                'fill-opacity': 0.16
+            }
+        });
+        mapa.addLayer({
+            id: 'cobertura-puntos-line',
+            type: 'line',
+            source: 'cobertura-puntos',
+            paint: {
+                'line-color': ['get', 'color'],
+                'line-width': 2
+            }
+        });
+        var featuresPuntos = puntos.map(function (feature) {
+            var propiedades = Object.assign({}, feature.properties);
+            propiedades.solapa = Boolean(solapamientos[propiedades.id]);
+            return {
+                type: 'Feature',
+                geometry: feature.geometry,
+                properties: propiedades
+            };
+        });
+        mapa.addSource('puntos-mapa', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: featuresPuntos }
+        });
+        mapa.addLayer({
+            id: 'puntos-mapa-circulos',
+            type: 'circle',
+            source: 'puntos-mapa',
+            paint: {
+                'circle-radius': 7,
+                'circle-color': [
+                    'case',
+                    ['boolean', ['get', 'solapa'], false],
+                    '#dc2626',
+                    '#155e9a'
+                ],
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        mapa.on('click', 'puntos-mapa-circulos', function (evento) {
+            var feature = evento.features && evento.features[0];
+            if (!feature) return;
+            mostrarPunto(feature, evento.lngLat);
+        });
+        mapa.on('mouseenter', 'puntos-mapa-circulos', function () {
+            mapa.getCanvas().style.cursor = 'pointer';
+        });
+        mapa.on('mouseleave', 'puntos-mapa-circulos', function () {
+            mapa.getCanvas().style.cursor = '';
+        });
+        estado.textContent = puntos.length + ' punto(s). Los círculos son radios manuales estimados; rojo indica solapamiento geométrico.';
+    }
+
+    function mostrarPunto(feature, ubicacion) {
+        var props = feature.properties || {};
+        var contenido = document.createElement('div');
+        var titulo = document.createElement('strong');
+        titulo.textContent = props.nombre || 'Punto sin nombre';
+        contenido.appendChild(titulo);
+        [
+            ['Tipo', props.tipo_display || props.tipo],
+            ['Estado', props.estado],
+            ['Frecuencia', props.frecuencia_mhz ? props.frecuencia_mhz + ' MHz' : null],
+            ['Radio estimado', radioKm(props) ? radioKm(props) + ' km' : null],
+            ['Responsable', props.responsable],
+            ['Dirección', props.direccion_instalacion || props.direccion]
+        ].forEach(function (item) {
+            if (!item[1]) return;
+            var linea = document.createElement('div');
+            linea.textContent = item[0] + ': ' + item[1];
+            contenido.appendChild(linea);
+        });
+        popup.setLngLat(ubicacion).setDOMContent(contenido).addTo(mapa);
+    }
+
+    function buscarLocal(limites, consulta) {
+        var clave = normalizar(consulta);
+        var punto = puntos.find(function (feature) {
+            var props = feature.properties || {};
+            return normalizar(props.nombre).indexOf(clave) !== -1 ||
+                normalizar(props.direccion || props.direccion_instalacion).indexOf(clave) !== -1;
+        });
+        if (punto) {
+            var coordenadas = punto.geometry.coordinates;
+            mapa.flyTo({ center: coordenadas, zoom: 14 });
+            mostrarPunto(punto, { lng: coordenadas[0], lat: coordenadas[1] });
+            return true;
+        }
+        var municipio = buscarMunicipio(limites, consulta);
+        if (municipio) {
+            mapa.fitBounds(boundsFeature(municipio), { maxZoom: 12, padding: 24 });
+            return true;
+        }
+        return false;
+    }
+
+    function normalizar(texto) {
+        return String(texto || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLocaleLowerCase('es')
+            .trim();
+    }
+
+    window.buscarLugar = function () {
+        var consulta = document.getElementById('search-input').value.trim();
+        if (!consulta) return;
+        if (window.MAPA_LIMITES && buscarLocal(window.MAPA_LIMITES, consulta)) return;
+
+        var url = new URL('https://nominatim.openstreetmap.org/search');
+        url.searchParams.set('format', 'jsonv2');
+        url.searchParams.set('limit', '1');
+        url.searchParams.set('q', consulta);
+        fetch(url.toString())
+            .then(function (respuesta) {
+                if (!respuesta.ok) throw new Error('Búsqueda en línea no disponible.');
+                return respuesta.json();
             })
-            .catch(function(error) {
-                console.error('Error en búsqueda:', error);
-                alert('Error al buscar. Revisa tu conexión a internet.');
+            .then(function (resultados) {
+                if (!resultados.length) throw new Error('No se encontró el lugar.');
+                var resultado = resultados[0];
+                var coordenadas = [Number(resultado.lon), Number(resultado.lat)];
+                mapa.flyTo({ center: coordenadas, zoom: 14 });
+                var urlCrear = new URL(config.urlCrear, window.location.origin);
+                urlCrear.searchParams.set('lat', coordenadas[1]);
+                urlCrear.searchParams.set('lon', coordenadas[0]);
+                var contenido = document.createElement('div');
+                contenido.appendChild(document.createTextNode(resultado.display_name || consulta));
+                var enlace = document.createElement('a');
+                enlace.href = urlCrear.toString();
+                enlace.textContent = 'Crear punto aquí';
+                enlace.style.display = 'block';
+                contenido.appendChild(enlace);
+                popup.setLngLat(coordenadas).setDOMContent(contenido).addTo(mapa);
+            })
+            .catch(function () {
+                window.alert('No se encontró el punto localmente. La búsqueda de direcciones requiere Internet; también puede ubicarlo haciendo clic en el mapa.');
             });
     };
+
+    mapa.on('error', function (evento) {
+        if (evento.error) console.error('Error cargando el mapa offline:', evento.error);
+    });
+
+    mapa.on('load', function () {
+        cargarLimites()
+            .then(function (limites) {
+                window.MAPA_LIMITES = limites;
+                anadirLimites(mapa, limites);
+                return fetch(config.apiUrl);
+            })
+            .then(function (respuesta) {
+                if (!respuesta.ok) throw new Error('No se pudieron cargar los puntos del mapa.');
+                return respuesta.json();
+            })
+            .then(renderizarPuntos)
+            .catch(function (error) {
+                console.error('Error cargando datos locales del mapa:', error);
+                estado.textContent = error.message;
+            });
+    });
+
+    document.getElementById('close-panel').addEventListener('click', function () {
+        document.getElementById('info-panel').style.display = 'none';
+    });
 });

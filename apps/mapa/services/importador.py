@@ -23,6 +23,8 @@ MAPEO_COLUMNAS = {
     'estado': ['estado', 'status', 'state'],
     'descripcion': ['descripcion', 'description', 'observaciones', 'notas'],
     'responsable': ['responsable', 'responsible', 'owner', 'encargado'],
+    'frecuencia_mhz': ['frecuencia_mhz', 'frecuencia mhz', 'frecuencia', 'frequency_mhz', 'frequency'],
+    'radio_km': ['radio_km', 'radio km', 'alcance_km', 'alcance km', 'radio', 'alcance', 'coverage_km'],
 }
 
 
@@ -241,6 +243,24 @@ def parsear_archivo(archivo):
                 if hasattr(valor, 'isoformat'):
                     valor = valor.isoformat()
                 atributos[str(col)] = valor
+
+            for campo in ('frecuencia_mhz', 'radio_km'):
+                columna = mapeo.get(campo)
+                if not columna:
+                    continue
+                valor = fila[columna]
+                try:
+                    if PANDAS_AVAILABLE and pd.isna(valor):
+                        continue
+                except Exception:
+                    pass
+                coincidencia = re.search(r'-?\d+(?:[.,]\d+)?', str(valor))
+                if not coincidencia:
+                    raise ValueError(f'Valor inválido para {campo}: {valor}')
+                numero = float(coincidencia.group().replace(',', '.'))
+                if not numero > 0 or (campo == 'radio_km' and numero > 1000):
+                    raise ValueError(f'Valor fuera de rango para {campo}: {valor}')
+                atributos[campo] = numero
 
             atributos['_coordenada_original'] = f"{val_lat} | {val_lon}"
 

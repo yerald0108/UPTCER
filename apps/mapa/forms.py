@@ -1,4 +1,5 @@
 from django import forms
+from .models import PuntoMapa
 
 
 class ImportarArchivoForm(forms.Form):
@@ -25,3 +26,44 @@ class ImportarArchivoForm(forms.Form):
         if archivo.size > 20 * 1024 * 1024:  # 20 MB
             raise forms.ValidationError('El archivo es demasiado grande (máx. 20 MB)')
         return archivo
+
+
+class PuntoMapaAdminForm(forms.ModelForm):
+    frecuencia_mhz = forms.FloatField(
+        label='Frecuencia (MHz)',
+        required=False,
+        min_value=0.0001,
+    )
+    radio_km = forms.FloatField(
+        label='Radio de cobertura estimado (km)',
+        required=False,
+        min_value=0.01,
+        max_value=1000,
+        help_text='Radio manual para visualizar cobertura aproximada y solapamientos.',
+    )
+
+    class Meta:
+        model = PuntoMapa
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            atributos = self.instance.atributos or {}
+            self.fields['frecuencia_mhz'].initial = atributos.get('frecuencia_mhz')
+            self.fields['radio_km'].initial = atributos.get('radio_km')
+
+    def save(self, commit=True):
+        punto = super().save(commit=False)
+        atributos = dict(punto.atributos or {})
+        for campo in ('frecuencia_mhz', 'radio_km'):
+            valor = self.cleaned_data[campo]
+            if valor is None:
+                atributos.pop(campo, None)
+            else:
+                atributos[campo] = valor
+        punto.atributos = atributos
+        if commit:
+            punto.save()
+            self.save_m2m()
+        return punto
