@@ -9,4 +9,6 @@ urlpatterns = [
     path('importar/', views.importar_view, name='importar'),
     path('api/crear/', views.api_crear_punto, name='api_crear_punto'),
     path('api/puntos.geojson', views.api_puntos_geojson, name='api_puntos'),
+    path('api/satelites.geojson', views.api_trayectorias_satelitales, name='api_satelites'),
+    path('base/cuba.pmtiles', views.cuba_pmtiles_view, name='pmtiles'),
 ]

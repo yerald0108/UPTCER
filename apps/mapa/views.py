@@ -1,11 +1,13 @@
 import json
+import math
 import os
+import re
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -16,6 +18,7 @@ from apps.licencias.models import Licencia
 from .forms import ImportarArchivoForm
 from .models import PuntoMapa, ImportacionLog
 from .services.importador import parsear_archivo, importar_registros
+from .services.satelites import DatosOrbitalesNoDisponibles, obtener_trayectorias_satelitales
 
 
 def _url_volver(request):
@@ -38,6 +41,7 @@ def mapa_view(request):
     """Vista principal del mapa."""
     return render(request, 'mapa/mapa.html', {
         'url_volver': _url_volver(request),
+        'url_api_puntos': reverse('mapa:api_puntos'),
     })
 
 
@@ -64,8 +68,9 @@ def api_puntos_geojson(request):
     for punto in puntos:
         feature = punto.geojson_feature
         solicitud = punto.solicitud
+        properties = feature['properties']
+        properties['radio_km'] = properties.get('radio_km')
         if solicitud:
-            properties = feature['properties']
             properties['solicitud_numero'] = solicitud.numero
             properties['solicitante'] = solicitud.solicitante.get_nombre_completo()
             properties['direccion_instalacion'] = solicitud.direccion_instalacion
@@ -90,6 +95,75 @@ def api_puntos_geojson(request):
         'features': features
     }
     return JsonResponse(geojson, safe=False)
+
+
+@require_GET
+@login_required
+def api_trayectorias_satelitales(request):
+    """Devuelve las trayectorias activas y sus huellas de visibilidad sobre Cuba."""
+    try:
+        return JsonResponse(obtener_trayectorias_satelitales())
+    except DatosOrbitalesNoDisponibles as error:
+        return JsonResponse({'error': str(error)}, status=503)
+
+
+@require_GET
+def cuba_pmtiles_view(request):
+    """Sirve rangos del archivo PMTiles para clientes que no soportan Range en estáticos."""
+    ruta = settings.BASE_DIR / 'apps' / 'mapa' / 'static' / 'mapa' / 'data' / 'cuba.pmtiles'
+    if not ruta.is_file():
+        return HttpResponse('El mapa offline de Cuba no está instalado.', status=404)
+
+    tamano = ruta.stat().st_size
+    rango = request.headers.get('Range')
+    inicio = 0
+    fin = tamano - 1
+    estado = 200
+    headers = {'Accept-Ranges': 'bytes', 'Content-Type': 'application/vnd.pmtiles'}
+
+    if rango:
+        coincidencia = re.fullmatch(r'bytes=(\d*)-(\d*)', rango.strip())
+        if not coincidencia or not any(coincidencia.groups()):
+            respuesta = HttpResponse(status=416)
+            respuesta['Content-Range'] = f'bytes */{tamano}'
+            respuesta['Accept-Ranges'] = 'bytes'
+            return respuesta
+
+        inicio_texto, fin_texto = coincidencia.groups()
+        if inicio_texto:
+            inicio = int(inicio_texto)
+            fin = int(fin_texto) if fin_texto else fin
+        else:
+            sufijo = int(fin_texto)
+            inicio = max(tamano - sufijo, 0)
+        if inicio >= tamano or inicio > fin:
+            respuesta = HttpResponse(status=416)
+            respuesta['Content-Range'] = f'bytes */{tamano}'
+            respuesta['Accept-Ranges'] = 'bytes'
+            return respuesta
+
+        fin = min(fin, tamano - 1)
+        estado = 206
+        headers['Content-Range'] = f'bytes {inicio}-{fin}/{tamano}'
+
+    longitud = fin - inicio + 1
+    archivo = ruta.open('rb')
+    archivo.seek(inicio)
+
+    def transmitir():
+        restante = longitud
+        try:
+            while restante:
+                bloque = archivo.read(min(64 * 1024, restante))
+                if not bloque:
+                    break
+                restante -= len(bloque)
+                yield bloque
+        finally:
+            archivo.close()
+
+    headers['Content-Length'] = str(longitud)
+    return StreamingHttpResponse(transmitir(), status=estado, headers=headers)
 
 
 # ============================================================
@@ -157,7 +231,30 @@ def api_crear_punto(request):
             try:
                 atributos = json.loads(atributos)
             except json.JSONDecodeError:
-                atributos = {}
+                return JsonResponse({'ok': False, 'error': 'Los atributos deben ser un objeto JSON válido'}, status=400)
+        if not isinstance(atributos, dict):
+            return JsonResponse({'ok': False, 'error': 'Los atributos deben ser un objeto JSON'}, status=400)
+
+        if atributos.get('radio_km') not in (None, ''):
+            try:
+                radio_km = float(atributos['radio_km'])
+            except (TypeError, ValueError):
+                return JsonResponse({'ok': False, 'error': 'El radio de cobertura debe ser un número válido'}, status=400)
+            if not math.isfinite(radio_km) or not 0 < radio_km <= 1000:
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'El radio de cobertura debe ser mayor que 0 y no superar 1000 km',
+                }, status=400)
+            atributos['radio_km'] = radio_km
+
+        if atributos.get('frecuencia_mhz') not in (None, ''):
+            try:
+                frecuencia_mhz = float(atributos['frecuencia_mhz'])
+            except (TypeError, ValueError):
+                return JsonResponse({'ok': False, 'error': 'La frecuencia debe ser un número válido'}, status=400)
+            if not math.isfinite(frecuencia_mhz) or frecuencia_mhz <= 0:
+                return JsonResponse({'ok': False, 'error': 'La frecuencia debe ser mayor que 0'}, status=400)
+            atributos['frecuencia_mhz'] = frecuencia_mhz
 
         punto = PuntoMapa.objects.create(
             nombre=nombre,

@@ -52,6 +52,7 @@ UPTCER digitaliza completamente el ciclo de vida de una solicitud de importació
 | Fuente tipográfica | Inter (Google Fonts) |
 | Gestión de configuración | python-decouple (.env) |
 | Cálculo de fechas | python-dateutil |
+| Propagación orbital | sgp4 (TLE/SGP4) |
 
 No se usa ningún framework de JavaScript. Todo el frontend es HTML, CSS y JS vanilla.
 
@@ -227,6 +228,22 @@ Registra cada cambio de estado con: estado anterior, estado nuevo, usuario respo
 ---
 
 ## 8. Apps del sistema
+
+### Mapa offline
+
+La vista del mapa, el selector de ubicación, la creación de puntos y el mapa del panel directivo usan **MapLibre GL JS** y un archivo PMTiles local. La extracción de Cuba, `apps/mapa/static/mapa/data/cuba.pmtiles`, contiene calles, edificios, agua y etiquetas hasta zoom 14 (aprox. 71 MB); los límites administrativos siguen en `cuba_municipios.geojson`. MapLibre, PMTiles, los estilos, las fuentes y los sprites también se sirven desde archivos locales.
+
+Los archivos de basemap se extrajeron del canal diario abierto de [Protomaps](https://maps.protomaps.com/builds/), compilado de datos de [OpenStreetMap](https://www.openstreetmap.org/copyright); la extracción utilizada corresponde al 28 de octubre de 2026. Los datos se distribuyen bajo ODbL y requieren atribución a OpenStreetMap. Las licencias de MapLibre, PMTiles, Protomaps, fuentes y sprites están junto a los recursos en `apps/mapa/static/mapa/vendor/`. Para actualizar el mapa, descarga el archivo PMTiles diario de Protomaps y extrae el mismo recuadro de Cuba con el CLI oficial `pmtiles`:
+
+```powershell
+pmtiles extract https://build.protomaps.com/AAAAMMDD.pmtiles apps/mapa/static/mapa/data/cuba.pmtiles --bbox=-85.2,19.7,-74.1,23.4 --maxzoom=14
+```
+
+El endpoint local del archivo sirve solicitudes HTTP Range, necesarias para que PMTiles lea solo las teselas requeridas. Incluye el archivo al desplegar el sistema; no basta con copiar el código fuente. El mapa, sus calles/etiquetas, puntos, límites, filtros y la búsqueda por nombre de punto, municipio o provincia funcionan sin Internet. La búsqueda y geocodificación de direcciones mediante Nominatim siguen siendo opcionales y requieren conexión. La distribución completa es mayor que 5–20 MB; el tamaño cambia según la cobertura y el zoom elegido.
+
+El panel directivo filtra puntos por provincia, municipio y rango de frecuencia MHz. La frecuencia y el radio (`radio_km`) se pueden configurar al crear un punto, en el administrador o importando columnas de frecuencia y alcance. Los radios son manuales: los círculos rojos identifican un solapamiento geométrico, no calculan propagación ni predicen interferencias. Para puntos con solicitudes F43, los datos geográficos se asignan con el límite municipal que contiene sus coordenadas.
+
+En la vista **Mapa** del directivo se pueden activar las trayectorias de satélites que tendrán huella geométrica sobre Cuba durante los próximos 90 minutos. Las posiciones se calculan localmente con SGP4 a partir de elementos TLE de CelesTrak; se actualizan cuando hay conexión y se guardan en `media/datos_satelites/activos.tle` para recalcular trayectorias sin Internet. La actualización se intenta cada seis horas y, si falla, se reintenta como máximo cada dos horas. Si todavía no hay caché y el grupo completo «active» no está disponible, se intenta usar CelesTrak «visual» o AMSAT «amateur», que son subconjuntos y se identifican como tales en el mapa; no representan todos los satélites activos. La franja dibujada representa visibilidad geométrica aproximada con elevación mínima de 10°, no el haz de una antena ni cobertura real de un servicio. Las órbitas son estimaciones y su precisión disminuye a medida que envejecen los TLE.
 
 ### `apps/accounts`
 

@@ -185,6 +185,31 @@ class LicenciaModelTest(TestCase):
         generar_licencia(self.solicitud, self.directivo)
         self.assertEqual(self.solicitud.punto_mapa.pk, punto.pk)
 
+    def test_sincronizar_licencia_conserva_frecuencia_y_radio_del_mapa(self):
+        from apps.mapa.models import PuntoMapa
+
+        self.solicitud.direccion_instalacion = 'Calle 1, La Habana'
+        self.solicitud.latitud_instalacion = 23.1136
+        self.solicitud.longitud_instalacion = -82.3666
+        self.solicitud.save(update_fields=[
+            'direccion_instalacion',
+            'latitud_instalacion',
+            'longitud_instalacion',
+        ])
+        PuntoMapa.objects.create(
+            nombre='Punto manual',
+            solicitud=self.solicitud,
+            latitud=self.solicitud.latitud_instalacion,
+            longitud=self.solicitud.longitud_instalacion,
+            atributos={'frecuencia_mhz': 900, 'radio_km': 4},
+        )
+
+        generar_licencia(self.solicitud, self.directivo)
+
+        self.solicitud.punto_mapa.refresh_from_db()
+        self.assertEqual(self.solicitud.punto_mapa.atributos['frecuencia_mhz'], 900)
+        self.assertEqual(self.solicitud.punto_mapa.atributos['radio_km'], 4)
+
     def test_licencia_definitiva_sin_vencimiento(self):
         """Una licencia definitiva no tiene fecha de vencimiento."""
         l = generar_licencia(self.solicitud, self.directivo)

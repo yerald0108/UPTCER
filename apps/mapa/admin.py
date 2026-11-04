@@ -1,9 +1,11 @@
 from django.contrib import admin
+from .forms import PuntoMapaAdminForm
 from .models import PuntoMapa, ImportacionLog
 
 
 @admin.register(PuntoMapa)
 class PuntoMapaAdmin(admin.ModelAdmin):
+    form = PuntoMapaAdminForm
     list_display = ('nombre', 'tipo', 'estado', 'latitud', 'longitud')
     list_filter = ('tipo', 'estado')
     search_fields = ('nombre', 'descripcion', 'responsable')
@@ -16,7 +18,10 @@ class PuntoMapaAdmin(admin.ModelAdmin):
             'fields': ('direccion', 'latitud', 'longitud')
         }),
         ('Información adicional', {
-            'fields': ('atributos', 'descripcion', 'responsable', 'fecha_instalacion', 'ultima_revision')
+            'fields': (
+                'frecuencia_mhz', 'radio_km', 'atributos', 'descripcion',
+                'responsable', 'fecha_instalacion', 'ultima_revision'
+            )
         }),
         ('Auditoría', {
             'fields': ('created_at', 'updated_at'),

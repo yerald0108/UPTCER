@@ -23,7 +23,19 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; backgr
 }
 .btn-header:hover { background: rgba(255, 255, 255, 0.3); }
 
-#map { height: calc(100vh - 60px); width: 100%; }
+#map { height: calc(100vh - 60px); width: 100%; background: #e8f0f3; }
+#mapa-estado {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 500;
+    max-width: min(440px, calc(100% - 24px));
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.94);
+    color: #334155;
+    font-size: .85rem;
+}
 
 .info-panel {
     position: absolute;

@@ -4,19 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Puntos</title>
+    <title>{% if user.es_directivo %}Mapa de instalaciones y cobertura{% else %}Mapa de puntos{% endif %}</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="{% static 'mapa/vendor/maplibre-gl.css' %}">
     <link rel="stylesheet" href="{% static 'mapa/css/mapa.css' %}">
     
     <style>
-        /* Estilos corregidos para el buscador flotante */
+        body { height: 100vh; display: flex; flex-direction: column; }
+        #mapa-header { flex-shrink: 0; }
+        #mapa-vista-directivo { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        #mapa-controles { flex: 0 0 auto; background: #f8fafc; }
+        #mapa-controles > summary { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 6px 18px; color: #334155; background: #eaf0f5; cursor: pointer; font-size: .9rem; font-weight: 600; list-style: none; user-select: none; }
+        #mapa-controles > summary::-webkit-details-marker { display: none; }
+        #mapa-controles > summary::after { content: "Mostrar"; color: #2563eb; font-size: .8rem; }
+        #mapa-controles[open] > summary::after { content: "Ocultar"; }
+        #mapa-controles > summary:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+        #mapa-directivo-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; padding: 14px 18px; background: #f8fafc; }
+        #mapa-directivo-filtros label { display: grid; gap: 5px; font-size: .85rem; font-weight: 600; color: #334155; }
+        #mapa-directivo-filtros select, #mapa-directivo-filtros input { width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; font: inherit; }
+        .mapa-directivo-acciones { display: flex; align-items: end; gap: 8px; }
+        .mapa-directivo-acciones button { color: white; border: 0; cursor: pointer; font: inherit; white-space: nowrap; }
+        .mapa-satelites-control { display: flex !important; flex-direction: row; align-items: center; gap: 8px !important; }
+        #mapa-mostrar-satelites { width: auto !important; min-height: auto !important; }
+        #mapa-satelites-estado { padding: 6px 18px; color: #475569; font-size: .82rem; background: #fff; }
+        #mapa-directivo { flex: 1; min-height: 260px; width: 100%; background: #e8f0f3; }
+        #mapa-directivo-estado { padding: 8px 18px; color: #334155; font-size: .9rem; background: #fff; }
+        .mapa-directivo-aviso { padding: 0 18px 8px; color: #64748b; font-size: .85rem; background: #fff; }
+        #mapa-directivo-solapamientos { max-height: 90px; overflow: auto; margin: 0; padding: 0 18px 10px 38px; color: #b91c1c; font-size: .9rem; background: #fff; }
         .search-container {
             position: absolute;
-            top: 70px; /* 🔽 Ajustado para quedar debajo del encabezado azul */
-            left: 50px; /* Al lado de los controles de zoom */
+            top: 70px;
+            left: 50px;
             z-index: 1000;
             background: white;
             padding: 5px;
@@ -44,12 +62,16 @@
             font-size: 14px;
         }
         .search-container button:hover { background: #0a58ca; }
+        @media (max-width: 600px) {
+            #mapa-directivo-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px; }
+            .mapa-directivo-acciones { grid-column: 1 / -1; }
+        }
     </style>
 </head>
 <body>
 
     <div id="mapa-header">
-        <h1>📍 Mapa de puntos</h1>
+        <h1>{% if user.es_directivo %}📍 Mapa de instalaciones y cobertura{% else %}📍 Mapa de puntos{% endif %}</h1>
         <div class="acciones-header">
             <a href="{{ url_volver }}" class="btn-header">← Volver</a>
             <a href="{% url 'mapa:importar' %}?next={{ url_volver|urlencode }}" class="btn-header">📥 Importar</a>
@@ -58,11 +80,53 @@
         </div>
     </div>
 
+    {% if user.es_directivo %}
+    <main id="mapa-vista-directivo">
+        <details id="mapa-controles">
+            <summary>Configuración y filtros del mapa</summary>
+            <div id="mapa-directivo-filtros">
+                <label for="mapa-provincia">Provincia
+                    <select id="mapa-provincia"><option value="">Todas las provincias</option></select>
+                </label>
+                <label for="mapa-municipio">Municipio
+                    <select id="mapa-municipio"><option value="">Todos los municipios</option></select>
+                </label>
+                <label for="mapa-frecuencia-desde">Frecuencia desde (MHz)
+                    <input id="mapa-frecuencia-desde" type="number" min="0" step="any" placeholder="Sin límite">
+                </label>
+                <label for="mapa-frecuencia-hasta">Frecuencia hasta (MHz)
+                    <input id="mapa-frecuencia-hasta" type="number" min="0" step="any" placeholder="Sin límite">
+                </label>
+                <label class="mapa-satelites-control" for="mapa-mostrar-satelites">
+                    <input id="mapa-mostrar-satelites" type="checkbox" checked>
+                    Trayectorias y huellas satelitales
+                </label>
+                <label for="mapa-filtro-satelite">Satélite sobre Cuba
+                    <select id="mapa-filtro-satelite" disabled>
+                        <option value="">Todos los satélites</option>
+                    </select>
+                </label>
+                <div class="mapa-directivo-acciones">
+                    <button type="button" class="btn-header" id="mapa-aplicar-filtros">Aplicar</button>
+                    <button type="button" class="btn-header" id="mapa-limpiar-filtros">Limpiar</button>
+                </div>
+            </div>
+        </details>
+        <div id="mapa-directivo" aria-label="Mapa de instalaciones y cobertura"></div>
+        <div id="mapa-satelites-estado" role="status" aria-live="polite">Cargando datos orbitales guardados o actualizados…</div>
+        <div id="mapa-directivo-estado" role="status" aria-live="polite">Cargando puntos y límites locales…</div>
+        <div class="mapa-directivo-aviso">
+            <strong id="mapa-directivo-total">0</strong> puntos. Los círculos muestran radios de cobertura introducidos manualmente; el rojo identifica áreas circulares que se solapan y no implica interferencia técnica.
+        </div>
+        <ul id="mapa-directivo-solapamientos" aria-live="polite"></ul>
+    </main>
+    {% else %}
     <div id="map"></div>
+    <div id="mapa-estado" role="status" aria-live="polite"></div>
 
     <!-- Barra de búsqueda flotante -->
     <div class="search-container">
-        <input type="text" id="search-input" placeholder="Buscar dirección, lugar..." onkeypress="if(event.key === 'Enter') window.buscarLugar()">
+        <input type="text" id="search-input" placeholder="Punto, municipio o provincia..." onkeypress="if(event.key === 'Enter') window.buscarLugar()">
         <button onclick="window.buscarLugar()">🔍</button>
     </div>
 
@@ -75,10 +139,21 @@
         <div id="info-atributos"></div>
         <p id="info-descripcion"></p>
     </div>
+    {% endif %}
 
     <script>
+        window.MAPA_BASEMAP_URL = "{% url 'mapa:pmtiles' %}";
+        window.MAPA_LIMITES_URL = "{% static 'mapa/data/cuba_municipios.geojson' %}";
+        window.MAPA_GLYPHS_URL = "{% static 'mapa/vendor/fonts/' %}" + decodeURIComponent("%7Bfontstack%7D/%7Brange%7D.pbf");
+        window.MAPA_SPRITES_URL = "{% static 'mapa/vendor/sprites/light' %}";
+        {% if user.es_directivo %}
+        window.MAPA_DIRECTIVO_CONFIG = {
+            apiUrl: "{{ url_api_puntos }}",
+            satelitesUrl: "{% url 'mapa:api_satelites' %}"
+        };
+        {% else %}
         window.MAPA_CONFIG = {
-            apiUrl: "{% url 'mapa:api_puntos' %}",
+            apiUrl: "{{ url_api_puntos }}",
             urlCrear: "{% url 'mapa:crear_punto' %}?next={{ url_volver|urlencode }}",
             iconos: {
                 'RADIOFARO_AEREO':        "{% static 'mapa/img/marker-blue.png' %}",
@@ -97,10 +172,15 @@
             },
             shadowUrl: "{% static 'mapa/img/marker-shadow.png' %}"
         };
+        {% endif %}
     </script>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="{% static 'mapa/js/mapa.js' %}?v=8"></script>
+    <script src="{% static 'mapa/vendor/pmtiles.js' %}"></script>
+    <script src="{% static 'mapa/vendor/basemaps.js' %}"></script>
+    {% if user.es_directivo %}
+    <script type="module" src="{% static 'mapa/js/mapa-directivo.js' %}?v=6"></script>
+    {% else %}
+    <script type="module" src="{% static 'mapa/js/mapa.js' %}?v=13"></script>
+    {% endif %}
 </body>
 </html>

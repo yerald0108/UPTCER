@@ -114,6 +114,14 @@ def _sincronizar_punto_mapa(solicitud, licencia):
         'solicitante': solicitud.solicitante.get_nombre_completo(),
         'equipos': equipos if isinstance(equipos, list) else [],
     }
+    try:
+        atributos_previos = solicitud.punto_mapa.atributos or {}
+    except PuntoMapa.DoesNotExist:
+        atributos_previos = {}
+    for campo in ('frecuencia_mhz', 'radio_km'):
+        if campo not in atributos and atributos_previos.get(campo) not in (None, ''):
+            atributos[campo] = atributos_previos[campo]
+
     PuntoMapa.objects.update_or_create(
         solicitud=solicitud,
         defaults={
